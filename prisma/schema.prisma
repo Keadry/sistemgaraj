@@ -1,0 +1,133 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==============================
+// KULLANICI
+// ==============================
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  builds   Build[]
+  likes    Like[]
+  comments Comment[]
+}
+
+// ==============================
+// PARÇA (Bileşen)
+// ==============================
+enum ComponentType {
+  CPU
+  MOTHERBOARD
+  RAM
+  GPU
+  PSU
+  CASE
+  STORAGE
+  COOLER
+}
+
+model Component {
+  id        String        @id @default(cuid())
+  name      String
+  brand     String
+  type      ComponentType
+  price     Float
+  imageUrl  String?
+  sourceUrl String? // Scraper'ın çektiği orijinal ürün linki
+
+  // Uyum kontrolü için teknik özellikler (Faz 4'te kullanılacak)
+  socket     String? // CPU / Motherboard soket uyumu için (örn: "AM5", "LGA1700")
+  ramType    String? // Motherboard / RAM için (örn: "DDR5", "DDR4")
+  wattage    Int? // GPU / CPU'nun tükettiği güç, PSU'nun sağladığı güç
+  formFactor String? // Motherboard / Case boyutu için (örn: "ATX", "Micro-ATX")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  buildComponents BuildComponent[]
+}
+
+// ==============================
+// TOPLANAN SİSTEM
+// ==============================
+model Build {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  totalPrice  Float
+  isPublic    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  components BuildComponent[]
+  likes      Like[]
+  comments   Comment[]
+}
+
+// ==============================
+// ARA TABLO: Build <-> Component (Many-to-Many)
+// ==============================
+model BuildComponent {
+  id String @id @default(cuid())
+
+  build   Build  @relation(fields: [buildId], references: [id])
+  buildId String
+
+  component   Component @relation(fields: [componentId], references: [id])
+  componentId String
+
+  quantity Int @default(1)
+
+  @@unique([buildId, componentId]) // Aynı parça bir sistemde tekrar tekrar eklenemesin
+}
+
+// ==============================
+// BEĞENİ
+// ==============================
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  build   Build  @relation(fields: [buildId], references: [id])
+  buildId String
+
+  @@unique([userId, buildId]) // Aynı kullanıcı aynı sistemi 2 kere beğenemez
+}
+
+// ==============================
+// YORUM
+// ==============================
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  build   Build  @relation(fields: [buildId], references: [id])
+  buildId String
+}

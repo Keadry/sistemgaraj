@@ -1,0 +1,65 @@
+GET http://localhost:3000/
+
+###
+
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@sistemgaraj.com",
+  "password": "sifre123",
+  "name": "Test Kullanıcı"
+}
+
+###
+
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@sistemgaraj.com",
+  "password": "sifre123"
+}
+
+###
+
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbXJmYm53bjgwMDAwdmFnYzJtYXYxa2gzIiwiaWF0IjoxNzgzNzExMzM3LCJleHAiOjE3ODQzMTYxMzd9.MvOT3F8rEXvK1hRZl_RAbEmiKjdx7AoIW9M9wjQ_zfs
+
+POST http://localhost:3000/api/builds
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "İlk Oyun Bilgisayarım",
+  "cpuId": "cmrfb3vsg0000vafcpin0vc3r",
+  "motherboardId": "cmrfb3vtu0005vafc6g7nhcts",
+  "ramId": "cmrfb3vu6000avafcoxvylbtg",
+  "gpuId": "cmrfb3vuf000evafc9cigeplr",
+  "psuId": "cmrfb3vut000lvafcxy3agvf4",
+  "caseId": "cmrfb3vuz000ovafcd8uroagd"
+}
+
+###
+
+GET http://localhost:3000/api/builds
+
+###
+
+@buildId = cmrfbymcd0001vaco2plukk1d
+
+POST http://localhost:3000/api/builds/{{buildId}}/like
+Authorization: Bearer {{token}}
+
+###
+
+POST http://localhost:3000/api/builds/{{buildId}}/comments
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "content": "Efsane bir sistem olmuş, tebrikler!"
+}
+
+###
+
+GET http://localhost:3000/api/builds/{{buildId}}

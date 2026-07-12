@@ -1,0 +1,28 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-paper: #ffffff;
+  --color-surface: #f4f6f8;
+  --color-ink: #14181f;
+  --color-ink-muted: #5a6472;
+  --color-trace: #2f6fed;
+  --color-compatible: #1e9e6c;
+  --color-incompatible: #e1483d;
+  --color-hairline: #d8dee6;
+
+  --font-display: var(--font-space-grotesk);
+  --font-body: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body), sans-serif;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -100;
+  }
+}

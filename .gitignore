@@ -1,0 +1,21 @@
+# Bağımlılıklar
+node_modules/
+frontend/node_modules/
+
+# Ortam değişkenleri (gizli bilgiler)
+.env
+.env.local
+frontend/.env.local
+
+# Derleme çıktıları
+dist/
+frontend/.next/
+frontend/out/
+
+# Prisma
+src/generated/
+
+# Editör / Sistem
+.vscode/
+.DS_Store
+*.log

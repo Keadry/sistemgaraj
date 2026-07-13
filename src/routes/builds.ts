@@ -3,8 +3,10 @@ import { prisma } from '../db.js';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { validateBuild } from '../services/compatibility.js';
 import type { Component } from '../generated/prisma/client.js';
+import { containsBannedWord } from '../services/moderation.js';
 
 const router = Router();
+
 // ==============================
 // SİSTEM TOPLA (korumalı rota)
 // ==============================
@@ -14,23 +16,23 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
       req.body;
 
     if (!cpuId || !motherboardId || !ramId || !gpuId || !psuId || !caseId) {
-      return res.status(400).json({
+      res.status(400).json({
         error:
           "6 parça ID'sinin tamamı zorunludur (cpuId, motherboardId, ramId, gpuId, psuId, caseId).",
       });
+      return;
     }
 
-    // İlgili parçaları veritabanından tek seferde çekiyoruz
-    const ids = [cpuId, motherboardId, ramId, gpuId, psuId, caseId];
+    const ids: string[] = [cpuId, motherboardId, ramId, gpuId, psuId, caseId];
     const components = await prisma.component.findMany({
       where: { id: { in: ids } },
     });
 
-    // Hepsi gerçekten bulundu mu kontrol et
     if (components.length !== 6) {
-      return res
+      res
         .status(404)
         .json({ error: 'Bir veya birden fazla parça bulunamadı.' });
+      return;
     }
 
     const findById = (id: string): Component => {
@@ -46,23 +48,21 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
       pcCase: findById(caseId),
     };
 
-    // FAZ 4'teki uyum algoritmasından geçiriyoruz
     const result = validateBuild(parts);
 
     if (!result.isCompatible) {
-      return res.status(422).json({
+      res.status(422).json({
         error: 'Seçilen parçalar uyumlu değil.',
         issues: result.issues,
       });
+      return;
     }
 
-    // Toplam fiyatı hesapla
     const totalPrice = Object.values(parts).reduce(
       (sum, part) => sum + part.price,
       0,
     );
 
-    // Uyumluysa veritabanına kaydet
     const build = await prisma.build.create({
       data: {
         name: name || 'Adsız Sistem',
@@ -80,7 +80,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
     res.status(201).json({
       message: 'Sistem başarıyla oluşturuldu',
       build,
-      warnings: result.issues, // varsa sadece "warning" seviyesindekiler kalmış olur
+      warnings: result.issues,
     });
   } catch (error) {
     console.error(error);
@@ -93,14 +93,19 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
 // ==============================
 router.get('/', async (req, res) => {
   try {
+    const featuredOnly = req.query.featured === 'true';
+
     const builds = await prisma.build.findMany({
-      where: { isPublic: true },
+      where: {
+        isPublic: true,
+        ...(featuredOnly ? { isFeatured: true } : {}),
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         user: { select: { id: true, name: true } },
         components: { include: { component: true } },
         likes: true,
-        comments: true,
+        comments: { where: { status: 'APPROVED' } },
       },
     });
 
@@ -116,13 +121,16 @@ router.get('/', async (req, res) => {
 // ==============================
 router.get('/:id', async (req, res) => {
   try {
+    const buildId = req.params.id as string;
+
     const build = await prisma.build.findUnique({
-      where: { id: req.params.id },
+      where: { id: buildId },
       include: {
         user: { select: { id: true, name: true } },
         components: { include: { component: true } },
         likes: true,
         comments: {
+          where: { status: 'APPROVED' },
           include: { user: { select: { id: true, name: true } } },
           orderBy: { createdAt: 'asc' },
         },
@@ -130,7 +138,8 @@ router.get('/:id', async (req, res) => {
     });
 
     if (!build) {
-      return res.status(404).json({ error: 'Sistem bulunamadı.' });
+      res.status(404).json({ error: 'Sistem bulunamadı.' });
+      return;
     }
 
     res.json({ build });
@@ -145,14 +154,15 @@ router.get('/:id', async (req, res) => {
 // ==============================
 router.post('/:id/like', requireAuth, async (req: AuthRequest, res) => {
   try {
-    const buildId = req.params.id;
+    const buildId = req.params.id as string;
 
     const existingLike = await prisma.like.findUnique({
       where: { userId_buildId: { userId: req.userId!, buildId } },
     });
 
     if (existingLike) {
-      return res.status(409).json({ error: 'Bu sistemi zaten beğendin.' });
+      res.status(409).json({ error: 'Bu sistemi zaten beğendin.' });
+      return;
     }
 
     await prisma.like.create({
@@ -171,7 +181,7 @@ router.post('/:id/like', requireAuth, async (req: AuthRequest, res) => {
 // ==============================
 router.delete('/:id/like', requireAuth, async (req: AuthRequest, res) => {
   try {
-    const buildId = req.params.id;
+    const buildId = req.params.id as string;
 
     await prisma.like.delete({
       where: { userId_buildId: { userId: req.userId!, buildId } },
@@ -189,19 +199,54 @@ router.delete('/:id/like', requireAuth, async (req: AuthRequest, res) => {
 // ==============================
 router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
   try {
-    const buildId = req.params.id;
+    const buildId = req.params.id as string;
     const { content } = req.body;
 
     if (!content || content.trim().length === 0) {
-      return res.status(400).json({ error: 'Yorum içeriği boş olamaz.' });
+      res.status(400).json({ error: 'Yorum içeriği boş olamaz.' });
+      return;
     }
 
+    const lastComment = await prisma.comment.findFirst({
+      where: { userId: req.userId! },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (lastComment) {
+      const secondsSinceLastComment =
+        (Date.now() - lastComment.createdAt.getTime()) / 1000;
+
+      if (secondsSinceLastComment < 30) {
+        res.status(429).json({
+          error: `Çok hızlı yorum yapıyorsun. ${Math.ceil(
+            30 - secondsSinceLastComment,
+          )} saniye bekle.`,
+        });
+        return;
+      }
+
+      if (lastComment.content.trim() === content.trim()) {
+        res.status(429).json({
+          error: 'Bu yorumu zaten yaptın, aynısını tekrar gönderemezsin.',
+        });
+        return;
+      }
+    }
+
+    const status = containsBannedWord(content) ? 'PENDING' : 'APPROVED';
+
     const comment = await prisma.comment.create({
-      data: { content, userId: req.userId!, buildId },
+      data: { content, userId: req.userId!, buildId, status },
       include: { user: { select: { id: true, name: true } } },
     });
 
-    res.status(201).json({ message: 'Yorum eklendi', comment });
+    res.status(201).json({
+      message:
+        status === 'PENDING'
+          ? 'Yorumun incelemeye alındı, onaylandıktan sonra görünecek.'
+          : 'Yorum eklendi',
+      comment,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Sunucu hatası.' });

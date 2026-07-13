@@ -1,29 +1,54 @@
-import Navbar from '@/components/Navbar';
 import { getFeed } from '@/lib/api';
 import BuildCard from '@/components/BuildCard';
+import Navbar from '@/components/Navbar';
 
 export default async function Home() {
-  const builds = await getFeed();
+  const [featuredBuilds, allBuilds] = await Promise.all([
+    getFeed({ featured: true }),
+    getFeed(),
+  ]);
+
+  // Topluluk listesinde öne çıkanları tekrar göstermeyelim
+  const featuredIds = new Set(featuredBuilds.map((b) => b.id));
+  const communityBuilds = allBuilds.filter((b) => !featuredIds.has(b.id));
 
   return (
     <main className="min-h-screen bg-paper">
-      {/* NAVBAR */}
       <Navbar />
 
-      {/* BAŞLIK */}
+      {/* ÖNERİLEN SİSTEMLER */}
+      {featuredBuilds.length > 0 && (
+        <section className="px-6 md:px-12 pt-10 pb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <h1 className="font-[family-name:var(--font-display)] text-2xl md:text-3xl font-semibold tracking-tight">
+              Önerilen Sistemler
+            </h1>
+          </div>
+          <p className="text-ink-muted mb-6">
+            Editör seçimi — SistemGaraj ekibinin öne çıkardığı sistemler.
+          </p>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {featuredBuilds.map((build) => (
+              <BuildCard key={build.id} build={build} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* TOPLULUK SİSTEMLERİ */}
       <section className="px-6 md:px-12 pt-10 pb-8">
-        <h1 className="font-[family-name:var(--font-display)] text-2xl md:text-3xl font-semibold tracking-tight">
+        <h2 className="font-[family-name:var(--font-display)] text-xl md:text-2xl font-semibold tracking-tight">
           Topluluk Sistemleri
-        </h1>
+        </h2>
         <p className="text-ink-muted mt-2">
-          {builds.length} sistem paylaşıldı — hepsi uyumluluk kontrolünden
-          geçti.
+          {communityBuilds.length} sistem paylaşıldı - Kullanıcıların parça
+          listelerini, fotoğraflarını ve genel toplama deneyimlerini gösteren
+          binlerce bilgisayar toplama örneğine göz atın.
         </p>
       </section>
 
-      {/* FEED */}
       <section className="px-6 md:px-12 pb-24">
-        {builds.length === 0 ? (
+        {communityBuilds.length === 0 ? (
           <div className="text-center py-20 border border-dashed border-hairline rounded-2xl">
             <p className="text-ink-muted">
               Henüz paylaşılan bir sistem yok. İlk sistemi sen topla!
@@ -31,7 +56,7 @@ export default async function Home() {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {builds.map((build) => (
+            {communityBuilds.map((build) => (
               <BuildCard key={build.id} build={build} />
             ))}
           </div>

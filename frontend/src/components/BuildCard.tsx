@@ -29,9 +29,16 @@ export default function BuildCard({ build }: { build: Build }) {
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="font-[family-name:var(--font-display)] text-lg font-semibold tracking-tight">
-            {build.name}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-[family-name:var(--font-display)] text-lg font-semibold tracking-tight">
+              {build.name}
+            </h3>
+            {build.isFeatured && (
+              <span className="text-trace" title="Öne çıkan sistem">
+                ★
+              </span>
+            )}
+          </div>
           <p className="text-sm text-ink-muted mt-1">
             {build.user.name ?? 'Anonim'} paylaştı
           </p>

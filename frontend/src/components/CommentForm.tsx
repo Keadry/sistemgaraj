@@ -14,10 +14,10 @@ export default function CommentForm({
 }) {
   const { user, token } = useAuth();
   const router = useRouter();
-
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,10 +31,17 @@ export default function CommentForm({
 
     setIsSubmitting(true);
     setError(null);
+    setInfo(null);
 
     try {
-      const comment = await addComment(buildId, content, token);
-      onCommentAdded(comment);
+      const { comment, message } = await addComment(buildId, content, token);
+
+      if (comment.status === 'APPROVED') {
+        onCommentAdded(comment);
+      } else {
+        setInfo(message);
+      }
+
       setContent('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Bir hata oluştu.');
@@ -55,6 +62,7 @@ export default function CommentForm({
         className="w-full rounded-xl border border-hairline px-4 py-3 text-sm outline-none focus:border-trace transition-colors resize-none"
       />
       {error && <p className="text-sm text-incompatible mt-2">{error}</p>}
+      {info && <p className="text-sm text-trace mt-2">{info}</p>}
       <button
         type="submit"
         disabled={isSubmitting || !content.trim()}

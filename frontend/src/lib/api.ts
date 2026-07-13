@@ -31,6 +31,7 @@ export type Like = {
 export type Comment = {
   id: string;
   content: string;
+  status: 'APPROVED' | 'PENDING' | 'REJECTED';
   createdAt: string;
   user: BuildUser;
 };
@@ -41,6 +42,7 @@ export type Build = {
   description: string | null;
   totalPrice: number;
   isPublic: boolean;
+  isFeatured: boolean;
   createdAt: string;
   user: BuildUser;
   components: BuildComponent[];
@@ -48,8 +50,11 @@ export type Build = {
   comments: Comment[];
 };
 
-export async function getFeed(): Promise<Build[]> {
-  const res = await fetch(`${API_URL}/api/builds`, {
+export async function getFeed(options?: {
+  featured?: boolean;
+}): Promise<Build[]> {
+  const query = options?.featured ? '?featured=true' : '';
+  const res = await fetch(`${API_URL}/api/builds${query}`, {
     cache: 'no-store',
   });
 
@@ -101,7 +106,7 @@ export async function addComment(
   buildId: string,
   content: string,
   token: string,
-): Promise<Comment> {
+): Promise<{ comment: Comment; message: string }> {
   const res = await fetch(`${API_URL}/api/builds/${buildId}/comments`, {
     method: 'POST',
     headers: {
@@ -117,7 +122,7 @@ export async function addComment(
     throw new Error(data.error || 'Yorum eklenemedi.');
   }
 
-  return data.comment;
+  return { comment: data.comment, message: data.message };
 }
 
 export async function getComponents(): Promise<Component[]> {
@@ -166,4 +171,233 @@ export async function createBuild(
   }
 
   return { build: data.build };
+}
+
+export type AdminUser = {
+  id: string;
+  email: string;
+  name: string | null;
+  role: 'USER' | 'MODERATOR' | 'ADMIN';
+  isBanned: boolean;
+  banReason: string | null;
+  mutedUntil: string | null;
+  createdAt: string;
+};
+
+export async function getUsers(token: string): Promise<AdminUser[]> {
+  const res = await fetch(`${API_URL}/api/admin/users`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error('Kullanıcılar yüklenemedi.');
+  }
+
+  const data = await res.json();
+  return data.users;
+}
+
+export async function deleteComment(commentId: string, token: string) {
+  const res = await fetch(`${API_URL}/api/admin/comments/${commentId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'Yorum silinemedi.');
+  }
+}
+
+export async function muteUser(
+  userId: string,
+  hours: number,
+  reason: string,
+  token: string,
+) {
+  const res = await fetch(`${API_URL}/api/admin/users/${userId}/mute`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ hours, reason }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'Susturma başarısız.');
+  }
+}
+
+export async function unmuteUser(userId: string, token: string) {
+  const res = await fetch(`${API_URL}/api/admin/users/${userId}/unmute`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'İşlem başarısız.');
+  }
+}
+
+export async function banUser(userId: string, reason: string, token: string) {
+  const res = await fetch(`${API_URL}/api/admin/users/${userId}/ban`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ reason }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'Banlama başarısız.');
+  }
+}
+
+export async function unbanUser(userId: string, token: string) {
+  const res = await fetch(`${API_URL}/api/admin/users/${userId}/unban`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'İşlem başarısız.');
+  }
+}
+
+export async function changeUserRole(
+  userId: string,
+  role: string,
+  token: string,
+) {
+  const res = await fetch(`${API_URL}/api/admin/users/${userId}/role`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ role }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'Rol değiştirilemedi.');
+  }
+}
+
+export async function toggleFeatured(buildId: string, token: string) {
+  const res = await fetch(`${API_URL}/api/admin/builds/${buildId}/feature`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'İşlem başarısız.');
+  }
+
+  const data = await res.json();
+  return data.build;
+}
+
+export type AdminComment = {
+  id: string;
+  content: string;
+  status: 'APPROVED' | 'PENDING' | 'REJECTED';
+  createdAt: string;
+  user: { id: string; name: string | null; email: string };
+  build: { id: string; name: string };
+};
+
+export async function getAllComments(token: string): Promise<AdminComment[]> {
+  const res = await fetch(`${API_URL}/api/admin/comments`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error('Yorumlar yüklenemedi.');
+  }
+
+  const data = await res.json();
+  return data.comments;
+}
+
+export async function getAllBuildsAdmin(token: string): Promise<Build[]> {
+  // Feed rotası zaten tüm herkese açık sistemleri (isFeatured dahil) döndürüyor
+  const res = await fetch(`${API_URL}/api/builds`, {
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error('Sistemler yüklenemedi.');
+  }
+
+  const data = await res.json();
+  return data.builds;
+}
+
+export async function approveComment(commentId: string, token: string) {
+  const res = await fetch(
+    `${API_URL}/api/admin/comments/${commentId}/approve`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'Onaylanamadı.');
+  }
+}
+
+export async function rejectComment(commentId: string, token: string) {
+  const res = await fetch(`${API_URL}/api/admin/comments/${commentId}/reject`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'Reddedilemedi.');
+  }
+}
+
+export type UserDetail = AdminUser & {
+  comments: {
+    id: string;
+    content: string;
+    status: 'APPROVED' | 'PENDING' | 'REJECTED';
+    createdAt: string;
+    build: { id: string; name: string };
+  }[];
+  likes: {
+    id: string;
+    createdAt: string;
+    build: { id: string; name: string };
+  }[];
+};
+
+export async function getUserDetail(
+  userId: string,
+  token: string,
+): Promise<UserDetail> {
+  const res = await fetch(`${API_URL}/api/admin/users/${userId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error('Kullanıcı detayı yüklenemedi.');
+  }
+
+  const data = await res.json();
+  return data.user;
 }

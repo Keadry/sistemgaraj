@@ -15,6 +15,24 @@ datasource db {
 }
 
 // ==============================
+// ROL
+// ==============================
+enum Role {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+// ==============================
+// YORUM DURUMU
+// ==============================
+enum CommentStatus {
+  APPROVED
+  PENDING
+  REJECTED
+}
+
+// ==============================
 // KULLANICI
 // ==============================
 model User {
@@ -22,6 +40,12 @@ model User {
   email     String   @unique
   password  String
   name      String?
+  role      Role     @default(USER)
+
+  isBanned   Boolean   @default(false)
+  banReason  String?
+  mutedUntil DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -44,6 +68,9 @@ enum ComponentType {
   COOLER
 }
 
+// ==============================
+// BILESEN BILGI
+// ==============================
 model Component {
   id        String        @id @default(cuid())
   name      String
@@ -74,6 +101,7 @@ model Build {
   description String?
   totalPrice  Float
   isPublic    Boolean  @default(true)
+  isFeatured  Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   user   User   @relation(fields: [userId], references: [id])
@@ -121,9 +149,10 @@ model Like {
 // YORUM
 // ==============================
 model Comment {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   content   String
-  createdAt DateTime @default(now())
+  status    CommentStatus @default(APPROVED)
+  createdAt DateTime      @default(now())
 
   user   User   @relation(fields: [userId], references: [id])
   userId String

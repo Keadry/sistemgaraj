@@ -4,6 +4,7 @@ import authRoutes from './routes/auth.js';
 import buildRoutes from './routes/builds.js';
 import cors from 'cors';
 import componentRoutes from './routes/components.js';
+import adminRoutes from './routes/admin.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +19,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/builds', buildRoutes);
 app.use('/api/components', componentRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.listen(PORT, () => {
   console.log(`✅ Sunucu http://localhost:${PORT} adresinde çalışıyor`);

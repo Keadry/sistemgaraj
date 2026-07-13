@@ -31,7 +31,12 @@ router.post('/register', async (req, res) => {
 
     res.status(201).json({
       message: 'Kayıt başarılı',
-      user: { id: user.id, email: user.email, name: user.name },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error(error);
@@ -71,7 +76,12 @@ router.post('/login', async (req, res) => {
     res.json({
       message: 'Giriş başarılı',
       token,
-      user: { id: user.id, email: user.email, name: user.name },
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.error(error);

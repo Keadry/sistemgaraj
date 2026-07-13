@@ -19,9 +19,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'SistemGaraj — Uyumlu PC Sistemleri Kolayca Topla',
+  title: 'SistemGaraj',
   description:
-    'Parçalarını seç, uyumluluğu anında gör. SistemGaraj ile hatasız bilgisayar toplama.',
+    'Parçalarını seç, ve paylaş. SistemGaraj ile bilgisayar toplama.',
 };
 
 export default function RootLayout({

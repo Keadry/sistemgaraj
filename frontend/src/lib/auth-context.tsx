@@ -14,6 +14,7 @@ type AuthUser = {
   id: string;
   email: string;
   name: string | null;
+  role: 'USER' | 'MODERATOR' | 'ADMIN';
 };
 
 type AuthContextType = {

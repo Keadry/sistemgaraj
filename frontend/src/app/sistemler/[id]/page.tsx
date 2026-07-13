@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import BuildInteractions from '@/components/BuildInteractions';
+import AdminBuildActions from '@/components/AdminBuildActions';
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', {
@@ -66,7 +67,10 @@ export default async function BuildDetailPage({
         {build.description && (
           <p className="mt-6 text-ink leading-relaxed">{build.description}</p>
         )}
-
+        <AdminBuildActions
+          buildId={build.id}
+          initialIsFeatured={build.isFeatured}
+        />
         {/* PARÇA LİSTESİ */}
         <section className="mt-8">
           <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold mb-4">

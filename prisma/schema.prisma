@@ -96,21 +96,23 @@ model Component {
 // TOPLANAN SİSTEM
 // ==============================
 model Build {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  totalPrice  Float
-  isPublic    Boolean  @default(true)
-  isFeatured  Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id           String        @id @default(cuid())
+  name         String
+  description  String?
+  totalPrice   Float
+  isPublic     Boolean       @default(true)
+  isFeatured   Boolean       @default(false)
+  reviewStatus CommentStatus @default(APPROVED)
+  createdAt    DateTime      @default(now())
 
   user   User   @relation(fields: [userId], references: [id])
   userId String
 
-  components BuildComponent[]
-  likes      Like[]
-  comments   Comment[]
-  images     BuildImage[]
+  components   BuildComponent[]
+  likes        Like[]
+  comments     Comment[]
+  images       BuildImage[]
+  editRequests BuildEditRequest[]
 }
 
 // ==============================
@@ -178,3 +180,44 @@ model Comment {
   build   Build  @relation(fields: [buildId], references: [id])
   buildId String
 }
+
+
+model BuildEditRequest {
+  id          String        @id @default(cuid())
+  status      CommentStatus @default(PENDING)
+  description String?
+  createdAt   DateTime      @default(now())
+  reviewedAt  DateTime?
+
+  build   Build  @relation(fields: [buildId], references: [id])
+  buildId String
+
+  cpuId          String?
+  motherboardId  String?
+  ramId          String?
+  gpuId          String?
+  psuId          String?
+  caseId         String?
+
+  images BuildEditRequestImage[]
+  notes  BuildEditRequestNote[]
+}
+
+model BuildEditRequestImage {
+  id    String @id @default(cuid())
+  url   String
+  order Int    @default(0)
+
+  request   BuildEditRequest @relation(fields: [requestId], references: [id])
+  requestId String
+}
+
+model BuildEditRequestNote {
+  id            String        @id @default(cuid())
+  componentType ComponentType
+  note          String
+
+  request   BuildEditRequest @relation(fields: [requestId], references: [id])
+  requestId String
+}
+

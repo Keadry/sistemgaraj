@@ -23,7 +23,7 @@ router.get('/:username', optionalAuth, async (req: AuthRequest, res) => {
     const builds = await prisma.build.findMany({
       where: {
         userId: user.id,
-        ...(isOwner ? {} : { isPublic: true }),
+        ...(isOwner ? {} : { isPublic: true, reviewStatus: 'APPROVED' }),
       },
       orderBy: { createdAt: 'desc' },
       include: {

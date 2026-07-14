@@ -1,13 +1,21 @@
 import { Router } from 'express';
+import fs from 'fs';
+import path from 'path';
 import { prisma } from '../db.js';
 import {
   requireAuth,
   requireModerator,
   requireAdmin,
-  type AuthRequest,
 } from '../middleware/auth.js';
+import { applyEditRequestChanges } from '../services/buildEdits.js';
 
 const router = Router();
+
+function deleteUploadedFile(url: string) {
+  const relativePath = url.startsWith('/') ? url.slice(1) : url;
+  const filePath = path.join(process.cwd(), relativePath);
+  fs.unlink(filePath, () => {});
+}
 
 // ==============================
 // KULLANICI LİSTESİ (moderatör+)
@@ -55,11 +63,11 @@ router.get('/users/:id', requireAuth, requireModerator, async (req, res) => {
         createdAt: true,
         comments: {
           orderBy: { createdAt: 'desc' },
-          include: { build: { select: { id: true, username: true } } },
+          include: { build: { select: { id: true, name: true } } },
         },
         likes: {
           orderBy: { createdAt: 'desc' },
-          include: { build: { select: { id: true, username: true } } },
+          include: { build: { select: { id: true, name: true } } },
         },
       },
     });
@@ -77,6 +85,25 @@ router.get('/users/:id', requireAuth, requireModerator, async (req, res) => {
 });
 
 // ==============================
+// YORUM SİL (moderatör+)
+// ==============================
+router.delete(
+  '/comments/:id',
+  requireAuth,
+  requireModerator,
+  async (req, res) => {
+    try {
+      const commentId = req.params.id as string;
+      await prisma.comment.delete({ where: { id: commentId } });
+      res.json({ message: 'Yorum silindi.' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
 // TÜM YORUMLARI LİSTELE (moderatör+)
 // ==============================
 router.get('/comments', requireAuth, requireModerator, async (req, res) => {
@@ -85,7 +112,7 @@ router.get('/comments', requireAuth, requireModerator, async (req, res) => {
       orderBy: { createdAt: 'desc' },
       include: {
         user: { select: { id: true, username: true, email: true } },
-        build: { select: { id: true, username: true } },
+        build: { select: { id: true, name: true } },
       },
     });
 
@@ -106,12 +133,10 @@ router.post(
   async (req, res) => {
     try {
       const commentId = req.params.id as string;
-
       const comment = await prisma.comment.update({
         where: { id: commentId },
         data: { status: 'APPROVED' },
       });
-
       res.json({ message: 'Yorum onaylandı.', comment });
     } catch (error) {
       console.error(error);
@@ -121,7 +146,7 @@ router.post(
 );
 
 // ==============================
-// YORUMU REDDET (moderatör+) — kalıcı olarak reddedilmiş sayılır, silinmez
+// YORUMU REDDET (moderatör+)
 // ==============================
 router.post(
   '/comments/:id/reject',
@@ -130,32 +155,11 @@ router.post(
   async (req, res) => {
     try {
       const commentId = req.params.id as string;
-
       const comment = await prisma.comment.update({
         where: { id: commentId },
         data: { status: 'REJECTED' },
       });
-
       res.json({ message: 'Yorum reddedildi.', comment });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Sunucu hatası.' });
-    }
-  },
-);
-
-// ==============================
-// YORUM SİL (moderatör+)
-// ==============================
-router.delete(
-  '/comments/:id',
-  requireAuth,
-  requireModerator,
-  async (req, res) => {
-    try {
-      const commentId = req.params.id as string;
-      await prisma.comment.delete({ where: { id: commentId } });
-      res.json({ message: 'Yorum silindi.' });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Sunucu hatası.' });
@@ -322,78 +326,21 @@ router.patch(
 );
 
 // ==============================
-// ONAY BEKLEYEN GÖRSELLERİ LİSTELE (moderatör+)
+// YENİ SİSTEM ONAYLARI: Görsel içeren, ilk kez oluşturulmuş sistemler
 // ==============================
-router.get('/images', requireAuth, requireModerator, async (req, res) => {
+router.get('/new-builds', requireAuth, requireModerator, async (req, res) => {
   try {
-    const images = await prisma.buildImage.findMany({
+    const builds = await prisma.build.findMany({
+      where: { reviewStatus: 'PENDING' },
       orderBy: { createdAt: 'desc' },
-      include: { build: { select: { id: true, name: true, userId: true } } },
-    });
-
-    res.json({ images });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Sunucu hatası.' });
-  }
-});
-
-// ==============================
-// GÖRSELİ ONAYLA (moderatör+)
-// ==============================
-router.post(
-  '/images/:id/approve',
-  requireAuth,
-  requireModerator,
-  async (req, res) => {
-    try {
-      const image = await prisma.buildImage.update({
-        where: { id: req.params.id as string },
-        data: { status: 'APPROVED' },
-      });
-      res.json({ message: 'Görsel onaylandı.', image });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Sunucu hatası.' });
-    }
-  },
-);
-
-// ==============================
-// GÖRSELİ REDDET (moderatör+)
-// ==============================
-router.post(
-  '/images/:id/reject',
-  requireAuth,
-  requireModerator,
-  async (req, res) => {
-    try {
-      const image = await prisma.buildImage.update({
-        where: { id: req.params.id as string },
-        data: { status: 'REJECTED' },
-      });
-      res.json({ message: 'Görsel reddedildi.', image });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Sunucu hatası.' });
-    }
-  },
-);
-
-// ==============================
-// ONAY BEKLEYEN NOTLARI LİSTELE (moderatör+)
-// ==============================
-router.get('/notes', requireAuth, requireModerator, async (req, res) => {
-  try {
-    const notes = await prisma.buildComponent.findMany({
-      where: { note: { not: null } },
       include: {
-        build: { select: { id: true, name: true } },
-        component: { select: { name: true, brand: true } },
+        user: { select: { id: true, username: true } },
+        components: { include: { component: true } },
+        images: true,
       },
     });
 
-    res.json({ notes });
+    res.json({ builds });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Sunucu hatası.' });
@@ -401,19 +348,28 @@ router.get('/notes', requireAuth, requireModerator, async (req, res) => {
 });
 
 // ==============================
-// NOTU ONAYLA (moderatör+)
+// YENİ SİSTEMİ ONAYLA (moderatör+)
 // ==============================
 router.post(
-  '/notes/:id/approve',
+  '/new-builds/:id/approve',
   requireAuth,
   requireModerator,
   async (req, res) => {
     try {
-      const note = await prisma.buildComponent.update({
-        where: { id: req.params.id as string },
-        data: { noteStatus: 'APPROVED' },
-      });
-      res.json({ message: 'Not onaylandı.', note });
+      const buildId = req.params.id as string;
+
+      await prisma.$transaction([
+        prisma.buildImage.updateMany({
+          where: { buildId },
+          data: { status: 'APPROVED' },
+        }),
+        prisma.build.update({
+          where: { id: buildId },
+          data: { reviewStatus: 'APPROVED' },
+        }),
+      ]);
+
+      res.json({ message: 'Sistem onaylandı ve yayınlandı.' });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Sunucu hatası.' });
@@ -422,19 +378,137 @@ router.post(
 );
 
 // ==============================
-// NOTU REDDET (moderatör+)
+// YENİ SİSTEMİ REDDET (moderatör+)
 // ==============================
 router.post(
-  '/notes/:id/reject',
+  '/new-builds/:id/reject',
   requireAuth,
   requireModerator,
   async (req, res) => {
     try {
-      const note = await prisma.buildComponent.update({
-        where: { id: req.params.id as string },
-        data: { noteStatus: 'REJECTED' },
+      const buildId = req.params.id as string;
+
+      const images = await prisma.buildImage.findMany({ where: { buildId } });
+      for (const img of images) {
+        deleteUploadedFile(img.url);
+      }
+
+      await prisma.$transaction([
+        prisma.buildImage.deleteMany({ where: { buildId } }),
+        prisma.build.update({
+          where: { id: buildId },
+          data: { reviewStatus: 'REJECTED' },
+        }),
+      ]);
+
+      res.json({ message: 'Sistem reddedildi, görseller silindi.' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// DÜZENLEME İSTEKLERİ: Onay bekleyenleri listele (moderatör+)
+// ==============================
+router.get(
+  '/edit-requests',
+  requireAuth,
+  requireModerator,
+  async (req, res) => {
+    try {
+      const requests = await prisma.buildEditRequest.findMany({
+        where: { status: 'PENDING' },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          images: true,
+          notes: true,
+          build: {
+            include: {
+              user: { select: { id: true, username: true } },
+              components: { include: { component: true } },
+            },
+          },
+        },
       });
-      res.json({ message: 'Not reddedildi.', note });
+
+      res.json({ requests });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// DÜZENLEME İSTEĞİNİ ONAYLA (moderatör+)
+// ==============================
+router.post(
+  '/edit-requests/:id/approve',
+  requireAuth,
+  requireModerator,
+  async (req, res) => {
+    try {
+      const requestId = req.params.id as string;
+
+      const editRequest = await prisma.buildEditRequest.findUnique({
+        where: { id: requestId },
+        include: { images: true, notes: true },
+      });
+
+      if (!editRequest || editRequest.status !== 'PENDING') {
+        res.status(404).json({ error: 'İstek bulunamadı veya zaten işlendi.' });
+        return;
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await applyEditRequestChanges(tx, editRequest.buildId, editRequest);
+        await tx.buildEditRequest.update({
+          where: { id: requestId },
+          data: { status: 'APPROVED', reviewedAt: new Date() },
+        });
+      });
+
+      res.json({ message: 'Düzenleme isteği onaylandı ve uygulandı.' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// DÜZENLEME İSTEĞİNİ REDDET (moderatör+)
+// ==============================
+router.post(
+  '/edit-requests/:id/reject',
+  requireAuth,
+  requireModerator,
+  async (req, res) => {
+    try {
+      const requestId = req.params.id as string;
+
+      const editRequest = await prisma.buildEditRequest.findUnique({
+        where: { id: requestId },
+        include: { images: true },
+      });
+
+      if (!editRequest || editRequest.status !== 'PENDING') {
+        res.status(404).json({ error: 'İstek bulunamadı veya zaten işlendi.' });
+        return;
+      }
+
+      for (const img of editRequest.images) {
+        deleteUploadedFile(img.url);
+      }
+
+      await prisma.buildEditRequest.update({
+        where: { id: requestId },
+        data: { status: 'REJECTED', reviewedAt: new Date() },
+      });
+
+      res.json({ message: 'Düzenleme isteği reddedildi.' });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Sunucu hatası.' });

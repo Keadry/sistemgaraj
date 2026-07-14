@@ -2,7 +2,11 @@ import { Router } from 'express';
 import { prisma } from '../db.js';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { validateBuild } from '../services/compatibility.js';
-import { containsBannedWord } from '../services/moderation.js';
+import {
+  containsBannedWord,
+  anyContainsBannedWord,
+} from '../services/moderation.js';
+import { applyEditRequestChanges } from '../services/buildEdits.js';
 import { upload } from '../upload.js';
 import type { Component } from '../generated/prisma/client.js';
 
@@ -20,94 +24,110 @@ const buildIncludes = {
 };
 
 // ==============================
-// SİSTEM TOPLA
+// SİSTEM TOPLA (görsel destekli, multipart/form-data)
 // ==============================
-router.post('/', requireAuth, async (req: AuthRequest, res) => {
-  try {
-    const {
-      name,
-      cpuId,
-      motherboardId,
-      ramId,
-      gpuId,
-      psuId,
-      caseId,
-      isPublic,
-    } = req.body;
+router.post(
+  '/',
+  requireAuth,
+  upload.array('images', 5),
+  async (req: AuthRequest, res) => {
+    try {
+      const { name, cpuId, motherboardId, ramId, gpuId, psuId, caseId } =
+        req.body;
 
-    if (!cpuId || !motherboardId || !ramId || !gpuId || !psuId || !caseId) {
-      res.status(400).json({
-        error:
-          "6 parça ID'sinin tamamı zorunludur (cpuId, motherboardId, ramId, gpuId, psuId, caseId).",
+      const isPublic = req.body.isPublic !== 'false';
+
+      if (!cpuId || !motherboardId || !ramId || !gpuId || !psuId || !caseId) {
+        res.status(400).json({
+          error:
+            "6 parça ID'sinin tamamı zorunludur (cpuId, motherboardId, ramId, gpuId, psuId, caseId).",
+        });
+        return;
+      }
+
+      const ids: string[] = [cpuId, motherboardId, ramId, gpuId, psuId, caseId];
+      const components = await prisma.component.findMany({
+        where: { id: { in: ids } },
       });
-      return;
-    }
 
-    const ids: string[] = [cpuId, motherboardId, ramId, gpuId, psuId, caseId];
-    const components = await prisma.component.findMany({
-      where: { id: { in: ids } },
-    });
+      if (components.length !== 6) {
+        res
+          .status(404)
+          .json({ error: 'Bir veya birden fazla parça bulunamadı.' });
+        return;
+      }
 
-    if (components.length !== 6) {
-      res
-        .status(404)
-        .json({ error: 'Bir veya birden fazla parça bulunamadı.' });
-      return;
-    }
+      const findById = (id: string): Component => {
+        return components.find((c) => c.id === id)!;
+      };
 
-    const findById = (id: string): Component => {
-      return components.find((c) => c.id === id)!;
-    };
+      const parts = {
+        cpu: findById(cpuId),
+        motherboard: findById(motherboardId),
+        ram: findById(ramId),
+        gpu: findById(gpuId),
+        psu: findById(psuId),
+        pcCase: findById(caseId),
+      };
 
-    const parts = {
-      cpu: findById(cpuId),
-      motherboard: findById(motherboardId),
-      ram: findById(ramId),
-      gpu: findById(gpuId),
-      psu: findById(psuId),
-      pcCase: findById(caseId),
-    };
+      const result = validateBuild(parts);
 
-    const result = validateBuild(parts);
+      if (!result.isCompatible) {
+        res.status(422).json({
+          error: 'Seçilen parçalar uyumlu değil.',
+          issues: result.issues,
+        });
+        return;
+      }
 
-    if (!result.isCompatible) {
-      res.status(422).json({
-        error: 'Seçilen parçalar uyumlu değil.',
-        issues: result.issues,
-      });
-      return;
-    }
+      const totalPrice = Object.values(parts).reduce(
+        (sum, part) => sum + part.price,
+        0,
+      );
 
-    const totalPrice = Object.values(parts).reduce(
-      (sum, part) => sum + part.price,
-      0,
-    );
+      const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+      const hasImages = files.length > 0;
 
-    const build = await prisma.build.create({
-      data: {
-        name: name || 'Adsız Sistem',
-        totalPrice,
-        isPublic: isPublic !== false,
-        userId: req.userId!,
-        components: {
-          create: ids.map((componentId) => ({ componentId })),
+      const build = await prisma.build.create({
+        data: {
+          name: name || 'Adsız Sistem',
+          totalPrice,
+          isPublic,
+          reviewStatus: hasImages ? 'PENDING' : 'APPROVED',
+          userId: req.userId!,
+          components: {
+            create: ids.map((componentId) => ({ componentId })),
+          },
+          images: hasImages
+            ? {
+                create: files.map((file, i) => ({
+                  url: `/uploads/${file.filename}`,
+                  order: i,
+                  isMain: i === 0,
+                  status: 'PENDING',
+                })),
+              }
+            : undefined,
         },
-      },
-      include: {
-        components: { include: { component: true } },
-      },
-    });
+        include: {
+          components: { include: { component: true } },
+          images: true,
+        },
+      });
 
-    res.status(201).json({
-      message: 'Sistem başarıyla oluşturuldu',
-      build,
-      warnings: result.issues,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Sunucu hatası.' });
-  }
-});
+      res.status(201).json({
+        message: hasImages
+          ? 'Sistem oluşturuldu, görsellerin onaylandıktan sonra herkese görünecek.'
+          : 'Sistem başarıyla oluşturuldu',
+        build,
+        warnings: result.issues,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
 
 // ==============================
 // KENDİ SİSTEMLERİMİ LİSTELE
@@ -117,7 +137,13 @@ router.get('/me/all', requireAuth, async (req: AuthRequest, res) => {
     const builds = await prisma.build.findMany({
       where: { userId: req.userId! },
       orderBy: { createdAt: 'desc' },
-      include: buildIncludes,
+      include: {
+        user: { select: { id: true, username: true } },
+        components: { include: { component: true } },
+        likes: true,
+        comments: { where: { status: 'APPROVED' } },
+        images: true,
+      },
     });
 
     res.json({ builds });
@@ -137,6 +163,7 @@ router.get('/', async (req, res) => {
     const builds = await prisma.build.findMany({
       where: {
         isPublic: true,
+        reviewStatus: 'APPROVED',
         ...(featuredOnly ? { isFeatured: true } : {}),
       },
       orderBy: { createdAt: 'desc' },
@@ -289,17 +316,20 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
 });
 
 // ==============================
-// GÖRSEL YÜKLE (max 5, ilk yüklenen ana görsel olur)
+// DÜZENLEME İSTEĞİ OLUŞTUR (sadece sahibi)
 // ==============================
 router.post(
-  '/:id/images',
+  '/:id/edit-request',
   requireAuth,
   upload.array('images', 5),
   async (req: AuthRequest, res) => {
     try {
       const buildId = req.params.id as string;
 
-      const build = await prisma.build.findUnique({ where: { id: buildId } });
+      const build = await prisma.build.findUnique({
+        where: { id: buildId },
+        include: { components: { include: { component: true } } },
+      });
 
       if (!build) {
         res.status(404).json({ error: 'Sistem bulunamadı.' });
@@ -311,33 +341,134 @@ router.post(
         return;
       }
 
-      const files = req.files as Express.Multer.File[] | undefined;
+      const existingPending = await prisma.buildEditRequest.findFirst({
+        where: { buildId, status: 'PENDING' },
+      });
 
-      if (!files || files.length === 0) {
-        res.status(400).json({ error: 'Görsel dosyası bulunamadı.' });
+      if (existingPending) {
+        res.status(409).json({
+          error:
+            'Bu sistem için zaten onay bekleyen bir düzenleme isteğin var.',
+        });
         return;
       }
 
-      const existingCount = await prisma.buildImage.count({
-        where: { buildId },
+      const { description, cpuId, motherboardId, ramId, gpuId, psuId, caseId } =
+        req.body;
+
+      let notes: { componentType: string; note: string }[] = [];
+      if (req.body.notes) {
+        try {
+          notes = JSON.parse(req.body.notes);
+        } catch {
+          notes = [];
+        }
+      }
+
+      const proposedIds = { cpuId, motherboardId, ramId, gpuId, psuId, caseId };
+      const hasPartChange = Object.values(proposedIds).some(Boolean);
+
+      if (hasPartChange) {
+        const currentByType: Record<string, string> = {};
+        for (const bc of build.components) {
+          currentByType[bc.component.type] = bc.componentId;
+        }
+
+        const finalIds = {
+          cpuId: cpuId || currentByType['CPU'],
+          motherboardId: motherboardId || currentByType['MOTHERBOARD'],
+          ramId: ramId || currentByType['RAM'],
+          gpuId: gpuId || currentByType['GPU'],
+          psuId: psuId || currentByType['PSU'],
+          caseId: caseId || currentByType['CASE'],
+        };
+
+        const ids = Object.values(finalIds);
+        const parts = await prisma.component.findMany({
+          where: { id: { in: ids } },
+        });
+
+        if (parts.length !== 6) {
+          res
+            .status(404)
+            .json({ error: 'Bir veya birden fazla parça bulunamadı.' });
+          return;
+        }
+
+        const findById = (id: string) => parts.find((c) => c.id === id)!;
+
+        const result = validateBuild({
+          cpu: findById(finalIds.cpuId),
+          motherboard: findById(finalIds.motherboardId),
+          ram: findById(finalIds.ramId),
+          gpu: findById(finalIds.gpuId),
+          psu: findById(finalIds.psuId),
+          pcCase: findById(finalIds.caseId),
+        });
+
+        if (!result.isCompatible) {
+          res.status(422).json({
+            error: 'Önerdiğin parça kombinasyonu uyumlu değil.',
+            issues: result.issues,
+          });
+          return;
+        }
+      }
+
+      const files = (req.files as Express.Multer.File[] | undefined) ?? [];
+      const hasImages = files.length > 0;
+
+      const noteTexts = notes.map((n) => n.note);
+      const descriptionBanned = description
+        ? containsBannedWord(description)
+        : false;
+      const hasBannedContent =
+        anyContainsBannedWord(noteTexts) || descriptionBanned;
+
+      const requiresReview = hasImages || hasBannedContent;
+
+      const editRequest = await prisma.buildEditRequest.create({
+        data: {
+          buildId,
+          status: requiresReview ? 'PENDING' : 'APPROVED',
+          reviewedAt: requiresReview ? null : new Date(),
+          description: description || null,
+          cpuId: cpuId || null,
+          motherboardId: motherboardId || null,
+          ramId: ramId || null,
+          gpuId: gpuId || null,
+          psuId: psuId || null,
+          caseId: caseId || null,
+          images: {
+            create: files.map((file, i) => ({
+              url: `/uploads/${file.filename}`,
+              order: i,
+            })),
+          },
+          notes: {
+            create: notes
+              .filter((n) => n.note && n.note.trim().length > 0)
+              .map((n) => ({
+                componentType: n.componentType as any,
+                note: n.note,
+              })),
+          },
+        },
+        include: { images: true, notes: true },
       });
 
-      const created = await prisma.$transaction(
-        files.map((file, i) =>
-          prisma.buildImage.create({
-            data: {
-              url: `/uploads/${file.filename}`,
-              buildId,
-              order: existingCount + i,
-              isMain: existingCount === 0 && i === 0,
-            },
-          }),
-        ),
-      );
+      if (!requiresReview) {
+        await prisma.$transaction(async (tx) => {
+          await applyEditRequestChanges(tx, buildId, editRequest);
+        });
+      }
 
       res.status(201).json({
-        message: 'Görseller yüklendi, onaylandıktan sonra herkese görünecek.',
-        images: created,
+        message: requiresReview
+          ? 'Düzenleme isteğin gönderildi, admin onayı bekleniyor.'
+          : 'Değişikliklerin uygulandı.',
+        requiresReview,
+        editRequest,
       });
     } catch (error) {
       console.error(error);
@@ -347,113 +478,28 @@ router.post(
 );
 
 // ==============================
-// GÖRSELİ ANA GÖRSEL YAP (sadece sahibi)
+// SİSTEMİN BEKLEYEN DÜZENLEME İSTEĞİNİ GETİR (sadece sahibi)
 // ==============================
-router.patch(
-  '/:id/images/:imageId/main',
-  requireAuth,
-  async (req: AuthRequest, res) => {
-    try {
-      const buildId = req.params.id as string;
-      const imageId = req.params.imageId as string;
+router.get('/:id/edit-request', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const buildId = req.params.id as string;
 
-      const build = await prisma.build.findUnique({ where: { id: buildId } });
-
-      if (!build || build.userId !== req.userId) {
-        res.status(403).json({ error: 'Bu işlem için yetkin yok.' });
-        return;
-      }
-
-      await prisma.buildImage.updateMany({
-        where: { buildId },
-        data: { isMain: false },
-      });
-
-      const updated = await prisma.buildImage.update({
-        where: { id: imageId },
-        data: { isMain: true },
-      });
-
-      res.json({ message: 'Ana görsel güncellendi.', image: updated });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Sunucu hatası.' });
+    const build = await prisma.build.findUnique({ where: { id: buildId } });
+    if (!build || build.userId !== req.userId) {
+      res.status(403).json({ error: 'Bu işlem için yetkin yok.' });
+      return;
     }
-  },
-);
 
-// ==============================
-// GÖRSELİ SİL (sadece sahibi)
-// ==============================
-router.delete(
-  '/:id/images/:imageId',
-  requireAuth,
-  async (req: AuthRequest, res) => {
-    try {
-      const buildId = req.params.id as string;
-      const imageId = req.params.imageId as string;
+    const editRequest = await prisma.buildEditRequest.findFirst({
+      where: { buildId, status: 'PENDING' },
+      include: { images: true, notes: true },
+    });
 
-      const build = await prisma.build.findUnique({ where: { id: buildId } });
-
-      if (!build || build.userId !== req.userId) {
-        res.status(403).json({ error: 'Bu işlem için yetkin yok.' });
-        return;
-      }
-
-      await prisma.buildImage.delete({ where: { id: imageId } });
-
-      res.json({ message: 'Görsel silindi.' });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Sunucu hatası.' });
-    }
-  },
-);
-
-// ==============================
-// PARÇA NOTUNU GÜNCELLE (sadece sahibi)
-// ==============================
-router.patch(
-  '/:id/components/:buildComponentId/note',
-  requireAuth,
-  async (req: AuthRequest, res) => {
-    try {
-      const buildId = req.params.id as string;
-      const buildComponentId = req.params.buildComponentId as string;
-      const { note } = req.body;
-
-      const build = await prisma.build.findUnique({ where: { id: buildId } });
-
-      if (!build) {
-        res.status(404).json({ error: 'Sistem bulunamadı.' });
-        return;
-      }
-
-      if (build.userId !== req.userId) {
-        res.status(403).json({ error: 'Bu işlem için yetkin yok.' });
-        return;
-      }
-
-      const noteStatus =
-        note && containsBannedWord(note) ? 'PENDING' : 'APPROVED';
-
-      const updated = await prisma.buildComponent.update({
-        where: { id: buildComponentId },
-        data: { note: note || null, noteStatus },
-      });
-
-      res.json({
-        message:
-          noteStatus === 'PENDING'
-            ? 'Notun incelemeye alındı, onaylandıktan sonra herkese görünecek.'
-            : 'Not güncellendi.',
-        buildComponent: updated,
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Sunucu hatası.' });
-    }
-  },
-);
+    res.json({ editRequest });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
 
 export default router;

@@ -68,8 +68,10 @@ export default async function BuildDetailPage({
               {build.name}
             </h1>
             <p className="text-ink-muted mt-2">
-              href={`/kullanici/${build.user.username}`}
-              <a className="text-trace hover:underline">
+              <a
+                href={`/kullanici/${build.user.username}`}
+                className="text-trace hover:underline"
+              >
                 @{build.user.username}
               </a>{' '}
               tarafından {formatDate(build.createdAt)} tarihinde paylaşıldı

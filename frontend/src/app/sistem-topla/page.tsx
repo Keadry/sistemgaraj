@@ -126,6 +126,7 @@ export default function SistemToplaPage() {
 
   const [components, setComponents] = useState<Component[]>([]);
   const [isPublic, setIsPublic] = useState(true);
+  const [images, setImages] = useState<File[]>([]);
   const [isLoadingComponents, setIsLoadingComponents] = useState(true);
   const [name, setName] = useState('');
   const [selection, setSelection] = useState<Selection>({
@@ -214,6 +215,7 @@ export default function SistemToplaPage() {
         psuId: selection.psuId!,
         caseId: selection.caseId!,
         isPublic,
+        images: images.length > 0 ? images : undefined,
       },
       token,
     );
@@ -276,6 +278,27 @@ export default function SistemToplaPage() {
           />
           Herkese açık olsun (topluluk akışında görünsün)
         </label>
+
+        <div className="mt-6">
+          <label className="block text-sm font-medium mb-1.5">
+            Sistem Görselleri (opsiyonel, en fazla 5)
+          </label>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            onChange={(e) =>
+              setImages(Array.from(e.target.files ?? []).slice(0, 5))
+            }
+            className="block text-sm text-ink-muted file:mr-4 file:rounded-lg file:border-0 file:bg-surface file:px-4 file:py-2 file:text-sm file:font-medium file:text-ink hover:file:bg-hairline file:cursor-pointer"
+          />
+          {images.length > 0 && (
+            <p className="text-xs text-trace mt-2">
+              {images.length} görsel seçildi. Görsel eklersen sistemin admin
+              onayından sonra yayınlanır.
+            </p>
+          )}
+        </div>
 
         {isLoadingComponents ? (
           <p className="text-ink-muted mt-12">Parçalar yükleniyor...</p>

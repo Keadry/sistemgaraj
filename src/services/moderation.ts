@@ -702,3 +702,9 @@ export function containsBannedWord(text: string): boolean {
   const normalized = text.toLocaleLowerCase('tr-TR');
   return BANNED_WORDS.some((word) => normalized.includes(word));
 }
+
+export function anyContainsBannedWord(
+  texts: (string | null | undefined)[],
+): boolean {
+  return texts.some((t) => t && containsBannedWord(t));
+}

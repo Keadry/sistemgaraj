@@ -53,6 +53,7 @@ export type Build = {
   totalPrice: number;
   isPublic: boolean;
   isFeatured: boolean;
+  reviewStatus: 'APPROVED' | 'PENDING' | 'REJECTED';
   createdAt: string;
   user: BuildUser;
   components: BuildComponent[];
@@ -164,16 +165,33 @@ export async function createBuild(
     psuId: string;
     caseId: string;
     isPublic: boolean;
+    images?: File[];
   },
   token: string,
-): Promise<{ build?: Build; issues?: CompatibilityIssue[]; error?: string }> {
+): Promise<{
+  build?: Build;
+  issues?: CompatibilityIssue[];
+  error?: string;
+  message?: string;
+}> {
+  const formData = new FormData();
+  formData.append('name', params.name);
+  formData.append('cpuId', params.cpuId);
+  formData.append('motherboardId', params.motherboardId);
+  formData.append('ramId', params.ramId);
+  formData.append('gpuId', params.gpuId);
+  formData.append('psuId', params.psuId);
+  formData.append('caseId', params.caseId);
+  formData.append('isPublic', String(params.isPublic));
+
+  if (params.images) {
+    params.images.forEach((file) => formData.append('images', file));
+  }
+
   const res = await fetch(`${API_URL}/api/builds`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(params),
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
   });
 
   const data = await res.json();
@@ -182,7 +200,7 @@ export async function createBuild(
     return { error: data.error, issues: data.issues };
   }
 
-  return { build: data.build };
+  return { build: data.build, message: data.message };
 }
 
 export type AdminUser = {
@@ -604,5 +622,202 @@ export async function rejectNote(noteId: string, token: string) {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
+  if (!res.ok) throw new Error('Reddedilemedi.');
+}
+
+export type EditRequestNoteInput = {
+  componentType: string;
+  note: string;
+};
+
+export type EditRequestResult = {
+  message: string;
+  requiresReview?: boolean;
+  editRequest?: {
+    id: string;
+    status: 'APPROVED' | 'PENDING' | 'REJECTED';
+  };
+  error?: string;
+  issues?: CompatibilityIssue[];
+};
+
+export async function submitEditRequest(
+  buildId: string,
+  params: {
+    description?: string;
+    cpuId?: string;
+    motherboardId?: string;
+    ramId?: string;
+    gpuId?: string;
+    psuId?: string;
+    caseId?: string;
+    notes?: EditRequestNoteInput[];
+    images?: File[];
+  },
+  token: string,
+): Promise<EditRequestResult> {
+  const formData = new FormData();
+
+  if (params.description) formData.append('description', params.description);
+  if (params.cpuId) formData.append('cpuId', params.cpuId);
+  if (params.motherboardId)
+    formData.append('motherboardId', params.motherboardId);
+  if (params.ramId) formData.append('ramId', params.ramId);
+  if (params.gpuId) formData.append('gpuId', params.gpuId);
+  if (params.psuId) formData.append('psuId', params.psuId);
+  if (params.caseId) formData.append('caseId', params.caseId);
+  if (params.notes && params.notes.length > 0) {
+    formData.append('notes', JSON.stringify(params.notes));
+  }
+  if (params.images) {
+    params.images.forEach((file) => formData.append('images', file));
+  }
+
+  const res = await fetch(`${API_URL}/api/builds/${buildId}/edit-request`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    return { error: data.error, issues: data.issues, message: data.error };
+  }
+
+  return {
+    message: data.message,
+    requiresReview: data.requiresReview,
+    editRequest: data.editRequest,
+  };
+}
+
+export type PendingEditRequest = {
+  id: string;
+  status: 'APPROVED' | 'PENDING' | 'REJECTED';
+  description: string | null;
+  cpuId: string | null;
+  motherboardId: string | null;
+  ramId: string | null;
+  gpuId: string | null;
+  psuId: string | null;
+  caseId: string | null;
+  images: { id: string; url: string; order: number }[];
+  notes: { id: string; componentType: string; note: string }[];
+};
+
+export async function getPendingEditRequest(
+  buildId: string,
+  token: string,
+): Promise<PendingEditRequest | null> {
+  const res = await fetch(`${API_URL}/api/builds/${buildId}/edit-request`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.editRequest;
+}
+
+// ==============================
+// ADMIN: Yeni Sistem Onayları
+// ==============================
+export type NewBuildForReview = {
+  id: string;
+  name: string;
+  totalPrice: number;
+  reviewStatus: 'APPROVED' | 'PENDING' | 'REJECTED';
+  user: { id: string; username: string };
+  components: BuildComponent[];
+  images: BuildImageType[];
+};
+
+export async function getNewBuildsForReview(
+  token: string,
+): Promise<NewBuildForReview[]> {
+  const res = await fetch(`${API_URL}/api/admin/new-builds`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error('Sistemler yüklenemedi.');
+  const data = await res.json();
+  return data.builds;
+}
+
+export async function approveNewBuild(buildId: string, token: string) {
+  const res = await fetch(
+    `${API_URL}/api/admin/new-builds/${buildId}/approve`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  if (!res.ok) throw new Error('Onaylanamadı.');
+}
+
+export async function rejectNewBuild(buildId: string, token: string) {
+  const res = await fetch(`${API_URL}/api/admin/new-builds/${buildId}/reject`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Reddedilemedi.');
+}
+
+// ==============================
+// ADMIN: Düzenleme İstekleri
+// ==============================
+export type AdminEditRequest = {
+  id: string;
+  status: 'APPROVED' | 'PENDING' | 'REJECTED';
+  description: string | null;
+  cpuId: string | null;
+  motherboardId: string | null;
+  ramId: string | null;
+  gpuId: string | null;
+  psuId: string | null;
+  caseId: string | null;
+  createdAt: string;
+  images: { id: string; url: string }[];
+  notes: { id: string; componentType: string; note: string }[];
+  build: {
+    id: string;
+    name: string;
+    user: { id: string; username: string };
+    components: BuildComponent[];
+  };
+};
+
+export async function getEditRequestsForReview(
+  token: string,
+): Promise<AdminEditRequest[]> {
+  const res = await fetch(`${API_URL}/api/admin/edit-requests`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error('İstekler yüklenemedi.');
+  const data = await res.json();
+  return data.requests;
+}
+
+export async function approveEditRequest(requestId: string, token: string) {
+  const res = await fetch(
+    `${API_URL}/api/admin/edit-requests/${requestId}/approve`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  if (!res.ok) throw new Error('Onaylanamadı.');
+}
+
+export async function rejectEditRequest(requestId: string, token: string) {
+  const res = await fetch(
+    `${API_URL}/api/admin/edit-requests/${requestId}/reject`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
   if (!res.ok) throw new Error('Reddedilemedi.');
 }

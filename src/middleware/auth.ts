@@ -99,3 +99,29 @@ export async function requireAdmin(
     res.status(500).json({ error: 'Sunucu hatası.' });
   }
 }
+
+export async function optionalAuth(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    next();
+    return;
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+      userId: string;
+    };
+    req.userId = decoded.userId;
+  } catch {
+    // Token geçersizse sessizce yok say
+  }
+
+  next();
+}

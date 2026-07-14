@@ -1,58 +1,59 @@
-GET http://localhost:3000/
+GET http://localhost:4000/
 
 ###
 
-POST http://localhost:3000/api/auth/register
+POST http://localhost:4000/api/auth/register
 Content-Type: application/json
 
 {
-  "email": "test@sistemgaraj.com",
+  "email": "ahmet@sistemgaraj.com",
   "password": "sifre123",
-  "name": "Test Kullanıcı"
+  "username": "ahmet"
 }
 
 ###
 
-POST http://localhost:3000/api/auth/login
+POST http://localhost:4000/api/auth/login
 Content-Type: application/json
 
 {
-  "email": "test@sistemgaraj.com",
+  "email": "ahmet@sistemgaraj.com",
   "password": "sifre123"
 }
 
 ###
 
-@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJjbXJmYm53bjgwMDAwdmFnYzJtYXYxa2gzIiwiaWF0IjoxNzgzNzExMzM3LCJleHAiOjE3ODQzMTYxMzd9.MvOT3F8rEXvK1hRZl_RAbEmiKjdx7AoIW9M9wjQ_zfs
+@token = BURAYA_LOGIN_DAN_ALDIĞIN_TOKEN_GELECEK
 
-POST http://localhost:3000/api/builds
+POST http://localhost:4000/api/builds
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
   "name": "İlk Oyun Bilgisayarım",
-  "cpuId": "cmrfb3vsg0000vafcpin0vc3r",
-  "motherboardId": "cmrfb3vtu0005vafc6g7nhcts",
-  "ramId": "cmrfb3vu6000avafcoxvylbtg",
-  "gpuId": "cmrfb3vuf000evafc9cigeplr",
-  "psuId": "cmrfb3vut000lvafcxy3agvf4",
-  "caseId": "cmrfb3vuz000ovafcd8uroagd"
+  "cpuId": "BURAYA_CPU_ID",
+  "motherboardId": "BURAYA_ANAKART_ID",
+  "ramId": "BURAYA_RAM_ID",
+  "gpuId": "BURAYA_GPU_ID",
+  "psuId": "BURAYA_PSU_ID",
+  "caseId": "BURAYA_KASA_ID",
+  "isPublic": true
 }
 
 ###
 
-GET http://localhost:3000/api/builds
+GET http://localhost:4000/api/builds
 
 ###
 
-@buildId = cmrfbymcd0001vaco2plukk1d
+@buildId = BURAYA_BUILD_ID
 
-POST http://localhost:3000/api/builds/{{buildId}}/like
+POST http://localhost:4000/api/builds/{{buildId}}/like
 Authorization: Bearer {{token}}
 
 ###
 
-POST http://localhost:3000/api/builds/{{buildId}}/comments
+POST http://localhost:4000/api/builds/{{buildId}}/comments
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
@@ -62,4 +63,8 @@ Authorization: Bearer {{token}}
 
 ###
 
-GET http://localhost:3000/api/builds/{{buildId}}
+GET http://localhost:4000/api/builds/{{buildId}}
+
+###
+
+GET http://localhost:4000/api/users/ahmet

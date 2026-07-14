@@ -47,7 +47,7 @@ export default function LikeButton({
     <button
       onClick={handleClick}
       disabled={isSubmitting}
-      className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
+      className={`flex items-center gap-2 rounded-xl border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
         hasLiked
           ? 'border-trace bg-trace/10 text-trace'
           : 'border-hairline text-ink-muted hover:border-trace hover:text-trace'

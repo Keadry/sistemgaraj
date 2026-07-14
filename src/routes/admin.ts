@@ -19,7 +19,7 @@ router.get('/users', requireAuth, requireModerator, async (req, res) => {
       select: {
         id: true,
         email: true,
-        name: true,
+        username: true,
         role: true,
         isBanned: true,
         banReason: true,
@@ -47,7 +47,7 @@ router.get('/users/:id', requireAuth, requireModerator, async (req, res) => {
       select: {
         id: true,
         email: true,
-        name: true,
+        username: true,
         role: true,
         isBanned: true,
         banReason: true,
@@ -55,11 +55,11 @@ router.get('/users/:id', requireAuth, requireModerator, async (req, res) => {
         createdAt: true,
         comments: {
           orderBy: { createdAt: 'desc' },
-          include: { build: { select: { id: true, name: true } } },
+          include: { build: { select: { id: true, username: true } } },
         },
         likes: {
           orderBy: { createdAt: 'desc' },
-          include: { build: { select: { id: true, name: true } } },
+          include: { build: { select: { id: true, username: true } } },
         },
       },
     });
@@ -84,8 +84,8 @@ router.get('/comments', requireAuth, requireModerator, async (req, res) => {
     const comments = await prisma.comment.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        user: { select: { id: true, name: true, email: true } },
-        build: { select: { id: true, name: true } },
+        user: { select: { id: true, username: true, email: true } },
+        build: { select: { id: true, username: true } },
       },
     });
 
@@ -314,6 +314,127 @@ router.patch(
           : 'Sistem öne çıkarmadan kaldırıldı.',
         build: updated,
       });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// ONAY BEKLEYEN GÖRSELLERİ LİSTELE (moderatör+)
+// ==============================
+router.get('/images', requireAuth, requireModerator, async (req, res) => {
+  try {
+    const images = await prisma.buildImage.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { build: { select: { id: true, name: true, userId: true } } },
+    });
+
+    res.json({ images });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
+
+// ==============================
+// GÖRSELİ ONAYLA (moderatör+)
+// ==============================
+router.post(
+  '/images/:id/approve',
+  requireAuth,
+  requireModerator,
+  async (req, res) => {
+    try {
+      const image = await prisma.buildImage.update({
+        where: { id: req.params.id as string },
+        data: { status: 'APPROVED' },
+      });
+      res.json({ message: 'Görsel onaylandı.', image });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// GÖRSELİ REDDET (moderatör+)
+// ==============================
+router.post(
+  '/images/:id/reject',
+  requireAuth,
+  requireModerator,
+  async (req, res) => {
+    try {
+      const image = await prisma.buildImage.update({
+        where: { id: req.params.id as string },
+        data: { status: 'REJECTED' },
+      });
+      res.json({ message: 'Görsel reddedildi.', image });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// ONAY BEKLEYEN NOTLARI LİSTELE (moderatör+)
+// ==============================
+router.get('/notes', requireAuth, requireModerator, async (req, res) => {
+  try {
+    const notes = await prisma.buildComponent.findMany({
+      where: { note: { not: null } },
+      include: {
+        build: { select: { id: true, name: true } },
+        component: { select: { name: true, brand: true } },
+      },
+    });
+
+    res.json({ notes });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
+
+// ==============================
+// NOTU ONAYLA (moderatör+)
+// ==============================
+router.post(
+  '/notes/:id/approve',
+  requireAuth,
+  requireModerator,
+  async (req, res) => {
+    try {
+      const note = await prisma.buildComponent.update({
+        where: { id: req.params.id as string },
+        data: { noteStatus: 'APPROVED' },
+      });
+      res.json({ message: 'Not onaylandı.', note });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// NOTU REDDET (moderatör+)
+// ==============================
+router.post(
+  '/notes/:id/reject',
+  requireAuth,
+  requireModerator,
+  async (req, res) => {
+    try {
+      const note = await prisma.buildComponent.update({
+        where: { id: req.params.id as string },
+        data: { noteStatus: 'REJECTED' },
+      });
+      res.json({ message: 'Not reddedildi.', note });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Sunucu hatası.' });

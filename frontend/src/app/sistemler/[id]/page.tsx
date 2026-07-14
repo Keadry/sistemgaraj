@@ -4,7 +4,12 @@ import { notFound } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import BuildInteractions from '@/components/BuildInteractions';
 import AdminBuildActions from '@/components/AdminBuildActions';
-
+import BuildImage from '@/components/BuildImage';
+import BuildGallery from '@/components/BuildGallery';
+import {
+  ImageManager,
+  ComponentNoteEditor,
+} from '@/components/BuildOwnerControls';
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', {
     style: 'currency',
@@ -36,7 +41,7 @@ export default async function BuildDetailPage({
   }
 
   return (
-    <main className="min-h-screen bg-paper">
+    <main className="min-h-screen">
       {/* NAVBAR */}
       <Navbar />
 
@@ -48,15 +53,26 @@ export default async function BuildDetailPage({
         >
           ← Tüm sistemler
         </Link>
+        <div className="mt-4">
+          <BuildGallery images={build.images} />
+        </div>
 
+        <ImageManager
+          buildId={build.id}
+          ownerId={build.user.id}
+          images={build.images}
+        />
         <div className="mt-4 flex items-start justify-between gap-4">
           <div>
             <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight">
               {build.name}
             </h1>
             <p className="text-ink-muted mt-2">
-              {build.user.name ?? 'Anonim'} tarafından{' '}
-              {formatDate(build.createdAt)} tarihinde paylaşıldı
+              href={`/kullanici/${build.user.username}`}
+              <a className="text-trace hover:underline">
+                @{build.user.username}
+              </a>{' '}
+              tarafından {formatDate(build.createdAt)} tarihinde paylaşıldı
             </p>
           </div>
           <span className="font-[family-name:var(--font-mono)] text-2xl font-semibold text-trace whitespace-nowrap">
@@ -80,21 +96,28 @@ export default async function BuildDetailPage({
             {build.components.map((bc, i) => (
               <div
                 key={bc.id}
-                className={`flex items-center justify-between px-5 py-4 ${
+                className={`px-5 py-4 ${
                   i !== 0 ? 'border-t border-hairline' : ''
                 }`}
               >
-                <div>
-                  <span className="font-[family-name:var(--font-mono)] text-xs text-ink-muted uppercase tracking-wide">
-                    {bc.component.type}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="font-[family-name:var(--font-mono)] text-xs text-ink-muted uppercase tracking-wide">
+                      {bc.component.type}
+                    </span>
+                    <p className="font-medium mt-0.5">
+                      {bc.component.brand} {bc.component.name}
+                    </p>
+                  </div>
+                  <span className="font-[family-name:var(--font-mono)] text-sm text-ink-muted">
+                    {formatPrice(bc.component.price)}
                   </span>
-                  <p className="font-medium mt-0.5">
-                    {bc.component.brand} {bc.component.name}
-                  </p>
                 </div>
-                <span className="font-[family-name:var(--font-mono)] text-sm text-ink-muted">
-                  {formatPrice(bc.component.price)}
-                </span>
+                <ComponentNoteEditor
+                  buildId={build.id}
+                  ownerId={build.user.id}
+                  buildComponent={bc}
+                />
               </div>
             ))}
           </div>

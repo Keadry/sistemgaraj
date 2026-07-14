@@ -13,7 +13,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 type AuthUser = {
   id: string;
   email: string;
-  name: string | null;
+  username: string;
   role: 'USER' | 'MODERATOR' | 'ADMIN';
 };
 
@@ -22,7 +22,11 @@ type AuthContextType = {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string) => Promise<void>;
+  register: (
+    email: string,
+    password: string,
+    username: string,
+  ) => Promise<void>;
   logout: () => void;
 };
 
@@ -69,11 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveSession(data.token, data.user);
   }
 
-  async function register(email: string, password: string, name: string) {
+  async function register(email: string, password: string, username: string) {
     const res = await fetch(`${API_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name }),
+      body: JSON.stringify({ email, password, username }),
     });
 
     const data = await res.json();

@@ -5,28 +5,49 @@ import { prisma } from '../db.js';
 
 const router = Router();
 
-// ==============================
-// KAYIT OL
-// ==============================
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, username } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'E-posta ve şifre zorunludur.' });
+    if (!email || !password || !username) {
+      res
+        .status(400)
+        .json({ error: 'E-posta, şifre ve kullanıcı adı zorunludur.' });
+      return;
     }
 
-    // Aynı e-posta ile daha önce kayıt var mı kontrol et
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      return res.status(409).json({ error: 'Bu e-posta zaten kayıtlı.' });
+    const trimmedUsername = String(username).trim();
+
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(trimmedUsername)) {
+      res.status(400).json({
+        error:
+          'Kullanıcı adı 3-20 karakter olmalı, sadece harf, rakam ve alt çizgi içerebilir.',
+      });
+      return;
     }
 
-    // Şifreyi hash'le (asla düz metin saklamayız)
+    const existingEmail = await prisma.user.findUnique({ where: { email } });
+    if (existingEmail) {
+      res.status(409).json({ error: 'Bu e-posta zaten kayıtlı.' });
+      return;
+    }
+
+    const existingUsername = await prisma.user.findFirst({
+      where: { username: { equals: trimmedUsername, mode: 'insensitive' } },
+    });
+    if (existingUsername) {
+      res.status(409).json({ error: 'Bu kullanıcı adı zaten alınmış.' });
+      return;
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
-      data: { email, password: hashedPassword, name },
+      data: {
+        email,
+        password: hashedPassword,
+        username: trimmedUsername,
+      },
     });
 
     res.status(201).json({
@@ -34,7 +55,7 @@ router.post('/register', async (req, res) => {
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
+        username: user.username,
         role: user.role,
       },
     });
@@ -44,29 +65,27 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// ==============================
-// GİRİŞ YAP
-// ==============================
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: 'E-posta ve şifre zorunludur.' });
+      res.status(400).json({ error: 'E-posta ve şifre zorunludur.' });
+      return;
     }
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      return res.status(401).json({ error: 'E-posta veya şifre hatalı.' });
+      res.status(401).json({ error: 'E-posta veya şifre hatalı.' });
+      return;
     }
 
-    // Girilen şifreyi, veritabanındaki hash ile karşılaştır
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'E-posta veya şifre hatalı.' });
+      res.status(401).json({ error: 'E-posta veya şifre hatalı.' });
+      return;
     }
 
-    // JWT token üret (kullanıcının "kimlik kartı")
     const token = jwt.sign(
       { userId: user.id },
       process.env.JWT_SECRET as string,
@@ -79,7 +98,7 @@ router.post('/login', async (req, res) => {
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
+        username: user.username,
         role: user.role,
       },
     });

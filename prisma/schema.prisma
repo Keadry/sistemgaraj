@@ -38,8 +38,8 @@ enum CommentStatus {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
+  username  String   @unique
   password  String
-  name      String?
   role      Role     @default(USER)
 
   isBanned   Boolean   @default(false)
@@ -110,6 +110,7 @@ model Build {
   components BuildComponent[]
   likes      Like[]
   comments   Comment[]
+  images     BuildImage[]
 }
 
 // ==============================
@@ -124,9 +125,26 @@ model BuildComponent {
   component   Component @relation(fields: [componentId], references: [id])
   componentId String
 
-  quantity Int @default(1)
+  quantity   Int           @default(1)
+  note       String?
+  noteStatus CommentStatus @default(APPROVED)
 
-  @@unique([buildId, componentId]) // Aynı parça bir sistemde tekrar tekrar eklenemesin
+  @@unique([buildId, componentId])
+}
+
+// ==============================
+// SISTEM RESMI
+// ==============================
+model BuildImage {
+  id        String        @id @default(cuid())
+  url       String
+  isMain    Boolean       @default(false)
+  status    CommentStatus @default(PENDING)
+  order     Int           @default(0)
+  createdAt DateTime      @default(now())
+
+  build   Build  @relation(fields: [buildId], references: [id])
+  buildId String
 }
 
 // ==============================

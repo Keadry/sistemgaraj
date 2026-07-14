@@ -13,7 +13,7 @@ export default async function Home() {
   const communityBuilds = allBuilds.filter((b) => !featuredIds.has(b.id));
 
   return (
-    <main className="min-h-screen bg-paper">
+    <main className="min-h-screen">
       <Navbar />
 
       {/* ÖNERİLEN SİSTEMLER */}
@@ -27,7 +27,8 @@ export default async function Home() {
           <p className="text-ink-muted mb-6">
             Editör seçimi — SistemGaraj ekibinin öne çıkardığı sistemler.
           </p>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {' '}
             {featuredBuilds.map((build) => (
               <BuildCard key={build.id} build={build} />
             ))}
@@ -55,7 +56,8 @@ export default async function Home() {
             </p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {' '}
             {communityBuilds.map((build) => (
               <BuildCard key={build.id} build={build} />
             ))}

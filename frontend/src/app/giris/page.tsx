@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import Logo from '@/components/Logo';
 
 export default function GirisPage() {
   const router = useRouter();
@@ -32,11 +33,8 @@ export default function GirisPage() {
   return (
     <main className="min-h-screen bg-paper flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
-        <Link
-          href="/"
-          className="font-[family-name:var(--font-display)] text-lg font-semibold tracking-tight block text-center mb-8"
-        >
-          Sistem<span className="text-trace">Garaj</span>
+        <Link href="/" className="flex justify-center mb-8">
+          <Logo />
         </Link>
 
         <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-center mb-8">

@@ -2,18 +2,38 @@ import { Router } from 'express';
 import { prisma } from '../db.js';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { validateBuild } from '../services/compatibility.js';
-import type { Component } from '../generated/prisma/client.js';
 import { containsBannedWord } from '../services/moderation.js';
+import { upload } from '../upload.js';
+import type { Component } from '../generated/prisma/client.js';
 
 const router = Router();
 
+const buildIncludes = {
+  user: { select: { id: true, username: true } },
+  components: { include: { component: true } },
+  likes: true,
+  comments: { where: { status: 'APPROVED' as const } },
+  images: {
+    where: { status: 'APPROVED' as const },
+    orderBy: { order: 'asc' as const },
+  },
+};
+
 // ==============================
-// SİSTEM TOPLA (korumalı rota)
+// SİSTEM TOPLA
 // ==============================
 router.post('/', requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { name, cpuId, motherboardId, ramId, gpuId, psuId, caseId } =
-      req.body;
+    const {
+      name,
+      cpuId,
+      motherboardId,
+      ramId,
+      gpuId,
+      psuId,
+      caseId,
+      isPublic,
+    } = req.body;
 
     if (!cpuId || !motherboardId || !ramId || !gpuId || !psuId || !caseId) {
       res.status(400).json({
@@ -67,6 +87,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
       data: {
         name: name || 'Adsız Sistem',
         totalPrice,
+        isPublic: isPublic !== false,
         userId: req.userId!,
         components: {
           create: ids.map((componentId) => ({ componentId })),
@@ -89,7 +110,25 @@ router.post('/', requireAuth, async (req: AuthRequest, res) => {
 });
 
 // ==============================
-// FEED: Herkese açık sistemleri listele
+// KENDİ SİSTEMLERİMİ LİSTELE
+// ==============================
+router.get('/me/all', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const builds = await prisma.build.findMany({
+      where: { userId: req.userId! },
+      orderBy: { createdAt: 'desc' },
+      include: buildIncludes,
+    });
+
+    res.json({ builds });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
+
+// ==============================
+// FEED
 // ==============================
 router.get('/', async (req, res) => {
   try {
@@ -101,12 +140,7 @@ router.get('/', async (req, res) => {
         ...(featuredOnly ? { isFeatured: true } : {}),
       },
       orderBy: { createdAt: 'desc' },
-      include: {
-        user: { select: { id: true, name: true } },
-        components: { include: { component: true } },
-        likes: true,
-        comments: { where: { status: 'APPROVED' } },
-      },
+      include: buildIncludes,
     });
 
     res.json({ builds });
@@ -126,14 +160,15 @@ router.get('/:id', async (req, res) => {
     const build = await prisma.build.findUnique({
       where: { id: buildId },
       include: {
-        user: { select: { id: true, name: true } },
+        user: { select: { id: true, username: true } },
         components: { include: { component: true } },
         likes: true,
         comments: {
           where: { status: 'APPROVED' },
-          include: { user: { select: { id: true, name: true } } },
+          include: { user: { select: { id: true, username: true } } },
           orderBy: { createdAt: 'asc' },
         },
+        images: { orderBy: { order: 'asc' } },
       },
     });
 
@@ -237,7 +272,7 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
 
     const comment = await prisma.comment.create({
       data: { content, userId: req.userId!, buildId, status },
-      include: { user: { select: { id: true, name: true } } },
+      include: { user: { select: { id: true, username: true } } },
     });
 
     res.status(201).json({
@@ -252,5 +287,173 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
     res.status(500).json({ error: 'Sunucu hatası.' });
   }
 });
+
+// ==============================
+// GÖRSEL YÜKLE (max 5, ilk yüklenen ana görsel olur)
+// ==============================
+router.post(
+  '/:id/images',
+  requireAuth,
+  upload.array('images', 5),
+  async (req: AuthRequest, res) => {
+    try {
+      const buildId = req.params.id as string;
+
+      const build = await prisma.build.findUnique({ where: { id: buildId } });
+
+      if (!build) {
+        res.status(404).json({ error: 'Sistem bulunamadı.' });
+        return;
+      }
+
+      if (build.userId !== req.userId) {
+        res.status(403).json({ error: 'Bu işlem için yetkin yok.' });
+        return;
+      }
+
+      const files = req.files as Express.Multer.File[] | undefined;
+
+      if (!files || files.length === 0) {
+        res.status(400).json({ error: 'Görsel dosyası bulunamadı.' });
+        return;
+      }
+
+      const existingCount = await prisma.buildImage.count({
+        where: { buildId },
+      });
+
+      const created = await prisma.$transaction(
+        files.map((file, i) =>
+          prisma.buildImage.create({
+            data: {
+              url: `/uploads/${file.filename}`,
+              buildId,
+              order: existingCount + i,
+              isMain: existingCount === 0 && i === 0,
+            },
+          }),
+        ),
+      );
+
+      res.status(201).json({
+        message: 'Görseller yüklendi, onaylandıktan sonra herkese görünecek.',
+        images: created,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// GÖRSELİ ANA GÖRSEL YAP (sadece sahibi)
+// ==============================
+router.patch(
+  '/:id/images/:imageId/main',
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const buildId = req.params.id as string;
+      const imageId = req.params.imageId as string;
+
+      const build = await prisma.build.findUnique({ where: { id: buildId } });
+
+      if (!build || build.userId !== req.userId) {
+        res.status(403).json({ error: 'Bu işlem için yetkin yok.' });
+        return;
+      }
+
+      await prisma.buildImage.updateMany({
+        where: { buildId },
+        data: { isMain: false },
+      });
+
+      const updated = await prisma.buildImage.update({
+        where: { id: imageId },
+        data: { isMain: true },
+      });
+
+      res.json({ message: 'Ana görsel güncellendi.', image: updated });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// GÖRSELİ SİL (sadece sahibi)
+// ==============================
+router.delete(
+  '/:id/images/:imageId',
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const buildId = req.params.id as string;
+      const imageId = req.params.imageId as string;
+
+      const build = await prisma.build.findUnique({ where: { id: buildId } });
+
+      if (!build || build.userId !== req.userId) {
+        res.status(403).json({ error: 'Bu işlem için yetkin yok.' });
+        return;
+      }
+
+      await prisma.buildImage.delete({ where: { id: imageId } });
+
+      res.json({ message: 'Görsel silindi.' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// PARÇA NOTUNU GÜNCELLE (sadece sahibi)
+// ==============================
+router.patch(
+  '/:id/components/:buildComponentId/note',
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const buildId = req.params.id as string;
+      const buildComponentId = req.params.buildComponentId as string;
+      const { note } = req.body;
+
+      const build = await prisma.build.findUnique({ where: { id: buildId } });
+
+      if (!build) {
+        res.status(404).json({ error: 'Sistem bulunamadı.' });
+        return;
+      }
+
+      if (build.userId !== req.userId) {
+        res.status(403).json({ error: 'Bu işlem için yetkin yok.' });
+        return;
+      }
+
+      const noteStatus =
+        note && containsBannedWord(note) ? 'PENDING' : 'APPROVED';
+
+      const updated = await prisma.buildComponent.update({
+        where: { id: buildComponentId },
+        data: { note: note || null, noteStatus },
+      });
+
+      res.json({
+        message:
+          noteStatus === 'PENDING'
+            ? 'Notun incelemeye alındı, onaylandıktan sonra herkese görünecek.'
+            : 'Not güncellendi.',
+        buildComponent: updated,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
 
 export default router;

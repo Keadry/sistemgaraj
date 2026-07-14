@@ -125,6 +125,7 @@ export default function SistemToplaPage() {
   const router = useRouter();
 
   const [components, setComponents] = useState<Component[]>([]);
+  const [isPublic, setIsPublic] = useState(true);
   const [isLoadingComponents, setIsLoadingComponents] = useState(true);
   const [name, setName] = useState('');
   const [selection, setSelection] = useState<Selection>({
@@ -212,6 +213,7 @@ export default function SistemToplaPage() {
         gpuId: selection.gpuId!,
         psuId: selection.psuId!,
         caseId: selection.caseId!,
+        isPublic,
       },
       token,
     );
@@ -237,7 +239,7 @@ export default function SistemToplaPage() {
   }
 
   return (
-    <main className="min-h-screen bg-paper pb-32">
+    <main className="min-h-screen  pb-32">
       <Navbar />
 
       <div className="px-6 md:px-12 py-10 max-w-4xl mx-auto">
@@ -264,6 +266,16 @@ export default function SistemToplaPage() {
             className="w-full max-w-md rounded-xl border border-hairline px-4 py-2.5 outline-none focus:border-trace transition-colors"
           />
         </div>
+
+        <label className="mt-4 flex items-center gap-2.5 text-sm cursor-pointer w-fit">
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
+            className="w-4 h-4 accent-trace"
+          />
+          Herkese açık olsun (topluluk akışında görünsün)
+        </label>
 
         {isLoadingComponents ? (
           <p className="text-ink-muted mt-12">Parçalar yükleniyor...</p>
@@ -311,7 +323,7 @@ export default function SistemToplaPage() {
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-paper border-t border-hairline px-6 md:px-12 py-4 flex items-center justify-between">
+      <div className="fixed bottom-0 left-0 right-0  border-t border-hairline px-6 md:px-12 py-4 flex items-center justify-between">
         <div>
           <p className="text-xs text-ink-muted">Toplam</p>
           <p className="font-[family-name:var(--font-mono)] text-xl font-semibold">

@@ -15,12 +15,14 @@ export type Component = {
 export type BuildComponent = {
   id: string;
   quantity: number;
+  note: string | null;
+  noteStatus: 'APPROVED' | 'PENDING' | 'REJECTED';
   component: Component;
 };
 
 export type BuildUser = {
   id: string;
-  name: string | null;
+  username: string;
 };
 
 export type Like = {
@@ -36,6 +38,14 @@ export type Comment = {
   user: BuildUser;
 };
 
+export type BuildImageType = {
+  id: string;
+  url: string;
+  isMain: boolean;
+  status: 'APPROVED' | 'PENDING' | 'REJECTED';
+  order: number;
+};
+
 export type Build = {
   id: string;
   name: string;
@@ -48,6 +58,7 @@ export type Build = {
   components: BuildComponent[];
   likes: Like[];
   comments: Comment[];
+  images: BuildImageType[];
 };
 
 export async function getFeed(options?: {
@@ -152,6 +163,7 @@ export async function createBuild(
     gpuId: string;
     psuId: string;
     caseId: string;
+    isPublic: boolean;
   },
   token: string,
 ): Promise<{ build?: Build; issues?: CompatibilityIssue[]; error?: string }> {
@@ -400,4 +412,197 @@ export async function getUserDetail(
 
   const data = await res.json();
   return data.user;
+}
+
+export async function getMyBuilds(token: string): Promise<Build[]> {
+  const res = await fetch(`${API_URL}/api/builds/me/all`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error('Sistemlerin yüklenemedi.');
+  }
+
+  const data = await res.json();
+  return data.builds;
+}
+
+export async function uploadBuildImages(
+  buildId: string,
+  files: File[],
+  token: string,
+): Promise<BuildImageType[]> {
+  const formData = new FormData();
+  files.forEach((file) => formData.append('images', file));
+
+  const res = await fetch(`${API_URL}/api/builds/${buildId}/images`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error || 'Görsel yüklenemedi.');
+  }
+
+  return data.images;
+}
+
+export async function setMainImage(
+  buildId: string,
+  imageId: string,
+  token: string,
+) {
+  const res = await fetch(
+    `${API_URL}/api/builds/${buildId}/images/${imageId}/main`,
+    {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'İşlem başarısız.');
+  }
+}
+
+export async function deleteImage(
+  buildId: string,
+  imageId: string,
+  token: string,
+) {
+  const res = await fetch(
+    `${API_URL}/api/builds/${buildId}/images/${imageId}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'Görsel silinemedi.');
+  }
+}
+
+export async function updateComponentNote(
+  buildId: string,
+  buildComponentId: string,
+  note: string,
+  token: string,
+): Promise<{ buildComponent: BuildComponent; message: string }> {
+  const res = await fetch(
+    `${API_URL}/api/builds/${buildId}/components/${buildComponentId}/note`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ note }),
+    },
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error || 'Not güncellenemedi.');
+  }
+
+  return { buildComponent: data.buildComponent, message: data.message };
+}
+
+export type UserProfile = {
+  id: string;
+  username: string;
+  createdAt: string;
+};
+
+export async function getUserProfile(
+  username: string,
+  token?: string | null,
+): Promise<{ user: UserProfile; builds: Build[]; isOwner: boolean }> {
+  const res = await fetch(`${API_URL}/api/users/${username}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error('Kullanıcı bulunamadı.');
+  }
+
+  return res.json();
+}
+
+export type AdminImage = {
+  id: string;
+  url: string;
+  status: 'APPROVED' | 'PENDING' | 'REJECTED';
+  createdAt: string;
+  build: { id: string; name: string; userId: string };
+};
+
+export async function getAllImages(token: string): Promise<AdminImage[]> {
+  const res = await fetch(`${API_URL}/api/admin/images`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) throw new Error('Görseller yüklenemedi.');
+  const data = await res.json();
+  return data.images;
+}
+
+export async function approveImage(imageId: string, token: string) {
+  const res = await fetch(`${API_URL}/api/admin/images/${imageId}/approve`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Onaylanamadı.');
+}
+
+export async function rejectImage(imageId: string, token: string) {
+  const res = await fetch(`${API_URL}/api/admin/images/${imageId}/reject`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Reddedilemedi.');
+}
+
+export type AdminNote = {
+  id: string;
+  note: string | null;
+  noteStatus: 'APPROVED' | 'PENDING' | 'REJECTED';
+  build: { id: string; name: string };
+  component: { name: string; brand: string };
+};
+
+export async function getAllNotes(token: string): Promise<AdminNote[]> {
+  const res = await fetch(`${API_URL}/api/admin/notes`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error('Notlar yüklenemedi.');
+  const data = await res.json();
+  return data.notes;
+}
+
+export async function approveNote(noteId: string, token: string) {
+  const res = await fetch(`${API_URL}/api/admin/notes/${noteId}/approve`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Onaylanamadı.');
+}
+
+export async function rejectNote(noteId: string, token: string) {
+  const res = await fetch(`${API_URL}/api/admin/notes/${noteId}/reject`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Reddedilemedi.');
 }

@@ -1,6 +1,6 @@
 # 🛠️ SistemGaraj
 
-**Türkçe PC parça uyumluluk kontrolü ve topluluk platformu.** PCPartPicker'dan ilham alınarak geliştirilen SistemGaraj, kullanıcıların PC sistemlerini uyumluluk kontrolünden geçirerek toplamasını, paylaşmasını ve topluluktan geri bildirim almasını sağlar.
+**Türkçe PC parça, sistem paylaşma ve topluluk platformu.** SistemGaraj, kullanıcıların PC sistemlerini uyumluluk kontrolünden geçirerek toplamasını, paylaşmasını ve topluluktan geri bildirim almasını sağlar.
 
 ## ✨ Özellikler
 
@@ -49,20 +49,22 @@
 
 ## 📁 Proje Yapısı
 
+```
 SistemGaraj/
-├── src/ # Backend kaynak kodu
-│ ├── routes/ # API rotaları (auth, builds, admin, components)
-│ ├── middleware/ # Auth & yetkilendirme ara katmanları
-│ ├── services/ # Uyum algoritması & moderasyon
-│ └── index.ts # Express giriş noktası
+├── src/                       # Backend kaynak kodu
+│   ├── routes/                 # API rotaları (auth, builds, admin, components)
+│   ├── middleware/               # Auth & yetkilendirme ara katmanları
+│   ├── services/                   # Uyum algoritması & moderasyon
+│   └── index.ts                      # Express giriş noktası
 ├── prisma/
-│ └── schema.prisma # Veritabanı şeması
-├── frontend/ # Next.js uygulaması
-│ └── src/
-│ ├── app/ # Sayfalar (feed, sistem detay, admin, auth)
-│ ├── components/ # UI bileşenleri
-│ └── lib/ # API istemcisi & auth context
-└── requests.http # API test istekleri (REST Client)
+│   └── schema.prisma                   # Veritabanı şeması
+├── frontend/                    # Next.js uygulaması
+│   └── src/
+│       ├── app/                   # Sayfalar (feed, sistem detay, admin, auth)
+│       ├── components/               # UI bileşenleri
+│       └── lib/                        # API istemcisi & auth context
+└── requests.http                  # API test istekleri (REST Client)
+```
 
 ## 🚀 Kurulum
 

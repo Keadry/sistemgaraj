@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { prisma } from '../db.js';
-import { requireAuth, type AuthRequest } from '../middleware/auth.js';
+import {
+  requireAuth,
+  optionalAuth,
+  type AuthRequest,
+} from '../middleware/auth.js';
 import { validateBuild } from '../services/compatibility.js';
 import {
   containsBannedWord,
@@ -180,7 +184,7 @@ router.get('/', async (req, res) => {
 // ==============================
 // TEK SİSTEM DETAYI
 // ==============================
-router.get('/:id', async (req, res) => {
+router.get('/:id', optionalAuth, async (req: AuthRequest, res) => {
   try {
     const buildId = req.params.id as string;
 
@@ -204,7 +208,19 @@ router.get('/:id', async (req, res) => {
       return;
     }
 
-    res.json({ build });
+    const isOwner = req.userId === build.userId;
+
+    if (build.reviewStatus !== 'APPROVED' && !isOwner) {
+      res.status(404).json({ error: 'Sistem bulunamadı.' });
+      return;
+    }
+
+    // Onaylanmamış görselleri, sahibi değilse gösterme
+    const visibleImages = isOwner
+      ? build.images
+      : build.images.filter((img) => img.status === 'APPROVED');
+
+    res.json({ build: { ...build, images: visibleImages }, isOwner });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Sunucu hatası.' });

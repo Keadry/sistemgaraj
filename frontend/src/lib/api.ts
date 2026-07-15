@@ -78,8 +78,12 @@ export async function getFeed(options?: {
   return data.builds;
 }
 
-export async function getBuild(id: string): Promise<Build> {
+export async function getBuild(
+  id: string,
+  token?: string | null,
+): Promise<{ build: Build; isOwner: boolean }> {
   const res = await fetch(`${API_URL}/api/builds/${id}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
     cache: 'no-store',
   });
 
@@ -87,9 +91,9 @@ export async function getBuild(id: string): Promise<Build> {
     throw new Error('Sistem bulunamadı.');
   }
 
-  const data = await res.json();
-  return data.build;
+  return res.json();
 }
+
 export async function likeBuild(buildId: string, token: string) {
   const res = await fetch(`${API_URL}/api/builds/${buildId}/like`, {
     method: 'POST',

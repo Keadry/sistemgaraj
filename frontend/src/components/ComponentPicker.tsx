@@ -24,13 +24,11 @@ export default function ComponentPicker({
   label,
   components,
   selectedId,
-  incompatibleIds,
   onSelect,
 }: {
   label: string;
   components: Component[];
   selectedId: string | null;
-  incompatibleIds: Set<string>;
   onSelect: (id: string) => void;
 }) {
   return (
@@ -38,46 +36,44 @@ export default function ComponentPicker({
       <h3 className="font-[family-name:var(--font-display)] text-lg font-semibold mb-3">
         {label}
       </h3>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {components.map((component) => {
-          const isSelected = component.id === selectedId;
-          const isIncompatible = incompatibleIds.has(component.id);
-
-          return (
-            <button
-              key={component.id}
-              type="button"
-              disabled={isIncompatible}
-              onClick={() => onSelect(component.id)}
-              className={`text-left rounded-xl border p-4 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
-                isIncompatible
-                  ? 'border-hairline opacity-40 cursor-not-allowed'
-                  : isSelected
+      {components.length === 0 ? (
+        <p className="text-xs text-ink-muted">
+          Mevcut seçimlerinle uyumlu parça bulunamadı.
+        </p>
+      ) : (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {components.map((component) => {
+            const isSelected = component.id === selectedId;
+            return (
+              <button
+                key={component.id}
+                type="button"
+                onClick={() => onSelect(component.id)}
+                className={`text-left rounded-xl border p-4 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
+                  isSelected
                     ? 'border-trace bg-trace/5'
                     : 'border-hairline hover:border-ink-muted'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <p className="font-medium text-sm leading-snug">
-                  {component.brand} {component.name}
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-medium text-sm leading-snug">
+                    {component.brand} {component.name}
+                  </p>
+                  {isSelected && (
+                    <span className="text-trace shrink-0 mt-0.5">✓</span>
+                  )}
+                </div>
+                <p className="font-[family-name:var(--font-mono)] text-xs text-ink-muted mt-1.5">
+                  {getSpecLine(component)}
                 </p>
-                {isSelected && (
-                  <span className="text-trace shrink-0 mt-0.5">✓</span>
-                )}
-              </div>
-              <p className="font-[family-name:var(--font-mono)] text-xs text-ink-muted mt-1.5">
-                {getSpecLine(component)}
-              </p>
-              <p className="font-[family-name:var(--font-mono)] text-sm font-semibold mt-2">
-                {formatPrice(component.price)}
-              </p>
-              {isIncompatible && (
-                <p className="text-xs text-incompatible mt-1.5">Uyumsuz</p>
-              )}
-            </button>
-          );
-        })}
-      </div>
+                <p className="font-[family-name:var(--font-mono)] text-sm font-semibold mt-2">
+                  {formatPrice(component.price)}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

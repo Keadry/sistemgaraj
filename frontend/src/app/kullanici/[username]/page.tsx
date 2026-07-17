@@ -8,7 +8,13 @@ import BuildCard from '@/components/BuildCard';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import ProfileCover from '@/components/ProfileCover';
 import { useAuth } from '@/lib/auth-context';
-import { getUserProfile, type Build, type UserProfile } from '@/lib/api';
+import ProfileWall from '@/components/ProfileWall';
+import {
+  getUserProfileWithWall,
+  type Build,
+  type UserProfile,
+  type WallComment,
+} from '@/lib/api';
 
 function formatDate(dateString: string): string {
   return new Intl.DateTimeFormat('tr-TR', {
@@ -31,15 +37,17 @@ export default function UserProfilePage({
   const [isOwner, setIsOwner] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [notFoundError, setNotFoundError] = useState(false);
+  const [wallComments, setWallComments] = useState<WallComment[]>([]);
 
   useEffect(() => {
     if (isAuthLoading) return;
 
-    getUserProfile(username, token)
+    getUserProfileWithWall(username, token)
       .then((data) => {
         setProfile(data.user);
         setBuilds(data.builds);
         setIsOwner(data.isOwner);
+        setWallComments(data.wallComments);
       })
       .catch(() => setNotFoundError(true))
       .finally(() => setIsLoading(false));
@@ -128,6 +136,13 @@ export default function UserProfilePage({
               </div>
             ))}
           </div>
+        )}
+        {profile && (
+          <ProfileWall
+            username={profile.username}
+            profileUserId={profile.id}
+            initialComments={wallComments}
+          />
         )}
       </div>
     </main>

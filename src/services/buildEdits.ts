@@ -9,6 +9,7 @@ type EditRequestData = {
   gpuId: string | null;
   psuId: string | null;
   caseId: string | null;
+  storageId: string | null;
   images: { url: string; order: number }[];
   notes: { componentType: string; note: string }[];
 };
@@ -43,6 +44,7 @@ export async function applyEditRequestChanges(
     GPU: editRequest.gpuId || currentByType['GPU'],
     PSU: editRequest.psuId || currentByType['PSU'],
     CASE: editRequest.caseId || currentByType['CASE'],
+    STORAGE: editRequest.storageId || currentByType['STORAGE'],
   };
 
   const parts = await tx.component.findMany({

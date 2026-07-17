@@ -220,6 +220,32 @@ const components = [
     price: 2199,
     formFactor: 'Micro-ATX',
   },
+
+  // ==================== DEPOLAMA ====================
+  {
+    name: '870 EVO 1TB SATA SSD',
+    brand: 'Samsung',
+    type: ComponentType.STORAGE,
+    price: 2199,
+  },
+  {
+    name: '980 1TB NVMe M.2 SSD',
+    brand: 'Samsung',
+    type: ComponentType.STORAGE,
+    price: 2799,
+  },
+  {
+    name: 'NV2 1TB NVMe M.2 SSD',
+    brand: 'Kingston',
+    type: ComponentType.STORAGE,
+    price: 2299,
+  },
+  {
+    name: 'Barracuda 1TB SATA SSD',
+    brand: 'Seagate',
+    type: ComponentType.STORAGE,
+    price: 1899,
+  },
 ];
 
 async function main() {

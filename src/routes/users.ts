@@ -45,7 +45,21 @@ router.get('/:username', optionalAuth, async (req: AuthRequest, res) => {
       },
     });
 
-    res.json({ user, builds, isOwner });
+    const wallComments = await prisma.profileComment.findMany({
+      where: { profileUserId: user.id, parentId: null },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        author: { select: { id: true, username: true, avatarUrl: true } },
+        replies: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            author: { select: { id: true, username: true, avatarUrl: true } },
+          },
+        },
+      },
+    });
+
+    res.json({ user, builds, isOwner, wallComments });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Sunucu hatası.' });
@@ -105,6 +119,106 @@ router.post(
         message: 'Kapak fotoğrafı güncellendi.',
         coverUrl: user.coverUrl,
       });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// DUVAR YORUMU EKLE (soru/yorum, ya da cevap)
+// ==============================
+router.post('/:username/wall', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const username = req.params.username as string;
+    const { content, parentId } = req.body;
+
+    if (!content || content.trim().length === 0) {
+      res.status(400).json({ error: 'Yorum içeriği boş olamaz.' });
+      return;
+    }
+
+    const profileUser = await prisma.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
+    });
+
+    if (!profileUser) {
+      res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
+      return;
+    }
+
+    // Cevap veriliyorsa, üst yorumun gerçekten bu profile ait olduğunu doğrula
+    if (parentId) {
+      const parent = await prisma.profileComment.findUnique({
+        where: { id: parentId },
+      });
+      if (!parent || parent.profileUserId !== profileUser.id) {
+        res.status(400).json({ error: 'Geçersiz yanıt hedefi.' });
+        return;
+      }
+    }
+
+    const comment = await prisma.profileComment.create({
+      data: {
+        content,
+        authorId: req.userId!,
+        profileUserId: profileUser.id,
+        parentId: parentId || null,
+      },
+      include: {
+        author: { select: { id: true, username: true, avatarUrl: true } },
+      },
+    });
+
+    res.status(201).json({ message: 'Yorum eklendi.', comment });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
+
+// ==============================
+// DUVAR YORUMUNU SİL (yazarı, profil sahibi veya moderatör)
+// ==============================
+router.delete(
+  '/wall/:commentId',
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const commentId = req.params.commentId as string;
+
+      const comment = await prisma.profileComment.findUnique({
+        where: { id: commentId },
+      });
+
+      if (!comment) {
+        res.status(404).json({ error: 'Yorum bulunamadı.' });
+        return;
+      }
+
+      const requester = await prisma.user.findUnique({
+        where: { id: req.userId! },
+      });
+
+      const canDelete =
+        comment.authorId === req.userId ||
+        comment.profileUserId === req.userId ||
+        requester?.role === 'MODERATOR' ||
+        requester?.role === 'ADMIN';
+
+      if (!canDelete) {
+        res.status(403).json({ error: 'Bu işlem için yetkin yok.' });
+        return;
+      }
+
+      // Cevapları da sil (basit temizlik, tek seviye olduğu için sorun çıkarmaz)
+      await prisma.profileComment.deleteMany({
+        where: { parentId: commentId },
+      });
+      await prisma.profileComment.delete({ where: { id: commentId } });
+
+      res.json({ message: 'Yorum silindi.' });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Sunucu hatası.' });

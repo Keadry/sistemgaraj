@@ -38,25 +38,49 @@ router.post(
   upload.array('images', 5),
   async (req: AuthRequest, res) => {
     try {
-      const { name, cpuId, motherboardId, ramId, gpuId, psuId, caseId } =
-        req.body;
+      const {
+        name,
+        cpuId,
+        motherboardId,
+        ramId,
+        gpuId,
+        psuId,
+        caseId,
+        storageId,
+      } = req.body;
 
       const isPublic = req.body.isPublic !== 'false';
 
-      if (!cpuId || !motherboardId || !ramId || !gpuId || !psuId || !caseId) {
+      if (
+        !cpuId ||
+        !motherboardId ||
+        !ramId ||
+        !gpuId ||
+        !psuId ||
+        !caseId ||
+        !storageId
+      ) {
         res.status(400).json({
           error:
-            "6 parça ID'sinin tamamı zorunludur (cpuId, motherboardId, ramId, gpuId, psuId, caseId).",
+            "7 parça ID'sinin tamamı zorunludur (cpuId, motherboardId, ramId, gpuId, psuId, caseId, storageId).",
         });
         return;
       }
 
-      const ids: string[] = [cpuId, motherboardId, ramId, gpuId, psuId, caseId];
+      const ids: string[] = [
+        cpuId,
+        motherboardId,
+        ramId,
+        gpuId,
+        psuId,
+        caseId,
+        storageId,
+      ];
       const components = await prisma.component.findMany({
         where: { id: { in: ids } },
       });
 
-      if (components.length !== 6) {
+      if (components.length !== 7) {
         res
           .status(404)
           .json({ error: 'Bir veya birden fazla parça bulunamadı.' });
@@ -199,7 +223,7 @@ router.get('/:id', optionalAuth, async (req: AuthRequest, res) => {
         comments: {
           where: { status: 'APPROVED' },
           include: { user: { select: { id: true, username: true } } },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: 'desc' },
         },
         images: { orderBy: { order: 'asc' } },
       },
@@ -371,8 +395,16 @@ router.post(
         return;
       }
 
-      const { description, cpuId, motherboardId, ramId, gpuId, psuId, caseId } =
-        req.body;
+      const {
+        description,
+        cpuId,
+        motherboardId,
+        ramId,
+        gpuId,
+        psuId,
+        caseId,
+        storageId,
+      } = req.body;
 
       let notes: { componentType: string; note: string }[] = [];
       if (req.body.notes) {
@@ -383,7 +415,15 @@ router.post(
         }
       }
 
-      const proposedIds = { cpuId, motherboardId, ramId, gpuId, psuId, caseId };
+      const proposedIds = {
+        cpuId,
+        motherboardId,
+        ramId,
+        gpuId,
+        psuId,
+        caseId,
+        storageId,
+      };
       const hasPartChange = Object.values(proposedIds).some(Boolean);
 
       if (hasPartChange) {
@@ -399,6 +439,7 @@ router.post(
           gpuId: gpuId || currentByType['GPU'],
           psuId: psuId || currentByType['PSU'],
           caseId: caseId || currentByType['CASE'],
+          storageId: storageId || currentByType['STORAGE'],
         };
 
         const ids = Object.values(finalIds);
@@ -406,7 +447,7 @@ router.post(
           where: { id: { in: ids } },
         });
 
-        if (parts.length !== 6) {
+        if (parts.length !== 7) {
           res
             .status(404)
             .json({ error: 'Bir veya birden fazla parça bulunamadı.' });
@@ -457,6 +498,7 @@ router.post(
           gpuId: gpuId || null,
           psuId: psuId || null,
           caseId: caseId || null,
+          storageId: storageId || null,
           images: {
             create: files.map((file, i) => ({
               url: `/uploads/${file.filename}`,

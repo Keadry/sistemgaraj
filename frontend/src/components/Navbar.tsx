@@ -44,12 +44,6 @@ export default function Navbar() {
                   >
                     Çıkış
                   </button>
-                  <Link
-                    href="/sistem-topla"
-                    className="rounded-lg bg-trace text-paper text-sm font-medium px-5 py-2 hover:bg-trace-dark transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
-                  >
-                    Sistem Topla
-                  </Link>
                 </>
               ) : (
                 <>

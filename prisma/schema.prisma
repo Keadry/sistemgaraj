@@ -54,6 +54,9 @@ model User {
   builds   Build[]
   likes    Like[]
   comments Comment[]
+
+  profileCommentsAuthored ProfileComment[] @relation("ProfileCommentAuthor")
+  profileCommentsReceived ProfileComment[] @relation("ProfileCommentTarget")
 }
 
 // ==============================
@@ -111,6 +114,7 @@ model Build {
   userId String
 
   components   BuildComponent[]
+  
   likes        Like[]
   comments     Comment[]
   images       BuildImage[]
@@ -194,12 +198,13 @@ model BuildEditRequest {
   build   Build  @relation(fields: [buildId], references: [id])
   buildId String
 
-  cpuId          String?
-  motherboardId  String?
-  ramId          String?
-  gpuId          String?
-  psuId          String?
-  caseId         String?
+  cpuId         String?
+  motherboardId String?
+  ramId         String?
+  gpuId         String?
+  psuId         String?
+  caseId        String?
+  storageId     String?
 
   images BuildEditRequestImage[]
   notes  BuildEditRequestNote[]
@@ -222,4 +227,21 @@ model BuildEditRequestNote {
   request   BuildEditRequest @relation(fields: [requestId], references: [id])
   requestId String
 }
+
+model ProfileComment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  author   User   @relation("ProfileCommentAuthor", fields: [authorId], references: [id])
+  authorId String
+
+  profileUser   User   @relation("ProfileCommentTarget", fields: [profileUserId], references: [id])
+  profileUserId String
+
+  parent   ProfileComment?  @relation("ProfileCommentReplies", fields: [parentId], references: [id])
+  parentId String?
+  replies  ProfileComment[] @relation("ProfileCommentReplies")
+}
+
 

@@ -41,7 +41,7 @@ export default function BuildInteractions({
         <CommentForm
           buildId={buildId}
           onCommentAdded={(comment) =>
-            setComments((prev) => [...prev, comment])
+            setComments((prev) => [comment, ...prev])
           }
         />
 
@@ -55,7 +55,7 @@ export default function BuildInteractions({
               <div key={comment.id} className="rounded-xl bg-surface p-4">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-sm">
-                    {comment.user.name ?? 'Anonim'}
+                    {comment.user.username ?? 'Anonim'}
                   </span>
                   <span className="text-xs text-ink-muted font-[family-name:var(--font-mono)]">
                     {formatDate(comment.createdAt)}

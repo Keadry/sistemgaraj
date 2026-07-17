@@ -168,6 +168,7 @@ export async function createBuild(
     gpuId: string;
     psuId: string;
     caseId: string;
+    storageId: string;
     isPublic: boolean;
     images?: File[];
   },
@@ -186,6 +187,7 @@ export async function createBuild(
   formData.append('gpuId', params.gpuId);
   formData.append('psuId', params.psuId);
   formData.append('caseId', params.caseId);
+  formData.append('storageId', params.storageId);
   formData.append('isPublic', String(params.isPublic));
 
   if (params.images) {
@@ -880,4 +882,61 @@ export async function uploadCover(file: File, token: string): Promise<string> {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Yüklenemedi.');
   return data.coverUrl;
+}
+
+export type WallComment = {
+  id: string;
+  content: string;
+  createdAt: string;
+  author: { id: string; username: string; avatarUrl: string | null };
+  replies: WallComment[];
+};
+
+export async function getUserProfileWithWall(
+  username: string,
+  token?: string | null,
+): Promise<{
+  user: UserProfile;
+  builds: Build[];
+  isOwner: boolean;
+  wallComments: WallComment[];
+}> {
+  const res = await fetch(`${API_URL}/api/users/${username}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error('Kullanıcı bulunamadı.');
+  }
+
+  return res.json();
+}
+
+export async function postWallComment(
+  username: string,
+  content: string,
+  token: string,
+  parentId?: string,
+): Promise<WallComment> {
+  const res = await fetch(`${API_URL}/api/users/${username}/wall`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ content, parentId }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Yorum eklenemedi.');
+  return data.comment;
+}
+
+export async function deleteWallComment(commentId: string, token: string) {
+  const res = await fetch(`${API_URL}/api/users/wall/${commentId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error('Silinemedi.');
 }

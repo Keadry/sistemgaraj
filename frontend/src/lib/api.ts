@@ -210,7 +210,7 @@ export async function createBuild(
 export type AdminUser = {
   id: string;
   email: string;
-  name: string | null;
+  username: string | null;
   role: 'USER' | 'MODERATOR' | 'ADMIN';
   isBanned: boolean;
   banReason: string | null;
@@ -345,7 +345,7 @@ export type AdminComment = {
   content: string;
   status: 'APPROVED' | 'PENDING' | 'REJECTED';
   createdAt: string;
-  user: { id: string; name: string | null; email: string };
+  user: { id: string; username: string | null; email: string };
   build: { id: string; name: string };
 };
 
@@ -541,6 +541,8 @@ export async function updateComponentNote(
 export type UserProfile = {
   id: string;
   username: string;
+  avatarUrl: string | null;
+  coverUrl: string | null;
   createdAt: string;
 };
 
@@ -824,4 +826,58 @@ export async function rejectEditRequest(requestId: string, token: string) {
     },
   );
   if (!res.ok) throw new Error('Reddedilemedi.');
+}
+
+export async function setExistingImageMain(
+  buildId: string,
+  imageId: string,
+  token: string,
+) {
+  const res = await fetch(
+    `${API_URL}/api/builds/${buildId}/images/${imageId}/main`,
+    { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (!res.ok) throw new Error('İşlem başarısız.');
+}
+
+export async function deleteExistingImage(
+  buildId: string,
+  imageId: string,
+  token: string,
+) {
+  const res = await fetch(
+    `${API_URL}/api/builds/${buildId}/images/${imageId}`,
+    { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
+  );
+  if (!res.ok) throw new Error('Görsel silinemedi.');
+}
+
+export async function uploadAvatar(file: File, token: string): Promise<string> {
+  const formData = new FormData();
+  formData.append('avatar', file);
+
+  const res = await fetch(`${API_URL}/api/users/me/avatar`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Yüklenemedi.');
+  return data.avatarUrl;
+}
+
+export async function uploadCover(file: File, token: string): Promise<string> {
+  const formData = new FormData();
+  formData.append('cover', file);
+
+  const res = await fetch(`${API_URL}/api/users/me/cover`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Yüklenemedi.');
+  return data.coverUrl;
 }

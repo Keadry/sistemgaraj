@@ -31,7 +31,7 @@ export default function GirisPage() {
   }
 
   return (
-    <main className="min-h-screen bg-paper flex items-center justify-center px-6">
+    <main className="min-h-screen  flex items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <Link href="/" className="flex justify-center mb-8">
           <Logo />

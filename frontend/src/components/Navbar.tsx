@@ -24,16 +24,6 @@ export default function Navbar() {
           >
             Sistem Topla
           </Link>
-          {user && (
-            <Link href="/profilim" className="hover:text-ink transition-colors">
-              Sistemlerim
-            </Link>
-          )}
-          {(user?.role === 'MODERATOR' || user?.role === 'ADMIN') && (
-            <Link href="/admin" className="hover:text-ink transition-colors">
-              Yönetim Paneli
-            </Link>
-          )}
         </div>
         <div className="flex items-center gap-3 shrink-0">
           {!isLoading && (
@@ -41,7 +31,12 @@ export default function Navbar() {
               {user ? (
                 <>
                   <span className="text-sm text-ink-muted hidden sm:inline">
-                    {user.username}
+                    <Link
+                      href={`/kullanici/${user.username}`}
+                      className="hover:text-ink transition-colors"
+                    >
+                      {user.username}
+                    </Link>
                   </span>
                   <button
                     onClick={logout}

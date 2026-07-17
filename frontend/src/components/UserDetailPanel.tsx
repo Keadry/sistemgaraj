@@ -58,12 +58,11 @@ export default function UserDetailPanel({
 
         {detail && (
           <div className="mt-4">
-            <p className="font-medium">{detail.name ?? 'İsimsiz'}</p>
+            <p className="font-medium">@{detail.username}</p>{' '}
             <p className="text-sm text-ink-muted">{detail.email}</p>
             <p className="text-xs text-ink-muted mt-1">
               Kayıt: {formatDate(detail.createdAt)} · Rol: {detail.role}
             </p>
-
             {/* BEĞENİLER */}
             <div className="mt-6">
               <h4 className="font-medium text-sm mb-2">
@@ -90,7 +89,6 @@ export default function UserDetailPanel({
                 </ul>
               )}
             </div>
-
             {/* YORUMLAR */}
             <div className="mt-6">
               <h4 className="font-medium text-sm mb-2">

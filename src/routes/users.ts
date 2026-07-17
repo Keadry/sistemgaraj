@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { prisma } from '../db.js';
-import { optionalAuth, type AuthRequest } from '../middleware/auth.js';
-
+import { upload } from '../upload.js';
+import {
+  requireAuth,
+  optionalAuth,
+  type AuthRequest,
+} from '../middleware/auth.js';
 const router = Router();
 
 router.get('/:username', optionalAuth, async (req: AuthRequest, res) => {
@@ -10,7 +14,13 @@ router.get('/:username', optionalAuth, async (req: AuthRequest, res) => {
 
     const user = await prisma.user.findFirst({
       where: { username: { equals: username, mode: 'insensitive' } },
-      select: { id: true, username: true, createdAt: true },
+      select: {
+        id: true,
+        username: true,
+        avatarUrl: true,
+        coverUrl: true,
+        createdAt: true,
+      },
     });
 
     if (!user) {
@@ -41,5 +51,65 @@ router.get('/:username', optionalAuth, async (req: AuthRequest, res) => {
     res.status(500).json({ error: 'Sunucu hatası.' });
   }
 });
+
+// ==============================
+// AVATAR GÜNCELLE (sadece kendi hesabı)
+// ==============================
+router.post(
+  '/me/avatar',
+  requireAuth,
+  upload.single('avatar'),
+  async (req: AuthRequest, res) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: 'Görsel bulunamadı.' });
+        return;
+      }
+
+      const user = await prisma.user.update({
+        where: { id: req.userId! },
+        data: { avatarUrl: `/uploads/${req.file.filename}` },
+      });
+
+      res.json({
+        message: 'Profil resmi güncellendi.',
+        avatarUrl: user.avatarUrl,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// KAPAK FOTOĞRAFI GÜNCELLE (sadece kendi hesabı)
+// ==============================
+router.post(
+  '/me/cover',
+  requireAuth,
+  upload.single('cover'),
+  async (req: AuthRequest, res) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: 'Görsel bulunamadı.' });
+        return;
+      }
+
+      const user = await prisma.user.update({
+        where: { id: req.userId! },
+        data: { coverUrl: `/uploads/${req.file.filename}` },
+      });
+
+      res.json({
+        message: 'Kapak fotoğrafı güncellendi.',
+        coverUrl: user.coverUrl,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
 
 export default router;

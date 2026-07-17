@@ -143,6 +143,7 @@ export default function BuildDetailPage({
               setIsEditing(false);
               reload();
             }}
+            onImagesChanged={reload}
           />
         )}
 

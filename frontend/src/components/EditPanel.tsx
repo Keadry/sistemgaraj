@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import ComponentPicker from './ComponentPicker';
+import { setExistingImageMain, deleteExistingImage } from '@/lib/api';
 import {
   getComponents,
   submitEditRequest,
@@ -78,14 +79,17 @@ function isCompatible(
 export default function EditPanel({
   build,
   onDone,
+  onImagesChanged,
 }: {
   build: Build;
   onDone: () => void;
+  onImagesChanged: () => void;
 }) {
   const { token } = useAuth();
 
   const [components, setComponents] = useState<Component[]>([]);
   const [isLoadingComponents, setIsLoadingComponents] = useState(true);
+  const [imageActionId, setImageActionId] = useState<string | null>(null);
   const [selection, setSelection] = useState<Selection>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [description, setDescription] = useState(build.description ?? '');
@@ -156,6 +160,33 @@ export default function EditPanel({
     return new Set(incompatible.map((c) => c.id));
   }
 
+  async function handleSetMain(imageId: string) {
+    if (!token) return;
+    setImageActionId(imageId);
+    try {
+      await setExistingImageMain(build.id, imageId, token);
+      onImagesChanged();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+    } finally {
+      setImageActionId(null);
+    }
+  }
+
+  async function handleDeleteImage(imageId: string) {
+    if (!token) return;
+    if (!confirm('Bu görseli silmek istediğine emin misin?')) return;
+    setImageActionId(imageId);
+    try {
+      await deleteExistingImage(build.id, imageId, token);
+      onImagesChanged();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+    } finally {
+      setImageActionId(null);
+    }
+  }
+
   async function handleSubmit() {
     if (!token) return;
 
@@ -219,6 +250,66 @@ export default function EditPanel({
           className="w-full rounded-xl border border-hairline px-4 py-2.5 text-sm outline-none focus:border-trace transition-colors resize-none bg-paper"
         />
       </div>
+
+      {build.images.length > 0 && (
+        <div className="mt-5">
+          <label className="block text-sm font-medium mb-1.5">
+            Mevcut Görseller
+          </label>
+          <div className="flex flex-wrap gap-3">
+            {build.images.map((img) => {
+              const API_URL = process.env.NEXT_PUBLIC_API_URL;
+              const isBusy = imageActionId === img.id;
+              return (
+                <div
+                  key={img.id}
+                  className="relative w-24 h-20 rounded-lg overflow-hidden border border-hairline"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`${API_URL}${img.url}`}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                  {img.status === 'PENDING' && (
+                    <span className="absolute top-1 left-1 text-[10px] bg-trace text-paper rounded px-1.5 py-0.5">
+                      Onayda
+                    </span>
+                  )}
+                  {img.status === 'REJECTED' && (
+                    <span className="absolute top-1 left-1 text-[10px] bg-incompatible text-paper rounded px-1.5 py-0.5">
+                      Reddedildi
+                    </span>
+                  )}
+                  {img.isMain && (
+                    <span className="absolute top-1 right-1 text-[10px] bg-ink text-paper rounded px-1.5 py-0.5">
+                      Ana
+                    </span>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 flex bg-ink/60">
+                    {!img.isMain && img.status === 'APPROVED' && (
+                      <button
+                        disabled={isBusy}
+                        onClick={() => handleSetMain(img.id)}
+                        className="flex-1 text-[10px] text-paper py-1 hover:bg-ink/80 disabled:opacity-50"
+                      >
+                        Ana Yap
+                      </button>
+                    )}
+                    <button
+                      disabled={isBusy}
+                      onClick={() => handleDeleteImage(img.id)}
+                      className="flex-1 text-[10px] text-paper py-1 hover:bg-incompatible/80 disabled:opacity-50"
+                    >
+                      Sil
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="mt-5">
         <label className="block text-sm font-medium mb-1.5">

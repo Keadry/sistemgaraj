@@ -250,7 +250,7 @@ function UsersTab({
                       onClick={() => setSelectedUserId(u.id)}
                       className="text-left hover:text-trace transition-colors"
                     >
-                      <p className="font-medium">{u.name ?? 'İsimsiz'}</p>
+                      <p className="font-medium">@{u.username}</p>
                       <p className="text-ink-muted text-xs">{u.email}</p>
                     </button>
                   </td>
@@ -408,9 +408,18 @@ function BuildsTab({ token }: { token: string }) {
         <tbody>
           {builds.map((b) => (
             <tr key={b.id} className="border-t border-hairline">
-              <td className="px-4 py-3 font-medium">{b.name}</td>
+              <td className="px-4 py-3 font-medium">
+                <a
+                  href={`/sistemler/${b.id}`}
+                  target="_blank"
+                  className="font-medium text-sm text-trace
+                hover:underline"
+                >
+                  {b.name}
+                </a>
+              </td>
               <td className="px-4 py-3 text-ink-muted text-xs">
-                {b.user.username ?? 'Anonim'}
+                <p className="font-medium">@{b.user.username}</p>
               </td>
               <td className="px-4 py-3 font-[family-name:var(--font-mono)] text-xs">
                 {formatPrice(b.totalPrice)}
@@ -558,7 +567,7 @@ function CommentsTab({ token }: { token: string }) {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 text-xs text-ink-muted flex-wrap">
                     <span className="font-medium text-ink">
-                      {c.user.name ?? c.user.email}
+                      @{c.user.username ?? c.user.email}
                     </span>
                     <span>·</span>
                     <Link

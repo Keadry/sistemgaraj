@@ -9,13 +9,11 @@ type EditRequestData = {
   gpuId: string | null;
   psuId: string | null;
   caseId: string | null;
-  storageId: string | null;
+  storageId: string[];
   images: { url: string; order: number }[];
   notes: { componentType: string; note: string }[];
 };
 
-// Bir düzenleme isteğinin değişikliklerini gerçek Build kaydına uygular.
-// Hem otomatik onay (banned-word/görsel yoksa) hem admin onayı tarafından kullanılır.
 export async function applyEditRequestChanges(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
   buildId: string,
@@ -32,30 +30,43 @@ export async function applyEditRequestChanges(
 
   const currentByType: Record<string, string> = {};
   const currentNoteByType: Record<string, string | null> = {};
+  const currentStorageId: string[] = [];
+
   for (const bc of build.components) {
-    currentByType[bc.component.type] = bc.componentId;
+    if (bc.component.type === 'STORAGE') {
+      currentStorageId.push(bc.componentId);
+    } else {
+      currentByType[bc.component.type] = bc.componentId;
+    }
     currentNoteByType[bc.component.type] = bc.note;
   }
 
-  const finalIds: Record<string, string> = {
+  const finalSingleIds: Record<string, string> = {
     CPU: editRequest.cpuId || currentByType['CPU'],
     MOTHERBOARD: editRequest.motherboardId || currentByType['MOTHERBOARD'],
     RAM: editRequest.ramId || currentByType['RAM'],
     GPU: editRequest.gpuId || currentByType['GPU'],
     PSU: editRequest.psuId || currentByType['PSU'],
     CASE: editRequest.caseId || currentByType['CASE'],
-    STORAGE: editRequest.storageId || currentByType['STORAGE'],
   };
 
+  const finalStorageIds =
+    editRequest.storageId.length > 0 ? editRequest.storageId : currentStorageId;
+
+  const allComponentIds = [
+    ...Object.values(finalSingleIds),
+    ...finalStorageIds,
+  ];
+
   const parts = await tx.component.findMany({
-    where: { id: { in: Object.values(finalIds) } },
+    where: { id: { in: allComponentIds } },
   });
 
   const totalPrice = parts.reduce((sum, p) => sum + p.price, 0);
 
   await tx.buildComponent.deleteMany({ where: { buildId } });
 
-  for (const [type, componentId] of Object.entries(finalIds)) {
+  for (const [type, componentId] of Object.entries(finalSingleIds)) {
     const requestNote = editRequest.notes.find((n) => n.componentType === type);
     await tx.buildComponent.create({
       data: {
@@ -64,6 +75,27 @@ export async function applyEditRequestChanges(
         note: requestNote
           ? requestNote.note
           : (currentNoteByType[type] ?? null),
+        noteStatus: 'APPROVED',
+      },
+    });
+  }
+
+  const storageNote = editRequest.notes.find(
+    (n) => n.componentType === 'STORAGE',
+  );
+
+  for (let i = 0; i < finalStorageIds.length; i++) {
+    await tx.buildComponent.create({
+      data: {
+        buildId,
+        componentId: finalStorageIds[i],
+        // Not sadece ilk depolama parçasına iliştirilir (birden fazla depolama için basit bir yaklaşım)
+        note:
+          i === 0
+            ? storageNote
+              ? storageNote.note
+              : (currentNoteByType['STORAGE'] ?? null)
+            : null,
         noteStatus: 'APPROVED',
       },
     });

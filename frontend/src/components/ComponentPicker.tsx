@@ -24,18 +24,27 @@ export default function ComponentPicker({
   label,
   components,
   selectedId,
+  selectedIds,
+  multiple = false,
   onSelect,
 }: {
   label: string;
   components: Component[];
-  selectedId: string | null;
+  selectedId?: string | null;
+  selectedIds?: string[];
+  multiple?: boolean;
   onSelect: (id: string) => void;
 }) {
+  const isSelected = (id: string) =>
+    multiple ? (selectedIds ?? []).includes(id) : id === selectedId;
+
   return (
     <div>
-      <h3 className="font-[family-name:var(--font-display)] text-lg font-semibold mb-3">
-        {label}
-      </h3>
+      {label && (
+        <h3 className="font-[family-name:var(--font-display)] text-lg font-semibold mb-3">
+          {label}
+        </h3>
+      )}
       {components.length === 0 ? (
         <p className="text-xs text-ink-muted">
           Mevcut seçimlerinle uyumlu parça bulunamadı.
@@ -43,14 +52,14 @@ export default function ComponentPicker({
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {components.map((component) => {
-            const isSelected = component.id === selectedId;
+            const selected = isSelected(component.id);
             return (
               <button
                 key={component.id}
                 type="button"
                 onClick={() => onSelect(component.id)}
                 className={`text-left rounded-xl border p-4 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
-                  isSelected
+                  selected
                     ? 'border-trace bg-trace/5'
                     : 'border-hairline hover:border-ink-muted'
                 }`}
@@ -59,7 +68,7 @@ export default function ComponentPicker({
                   <p className="font-medium text-sm leading-snug">
                     {component.brand} {component.name}
                   </p>
-                  {isSelected && (
+                  {selected && (
                     <span className="text-trace shrink-0 mt-0.5">✓</span>
                   )}
                 </div>

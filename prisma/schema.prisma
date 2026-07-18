@@ -204,7 +204,7 @@ model BuildEditRequest {
   gpuId         String?
   psuId         String?
   caseId        String?
-  storageId     String?
+  storageId     String[] @default([])
 
   images BuildEditRequestImage[]
   notes  BuildEditRequestNote[]

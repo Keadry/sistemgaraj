@@ -168,7 +168,7 @@ export async function createBuild(
     gpuId: string;
     psuId: string;
     caseId: string;
-    storageId: string;
+    storageIds: string[];
     isPublic: boolean;
     images?: File[];
   },
@@ -187,7 +187,7 @@ export async function createBuild(
   formData.append('gpuId', params.gpuId);
   formData.append('psuId', params.psuId);
   formData.append('caseId', params.caseId);
-  formData.append('storageId', params.storageId);
+  params.storageIds.forEach((id) => formData.append('storageIds', id));
   formData.append('isPublic', String(params.isPublic));
 
   if (params.images) {

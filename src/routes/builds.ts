@@ -1,7 +1,5 @@
 import { Router } from 'express';
 import { prisma } from '../db.js';
-import fs from 'fs';
-import path from 'path';
 import {
   requireAuth,
   optionalAuth,
@@ -14,6 +12,8 @@ import {
 } from '../services/moderation.js';
 import { applyEditRequestChanges } from '../services/buildEdits.js';
 import { upload } from '../upload.js';
+import fs from 'fs';
+import path from 'path';
 import type { Component } from '../generated/prisma/client.js';
 
 const router = Router();
@@ -29,8 +29,14 @@ const buildIncludes = {
   },
 };
 
+function getArray(value: unknown): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean) as string[];
+  return [String(value)];
+}
+
 // ==============================
-// SİSTEM TOPLA (görsel destekli, multipart/form-data)
+// SİSTEM TOPLA (görsel destekli, çoklu depolama destekli)
 // ==============================
 router.post(
   '/',
@@ -38,17 +44,10 @@ router.post(
   upload.array('images', 5),
   async (req: AuthRequest, res) => {
     try {
-      const {
-        name,
-        cpuId,
-        motherboardId,
-        ramId,
-        gpuId,
-        psuId,
-        caseId,
-        storageId,
-      } = req.body;
+      const { name, cpuId, motherboardId, ramId, gpuId, psuId, caseId } =
+        req.body;
 
+      const storageIds = getArray(req.body.storageIds);
       const isPublic = req.body.isPublic !== 'false';
 
       if (
@@ -58,29 +57,30 @@ router.post(
         !gpuId ||
         !psuId ||
         !caseId ||
-        !storageId
+        storageIds.length === 0
       ) {
         res.status(400).json({
           error:
-            "7 parça ID'sinin tamamı zorunludur (cpuId, motherboardId, ramId, gpuId, psuId, caseId, storageId).",
+            'CPU, Anakart, RAM, GPU, PSU, Kasa ve en az 1 depolama zorunludur.',
         });
         return;
       }
 
-      const ids: string[] = [
+      const singleIds: string[] = [
         cpuId,
         motherboardId,
         ramId,
         gpuId,
         psuId,
         caseId,
-        storageId,
       ];
+      const allIds = [...singleIds, ...storageIds];
+
       const components = await prisma.component.findMany({
-        where: { id: { in: ids } },
+        where: { id: { in: allIds } },
       });
 
-      if (components.length !== 7) {
+      if (components.length !== allIds.length) {
         res
           .status(404)
           .json({ error: 'Bir veya birden fazla parça bulunamadı.' });
@@ -110,10 +110,7 @@ router.post(
         return;
       }
 
-      const totalPrice = Object.values(parts).reduce(
-        (sum, part) => sum + part.price,
-        0,
-      );
+      const totalPrice = components.reduce((sum, c) => sum + c.price, 0);
 
       const files = (req.files as Express.Multer.File[] | undefined) ?? [];
       const hasImages = files.length > 0;
@@ -126,7 +123,7 @@ router.post(
           reviewStatus: hasImages ? 'PENDING' : 'APPROVED',
           userId: req.userId!,
           components: {
-            create: ids.map((componentId) => ({ componentId })),
+            create: allIds.map((componentId) => ({ componentId })),
           },
           images: hasImages
             ? {
@@ -223,7 +220,7 @@ router.get('/:id', optionalAuth, async (req: AuthRequest, res) => {
         comments: {
           where: { status: 'APPROVED' },
           include: { user: { select: { id: true, username: true } } },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: 'asc' },
         },
         images: { orderBy: { order: 'asc' } },
       },
@@ -241,7 +238,6 @@ router.get('/:id', optionalAuth, async (req: AuthRequest, res) => {
       return;
     }
 
-    // Onaylanmamış görselleri, sahibi değilse gösterme
     const visibleImages = isOwner
       ? build.images
       : build.images.filter((img) => img.status === 'APPROVED');
@@ -395,16 +391,10 @@ router.post(
         return;
       }
 
-      const {
-        description,
-        cpuId,
-        motherboardId,
-        ramId,
-        gpuId,
-        psuId,
-        caseId,
-        storageId,
-      } = req.body;
+      const { description, cpuId, motherboardId, ramId, gpuId, psuId, caseId } =
+        req.body;
+
+      const storageIds = getArray(req.body.storageIds);
 
       let notes: { componentType: string; note: string }[] = [];
       if (req.body.notes) {
@@ -415,39 +405,44 @@ router.post(
         }
       }
 
-      const proposedIds = {
-        cpuId,
-        motherboardId,
-        ramId,
-        gpuId,
-        psuId,
-        caseId,
-        storageId,
-      };
-      const hasPartChange = Object.values(proposedIds).some(Boolean);
+      const hasPartChange =
+        Boolean(cpuId) ||
+        Boolean(motherboardId) ||
+        Boolean(ramId) ||
+        Boolean(gpuId) ||
+        Boolean(psuId) ||
+        Boolean(caseId) ||
+        storageIds.length > 0;
 
       if (hasPartChange) {
         const currentByType: Record<string, string> = {};
+        const currentStorageIds: string[] = [];
         for (const bc of build.components) {
-          currentByType[bc.component.type] = bc.componentId;
+          if (bc.component.type === 'STORAGE') {
+            currentStorageIds.push(bc.componentId);
+          } else {
+            currentByType[bc.component.type] = bc.componentId;
+          }
         }
 
-        const finalIds = {
+        const finalSingleIds = {
           cpuId: cpuId || currentByType['CPU'],
           motherboardId: motherboardId || currentByType['MOTHERBOARD'],
           ramId: ramId || currentByType['RAM'],
           gpuId: gpuId || currentByType['GPU'],
           psuId: psuId || currentByType['PSU'],
           caseId: caseId || currentByType['CASE'],
-          storageId: storageId || currentByType['STORAGE'],
         };
 
-        const ids = Object.values(finalIds);
+        const finalStorageIds =
+          storageIds.length > 0 ? storageIds : currentStorageIds;
+
+        const allIds = [...Object.values(finalSingleIds), ...finalStorageIds];
         const parts = await prisma.component.findMany({
-          where: { id: { in: ids } },
+          where: { id: { in: allIds } },
         });
 
-        if (parts.length !== 7) {
+        if (parts.length !== allIds.length) {
           res
             .status(404)
             .json({ error: 'Bir veya birden fazla parça bulunamadı.' });
@@ -457,12 +452,12 @@ router.post(
         const findById = (id: string) => parts.find((c) => c.id === id)!;
 
         const result = validateBuild({
-          cpu: findById(finalIds.cpuId),
-          motherboard: findById(finalIds.motherboardId),
-          ram: findById(finalIds.ramId),
-          gpu: findById(finalIds.gpuId),
-          psu: findById(finalIds.psuId),
-          pcCase: findById(finalIds.caseId),
+          cpu: findById(finalSingleIds.cpuId),
+          motherboard: findById(finalSingleIds.motherboardId),
+          ram: findById(finalSingleIds.ramId),
+          gpu: findById(finalSingleIds.gpuId),
+          psu: findById(finalSingleIds.psuId),
+          pcCase: findById(finalSingleIds.caseId),
         });
 
         if (!result.isCompatible) {
@@ -498,7 +493,7 @@ router.post(
           gpuId: gpuId || null,
           psuId: psuId || null,
           caseId: caseId || null,
-          storageId: storageId || null,
+          storageId: storageIds,
           images: {
             create: files.map((file, i) => ({
               url: `/uploads/${file.filename}`,

@@ -220,7 +220,7 @@ router.get('/:id', optionalAuth, async (req: AuthRequest, res) => {
         comments: {
           where: { status: 'APPROVED' },
           include: { user: { select: { id: true, username: true } } },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: 'desc' },
         },
         images: { orderBy: { order: 'asc' } },
       },

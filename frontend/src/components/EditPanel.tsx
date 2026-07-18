@@ -92,6 +92,7 @@ export default function EditPanel({
   const [imageActionId, setImageActionId] = useState<string | null>(null);
   const [selection, setSelection] = useState<Selection>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [storageIds, setStorageIds] = useState<string[]>([]);
   const [description, setDescription] = useState(build.description ?? '');
   const [images, setImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -113,6 +114,12 @@ export default function EditPanel({
           if (current) initial[cat.key] = current.component.id;
         }
         setSelection(initial);
+
+        // Mevcut depolama parçalarını (birden fazla olabilir) başlangıçta seçili göster
+        const initialStorage = build.components
+          .filter((bc) => bc.component.type === 'STORAGE')
+          .map((bc) => bc.component.id);
+        setStorageIds(initialStorage);
 
         const initialNotes: Record<string, string> = {};
         for (const bc of build.components) {
@@ -207,15 +214,27 @@ export default function EditPanel({
       }
     }
 
+    // Depolama değişti mi kontrol et (sıra bağımsız karşılaştırma)
+    const currentStorageIds = build.components
+      .filter((bc) => bc.component.type === 'STORAGE')
+      .map((bc) => bc.component.id)
+      .sort();
+    const sortedStorageIds = [...storageIds].sort();
+    const storageChanged =
+      JSON.stringify(currentStorageIds) !== JSON.stringify(sortedStorageIds);
+
     const noteInputs: EditRequestNoteInput[] = Object.entries(notes)
       .filter(([, value]) => value && value.trim().length > 0)
       .map(([componentType, note]) => ({ componentType, note }));
+
+    // Sadece mevcut halinden FARKLI olan parçaları gönderiyoruz
 
     const result = await submitEditRequest(
       build.id,
       {
         description: description.trim() || undefined,
         ...changedParts,
+        storageIds: storageChanged ? storageIds : undefined,
         notes: noteInputs.length > 0 ? noteInputs : undefined,
         images: images.length > 0 ? images : undefined,
       },
@@ -336,33 +355,67 @@ export default function EditPanel({
         <p className="text-ink-muted text-sm mt-6">Parçalar yükleniyor...</p>
       ) : (
         <div className="mt-6 space-y-8">
-          {CATEGORIES.map((cat) => (
-            <div key={cat.key}>
-              <ComponentPicker
-                label={cat.label}
-                components={components.filter((c) => c.type === cat.type)}
-                selectedId={selection[cat.key] ?? null}
-                incompatibleIds={getIncompatibleIds(cat.type)}
-                onSelect={(id) =>
-                  setSelection((prev) => ({ ...prev, [cat.key]: id }))
-                }
-              />
-              <div className="mt-2">
-                <textarea
-                  value={notes[cat.type] ?? ''}
-                  onChange={(e) =>
-                    setNotes((prev) => ({
-                      ...prev,
-                      [cat.type]: e.target.value,
-                    }))
+          {CATEGORIES.map((cat) => {
+            const ofType = components.filter((c) => c.type === cat.type);
+            const compatibleList = ofType.filter((c) =>
+              isCompatible(c, selection, components),
+            );
+
+            return (
+              <div key={cat.key}>
+                <ComponentPicker
+                  label={cat.label}
+                  components={compatibleList}
+                  selectedId={selection[cat.key] ?? null}
+                  onSelect={(id) =>
+                    setSelection((prev) => ({ ...prev, [cat.key]: id }))
                   }
-                  rows={2}
-                  placeholder={`${cat.label} hakkında not ekle (opsiyonel)...`}
-                  className="w-full rounded-lg border border-hairline px-3 py-2 text-xs outline-none focus:border-trace transition-colors resize-none bg-paper"
                 />
+                <div className="mt-2">
+                  <textarea
+                    value={notes[cat.type] ?? ''}
+                    onChange={(e) =>
+                      setNotes((prev) => ({
+                        ...prev,
+                        [cat.type]: e.target.value,
+                      }))
+                    }
+                    rows={2}
+                    placeholder={`${cat.label} hakkında not ekle (opsiyonel)...`}
+                    className="w-full rounded-lg border border-hairline px-3 py-2 text-xs outline-none focus:border-trace transition-colors resize-none bg-paper"
+                  />
+                </div>
               </div>
+            );
+          })}
+
+          {/* DEPOLAMA — çoklu seçim */}
+          <div>
+            <ComponentPicker
+              label="Depolama (SATA / M.2, birden fazla seçilebilir)"
+              components={components.filter((c) => c.type === 'STORAGE')}
+              selectedIds={storageIds}
+              multiple
+              onSelect={(id) =>
+                setStorageIds((prev) =>
+                  prev.includes(id)
+                    ? prev.filter((s) => s !== id)
+                    : [...prev, id],
+                )
+              }
+            />
+            <div className="mt-2">
+              <textarea
+                value={notes['STORAGE'] ?? ''}
+                onChange={(e) =>
+                  setNotes((prev) => ({ ...prev, STORAGE: e.target.value }))
+                }
+                rows={2}
+                placeholder="Depolama hakkında not ekle (opsiyonel)..."
+                className="w-full rounded-lg border border-hairline px-3 py-2 text-xs outline-none focus:border-trace transition-colors resize-none bg-paper"
+              />
             </div>
-          ))}
+          </div>
         </div>
       )}
 

@@ -658,6 +658,7 @@ export async function submitEditRequest(
     ramId?: string;
     gpuId?: string;
     psuId?: string;
+    storageIds?: string[];
     caseId?: string;
     notes?: EditRequestNoteInput[];
     images?: File[];
@@ -673,6 +674,9 @@ export async function submitEditRequest(
   if (params.ramId) formData.append('ramId', params.ramId);
   if (params.gpuId) formData.append('gpuId', params.gpuId);
   if (params.psuId) formData.append('psuId', params.psuId);
+  if (params.storageIds && params.storageIds.length > 0) {
+    params.storageIds.forEach((id) => formData.append('storageIds', id));
+  }
   if (params.caseId) formData.append('caseId', params.caseId);
   if (params.notes && params.notes.length > 0) {
     formData.append('notes', JSON.stringify(params.notes));

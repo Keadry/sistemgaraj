@@ -947,3 +947,41 @@ export async function deleteWallComment(commentId: string, token: string) {
   });
   if (!res.ok) throw new Error('Silinemedi.');
 }
+
+export async function editComment(
+  buildId: string,
+  commentId: string,
+  content: string,
+  token: string,
+): Promise<{ comment: Comment; message: string }> {
+  const res = await fetch(
+    `${API_URL}/api/builds/${buildId}/comments/${commentId}`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ content }),
+    },
+  );
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Yorum güncellenemedi.');
+  return { comment: data.comment, message: data.message };
+}
+
+export async function deleteOwnComment(
+  buildId: string,
+  commentId: string,
+  token: string,
+) {
+  const res = await fetch(
+    `${API_URL}/api/builds/${buildId}/comments/${commentId}`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  );
+  if (!res.ok) throw new Error('Yorum silinemedi.');
+}

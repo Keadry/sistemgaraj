@@ -354,6 +354,116 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
 });
 
 // ==============================
+// YORUMU DÜZENLE (sadece yazarı)
+// ==============================
+router.patch(
+  '/:id/comments/:commentId',
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const commentId = req.params.commentId as string;
+      const { content } = req.body;
+
+      if (!content || content.trim().length === 0) {
+        res.status(400).json({ error: 'Yorum içeriği boş olamaz.' });
+        return;
+      }
+
+      const comment = await prisma.comment.findUnique({
+        where: { id: commentId },
+      });
+
+      if (!comment) {
+        res.status(404).json({ error: 'Yorum bulunamadı.' });
+        return;
+      }
+
+      if (comment.userId !== req.userId) {
+        res.status(403).json({ error: 'Bu işlem için yetkin yok.' });
+        return;
+      }
+
+      const referenceTime = comment.lastEditedAt ?? comment.createdAt;
+      const secondsSinceLastEdit =
+        (Date.now() - referenceTime.getTime()) / 1000;
+
+      if (secondsSinceLastEdit < 30) {
+        res.status(429).json({
+          error: `Çok hızlı düzenliyorsun. ${Math.ceil(
+            30 - secondsSinceLastEdit,
+          )} saniye bekle.`,
+        });
+        return;
+      }
+
+      const status = containsBannedWord(content) ? 'PENDING' : 'APPROVED';
+
+      const updated = await prisma.comment.update({
+        where: { id: commentId },
+        data: { content, status, lastEditedAt: new Date() },
+        include: { user: { select: { id: true, username: true } } },
+      });
+      res.json({
+        message:
+          status === 'PENDING'
+            ? 'Yorumun tekrar incelemeye alındı.'
+            : 'Yorum güncellendi.',
+        comment: updated,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// YORUMU SİL (yazarı, sistem sahibi veya moderatör)
+// ==============================
+router.delete(
+  '/:id/comments/:commentId',
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const buildId = req.params.id as string;
+      const commentId = req.params.commentId as string;
+
+      const comment = await prisma.comment.findUnique({
+        where: { id: commentId },
+      });
+
+      if (!comment) {
+        res.status(404).json({ error: 'Yorum bulunamadı.' });
+        return;
+      }
+
+      const build = await prisma.build.findUnique({ where: { id: buildId } });
+      const requester = await prisma.user.findUnique({
+        where: { id: req.userId! },
+      });
+
+      const canDelete =
+        comment.userId === req.userId ||
+        build?.userId === req.userId ||
+        requester?.role === 'MODERATOR' ||
+        requester?.role === 'ADMIN';
+
+      if (!canDelete) {
+        res.status(403).json({ error: 'Bu işlem için yetkin yok.' });
+        return;
+      }
+
+      await prisma.comment.delete({ where: { id: commentId } });
+
+      res.json({ message: 'Yorum silindi.' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
 // DÜZENLEME İSTEĞİ OLUŞTUR (sadece sahibi)
 // ==============================
 router.post(

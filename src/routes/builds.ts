@@ -653,6 +653,42 @@ router.post(
 );
 
 // ==============================
+// SİSTEMİ SİL (sadece sahibi)
+// ==============================
+router.delete('/:id', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const buildId = req.params.id as string;
+
+    const build = await prisma.build.findUnique({
+      where: { id: buildId },
+      include: { images: true },
+    });
+
+    if (!build) {
+      res.status(404).json({ error: 'Sistem bulunamadı.' });
+      return;
+    }
+
+    if (build.userId !== req.userId) {
+      res.status(403).json({ error: 'Bu işlem için yetkin yok.' });
+      return;
+    }
+
+    for (const img of build.images) {
+      const relativePath = img.url.startsWith('/') ? img.url.slice(1) : img.url;
+      fs.unlink(path.join(process.cwd(), relativePath), () => {});
+    }
+
+    await prisma.build.delete({ where: { id: buildId } });
+
+    res.json({ message: 'Sistem silindi.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
+
+// ==============================
 // SİSTEMİN BEKLEYEN DÜZENLEME İSTEĞİNİ GETİR (sadece sahibi)
 // ==============================
 router.get('/:id/edit-request', requireAuth, async (req: AuthRequest, res) => {

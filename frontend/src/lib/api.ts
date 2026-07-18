@@ -985,3 +985,30 @@ export async function deleteOwnComment(
   );
   if (!res.ok) throw new Error('Yorum silinemedi.');
 }
+
+export async function changeUsername(
+  userId: string,
+  username: string,
+  token: string,
+) {
+  const res = await fetch(`${API_URL}/api/admin/users/${userId}/username`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ username }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Kullanıcı adı değiştirilemedi.');
+}
+
+export async function deleteBuild(buildId: string, token: string) {
+  const res = await fetch(`${API_URL}/api/builds/${buildId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Sistem silinemedi.');
+}

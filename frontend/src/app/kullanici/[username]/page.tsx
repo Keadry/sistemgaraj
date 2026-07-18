@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
+import { deleteBuild } from '@/lib/api';
 import { use } from 'react';
 import Navbar from '@/components/Navbar';
 import BuildCard from '@/components/BuildCard';
@@ -131,6 +132,36 @@ export default function UserProfilePage({
                   <span className="absolute top-3 right-3 z-10 text-xs bg-ink text-paper rounded-full px-2.5 py-1">
                     Özel
                   </span>
+                )}
+                {isOwner && (
+                  <button
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      if (!token) return;
+                      if (
+                        !confirm(
+                          `"${build.name}" sistemini silmek istediğine emin misin? Bu işlem geri alınamaz.`,
+                        )
+                      )
+                        return;
+                      try {
+                        await deleteBuild(build.id, token);
+                        setBuilds((prev) =>
+                          prev.filter((b) => b.id !== build.id),
+                        );
+                      } catch (err) {
+                        alert(
+                          err instanceof Error
+                            ? err.message
+                            : 'Bir hata oluştu.',
+                        );
+                      }
+                    }}
+                    className="absolute bottom-3 right-3 z-10 text-xs bg-incompatible text-paper rounded-full w-7 h-7 flex items-center justify-center hover:bg-incompatible/80 transition-colors"
+                    title="Sistemi sil"
+                  >
+                    🗑
+                  </button>
                 )}
                 <BuildCard build={build} />
               </div>

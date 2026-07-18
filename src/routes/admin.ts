@@ -85,6 +85,58 @@ router.get('/users/:id', requireAuth, requireModerator, async (req, res) => {
 });
 
 // ==============================
+// KULLANICI ADINI DEĞİŞTİR (sadece admin)
+// ==============================
+router.patch(
+  '/users/:id/username',
+  requireAuth,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const targetUserId = req.params.id as string;
+      const { username } = req.body;
+
+      if (!username || typeof username !== 'string') {
+        res.status(400).json({ error: 'Geçerli bir kullanıcı adı gir.' });
+        return;
+      }
+
+      const trimmed = username.trim();
+
+      if (!/^[a-zA-Z0-9_]{3,20}$/.test(trimmed)) {
+        res.status(400).json({
+          error:
+            'Kullanıcı adı 3-20 karakter olmalı, sadece harf, rakam ve alt çizgi içerebilir.',
+        });
+        return;
+      }
+
+      const existing = await prisma.user.findFirst({
+        where: {
+          username: { equals: trimmed, mode: 'insensitive' },
+          id: { not: targetUserId },
+        },
+      });
+
+      if (existing) {
+        res.status(409).json({ error: 'Bu kullanıcı adı zaten alınmış.' });
+        return;
+      }
+
+      const user = await prisma.user.update({
+        where: { id: targetUserId },
+        data: { username: trimmed },
+      });
+
+      res.json({ message: 'Kullanıcı adı güncellendi.', user });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
 // YORUM SİL (moderatör+)
 // ==============================
 router.delete(

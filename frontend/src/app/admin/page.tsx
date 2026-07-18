@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { changeUsername } from '@/lib/api';
 import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
@@ -221,6 +222,21 @@ function UsersTab({
     }
   }
 
+  async function handleUsernameChange(userId: string) {
+    const newUsername = prompt('Yeni kullanıcı adı:');
+    if (!newUsername) return;
+
+    setActionUserId(userId);
+    try {
+      await changeUsername(userId, newUsername, token);
+      await refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+    } finally {
+      setActionUserId(null);
+    }
+  }
+
   if (isLoading) return <p className="text-ink-muted">Yükleniyor...</p>;
   if (error) return <p className="text-incompatible">{error}</p>;
 
@@ -246,13 +262,25 @@ function UsersTab({
               return (
                 <tr key={u.id} className="border-t border-hairline">
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => setSelectedUserId(u.id)}
-                      className="text-left hover:text-trace transition-colors"
-                    >
-                      <p className="font-medium">@{u.username}</p>
-                      <p className="text-ink-muted text-xs">{u.email}</p>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setSelectedUserId(u.id)}
+                        className="text-left hover:text-trace transition-colors"
+                      >
+                        <p className="font-medium">@{u.username}</p>
+                        <p className="text-ink-muted text-xs">{u.email}</p>
+                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleUsernameChange(u.id)}
+                          disabled={actionUserId === u.id}
+                          title="Kullanıcı adını değiştir"
+                          className="text-ink-muted hover:text-trace transition-colors disabled:opacity-50"
+                        >
+                          ✎
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     {isAdmin && u.id !== currentUserId ? (

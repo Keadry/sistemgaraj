@@ -775,14 +775,18 @@ function EditRequestsTab({ token }: { token: string }) {
               <a
                 href={`/sistemler/${req.build.id}`}
                 target="_blank"
-                className="font-medium text-sm text-trace
-                hover:underline"
+                className="font-medium text-sm text-trace hover:underline"
               >
                 {req.build.name}
               </a>
               <p className="text-xs text-ink-muted">
                 @{req.build.user.username}
               </p>
+              {req.name && req.name !== req.build.name && (
+                <p className="text-sm text-trace mt-1">
+                  Yeni isim: <span className="font-medium">{req.name}</span>
+                </p>
+              )}
             </div>
             <div className="flex gap-2">
               <button

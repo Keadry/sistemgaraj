@@ -391,8 +391,16 @@ router.post(
         return;
       }
 
-      const { description, cpuId, motherboardId, ramId, gpuId, psuId, caseId } =
-        req.body;
+      const {
+        name,
+        description,
+        cpuId,
+        motherboardId,
+        ramId,
+        gpuId,
+        psuId,
+        caseId,
+      } = req.body;
 
       const storageIds = getArray(req.body.storageIds);
 
@@ -476,8 +484,9 @@ router.post(
       const descriptionBanned = description
         ? containsBannedWord(description)
         : false;
+      const nameBanned = name ? containsBannedWord(name) : false;
       const hasBannedContent =
-        anyContainsBannedWord(noteTexts) || descriptionBanned;
+        anyContainsBannedWord(noteTexts) || descriptionBanned || nameBanned;
 
       const requiresReview = hasImages || hasBannedContent;
 
@@ -486,6 +495,7 @@ router.post(
           buildId,
           status: requiresReview ? 'PENDING' : 'APPROVED',
           reviewedAt: requiresReview ? null : new Date(),
+          name: name || null,
           description: description || null,
           cpuId: cpuId || null,
           motherboardId: motherboardId || null,

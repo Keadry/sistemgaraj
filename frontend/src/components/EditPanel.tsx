@@ -93,6 +93,7 @@ export default function EditPanel({
   const [selection, setSelection] = useState<Selection>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [storageIds, setStorageIds] = useState<string[]>([]);
+  const [name, setName] = useState(build.name);
   const [description, setDescription] = useState(build.description ?? '');
   const [images, setImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -232,6 +233,8 @@ export default function EditPanel({
     const result = await submitEditRequest(
       build.id,
       {
+        name:
+          name.trim() && name.trim() !== build.name ? name.trim() : undefined,
         description: description.trim() || undefined,
         ...changedParts,
         storageIds: storageChanged ? storageIds : undefined,
@@ -258,7 +261,15 @@ export default function EditPanel({
       <h3 className="font-[family-name:var(--font-display)] text-lg font-semibold mb-4">
         Sistemi Düzenle
       </h3>
-
+      <div className="mb-5">
+        <label className="block text-sm font-medium mb-1.5">Sistem Adı</label>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full rounded-xl border border-hairline px-4 py-2.5 text-sm outline-none focus:border-trace transition-colors bg-paper"
+        />
+      </div>
       <div>
         <label className="block text-sm font-medium mb-1.5">Açıklama</label>
         <textarea

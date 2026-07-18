@@ -652,6 +652,7 @@ export type EditRequestResult = {
 export async function submitEditRequest(
   buildId: string,
   params: {
+    name?: string;
     description?: string;
     cpuId?: string;
     motherboardId?: string;
@@ -667,6 +668,7 @@ export async function submitEditRequest(
 ): Promise<EditRequestResult> {
   const formData = new FormData();
 
+  if (params.name) formData.append('name', params.name);
   if (params.description) formData.append('description', params.description);
   if (params.cpuId) formData.append('cpuId', params.cpuId);
   if (params.motherboardId)
@@ -782,6 +784,7 @@ export async function rejectNewBuild(buildId: string, token: string) {
 export type AdminEditRequest = {
   id: string;
   status: 'APPROVED' | 'PENDING' | 'REJECTED';
+  name: string | null;
   description: string | null;
   cpuId: string | null;
   motherboardId: string | null;

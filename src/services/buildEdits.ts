@@ -2,6 +2,7 @@ import { prisma } from '../db.js';
 
 type EditRequestData = {
   id: string;
+  name: string | null;
   description: string | null;
   cpuId: string | null;
   motherboardId: string | null;
@@ -105,11 +106,11 @@ export async function applyEditRequestChanges(
     where: { id: buildId },
     data: {
       totalPrice,
+      name: editRequest.name ?? build.name,
       description: editRequest.description ?? build.description,
       reviewStatus: 'APPROVED',
     },
   });
-
   const existingImageCount = await tx.buildImage.count({ where: { buildId } });
 
   for (let i = 0; i < editRequest.images.length; i++) {

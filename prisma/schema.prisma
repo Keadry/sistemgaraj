@@ -191,6 +191,7 @@ model Comment {
 model BuildEditRequest {
   id          String        @id @default(cuid())
   status      CommentStatus @default(PENDING)
+  name        String?
   description String?
   createdAt   DateTime      @default(now())
   reviewedAt  DateTime?

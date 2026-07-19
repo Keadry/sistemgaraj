@@ -127,7 +127,7 @@ model Build {
 model BuildComponent {
   id String @id @default(cuid())
 
-  build   Build  @relation(fields: [buildId], references: [id])
+  build   Build  @relation(fields: [buildId], references: [id], onDelete: Cascade)
   buildId String
 
   component   Component @relation(fields: [componentId], references: [id])
@@ -151,7 +151,7 @@ model BuildImage {
   order     Int           @default(0)
   createdAt DateTime      @default(now())
 
-  build   Build  @relation(fields: [buildId], references: [id])
+  build   Build  @relation(fields: [buildId], references: [id], onDelete: Cascade)
   buildId String
 }
 
@@ -165,7 +165,7 @@ model Like {
   user   User   @relation(fields: [userId], references: [id])
   userId String
 
-  build   Build  @relation(fields: [buildId], references: [id])
+  build   Build  @relation(fields: [buildId], references: [id], onDelete: Cascade)
   buildId String
 
   @@unique([userId, buildId]) // Aynı kullanıcı aynı sistemi 2 kere beğenemez
@@ -184,7 +184,7 @@ model Comment {
   user   User   @relation(fields: [userId], references: [id])
   userId String
 
-  build   Build  @relation(fields: [buildId], references: [id])
+  build   Build  @relation(fields: [buildId], references: [id], onDelete: Cascade)
   buildId String
 }
 
@@ -197,7 +197,7 @@ model BuildEditRequest {
   createdAt   DateTime      @default(now())
   reviewedAt  DateTime?
 
-  build   Build  @relation(fields: [buildId], references: [id])
+  build   Build  @relation(fields: [buildId], references: [id], onDelete: Cascade)
   buildId String
 
   cpuId         String?
@@ -217,7 +217,7 @@ model BuildEditRequestImage {
   url   String
   order Int    @default(0)
 
-  request   BuildEditRequest @relation(fields: [requestId], references: [id])
+  request   BuildEditRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
   requestId String
 }
 
@@ -226,7 +226,7 @@ model BuildEditRequestNote {
   componentType ComponentType
   note          String
 
-  request   BuildEditRequest @relation(fields: [requestId], references: [id])
+  request   BuildEditRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
   requestId String
 }
 

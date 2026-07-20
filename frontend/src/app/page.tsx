@@ -1,6 +1,7 @@
 import { getFeed } from '@/lib/api';
 import BuildCard from '@/components/BuildCard';
 import Navbar from '@/components/Navbar';
+import FeaturedBuildCard from '@/components/FeaturedBuildCard';
 
 export default async function Home() {
   const [featuredBuilds, allBuilds] = await Promise.all([
@@ -30,7 +31,7 @@ export default async function Home() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {' '}
             {featuredBuilds.map((build) => (
-              <BuildCard key={build.id} build={build} />
+              <FeaturedBuildCard key={build.id} build={build} />
             ))}
           </div>
         </section>
@@ -56,7 +57,7 @@ export default async function Home() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {' '}
             {communityBuilds.map((build) => (
               <BuildCard key={build.id} build={build} />

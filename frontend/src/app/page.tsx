@@ -2,6 +2,7 @@ import { getFeed } from '@/lib/api';
 import BuildCard from '@/components/BuildCard';
 import Navbar from '@/components/Navbar';
 import FeaturedBuildCard from '@/components/FeaturedBuildCard';
+import Link from 'next/link';
 
 export default async function Home() {
   const [featuredBuilds, allBuilds] = await Promise.all([
@@ -38,15 +39,20 @@ export default async function Home() {
       )}
 
       {/* TOPLULUK SİSTEMLERİ */}
-      <section className="px-6 md:px-12 pt-10 pb-8">
-        <h2 className="font-[family-name:var(--font-display)] text-xl md:text-2xl font-semibold tracking-tight">
-          Topluluk Sistemleri
-        </h2>
-        <p className="text-ink-muted mt-2">
-          {communityBuilds.length} sistem paylaşıldı - Kullanıcıların parça
-          listelerini, fotoğraflarını ve genel toplama deneyimlerini gösteren
-          binlerce bilgisayar toplama örneğine göz atın.
-        </p>
+      <section className="px-6 md:px-12 pt-10 pb-8 flex items-end justify-between gap-4">
+        <div>
+          <h2 className="font-[family-name:var(--font-display)] text-xl md:text-2xl font-semibold tracking-tight">
+            Topluluk Sistemleri
+          </h2>
+        </div>
+        {communityBuilds.length > 8 && (
+          <Link
+            href="/sistemler"
+            className="text-sm text-trace hover:underline whitespace-nowrap shrink-0"
+          >
+            Tümünü Gör →
+          </Link>
+        )}
       </section>
 
       <section className="px-6 md:px-12 pb-24">
@@ -57,12 +63,23 @@ export default async function Home() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {' '}
-            {communityBuilds.map((build) => (
-              <BuildCard key={build.id} build={build} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {communityBuilds.slice(0, 10).map((build) => (
+                <BuildCard key={build.id} build={build} />
+              ))}
+            </div>
+            {communityBuilds.length > 8 && (
+              <div className="flex justify-center mt-8">
+                <Link
+                  href="/sistemler"
+                  className="rounded-lg border border-hairline px-6 py-2.5 text-sm font-medium hover:border-trace transition-colors"
+                >
+                  Tüm Sistemleri Gör
+                </Link>
+              </div>
+            )}
+          </>
         )}
       </section>
     </main>

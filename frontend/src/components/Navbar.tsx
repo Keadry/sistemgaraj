@@ -18,6 +18,9 @@ export default function Navbar() {
           <Link href="/" className="hover:text-ink transition-colors">
             Keşfet
           </Link>
+          <Link href="/sistemler" className="hover:text-ink transition-colors">
+            Sistemler
+          </Link>
           <Link
             href="/sistem-topla"
             className="hover:text-ink transition-colors"

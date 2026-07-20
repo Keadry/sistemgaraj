@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
 import { deleteBuild } from '@/lib/api';
+import { getFeed } from '@/lib/api';
 import { use } from 'react';
 import Navbar from '@/components/Navbar';
 import BuildCard from '@/components/BuildCard';
@@ -47,7 +48,13 @@ export default function UserProfilePage({
     getUserProfileWithWall(username, token)
       .then((data) => {
         setProfile(data.user);
-        setBuilds(data.builds);
+        const sorted = [...data.builds].sort((a, b) => {
+          if (a.isFeatured && !b.isFeatured) return -1;
+          if (!a.isFeatured && b.isFeatured) return 1;
+          return 0;
+        });
+        setBuilds(sorted);
+
         setIsOwner(data.isOwner);
         setWallComments(data.wallComments);
       })

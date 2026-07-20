@@ -1,5 +1,27 @@
 @import 'tailwindcss';
 
+@keyframes slideInRight {
+  from {
+    opacity: 0.9;
+    transform: translateX(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0.9;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @theme {
   --color-paper: #ffffff;
   --color-surface: #f4f6f8;

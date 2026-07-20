@@ -10,6 +10,7 @@ import ProfileAvatar from '@/components/ProfileAvatar';
 import ProfileCover from '@/components/ProfileCover';
 import { useAuth } from '@/lib/auth-context';
 import ProfileWall from '@/components/ProfileWall';
+import FeaturedBuildCard from '@/components/FeaturedBuildCard';
 import {
   getUserProfileWithWall,
   type Build,
@@ -110,7 +111,7 @@ export default function UserProfilePage({
         </div>
 
         {isOwner && (
-          <p className="text-xs text-ink-muted mt-3 px-2">
+          <p className="text-xs text-ink-muted mt-3 p-3">
             Özel sistemlerin de dahil edilerek gösteriliyor — sadece sen
             görebiliyorsun.
           </p>
@@ -125,7 +126,7 @@ export default function UserProfilePage({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 mt-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {' '}
             {builds.map((build) => (
               <div key={build.id} className="relative">

@@ -56,6 +56,8 @@ const components = [
     socket: 'AM5',
     ramType: 'DDR5',
     formFactor: 'Micro-ATX',
+    ramSlots: 4,
+    m2Slots: 2,
   },
   {
     name: 'B650M DS3H',
@@ -65,6 +67,8 @@ const components = [
     socket: 'AM5',
     ramType: 'DDR5',
     formFactor: 'Micro-ATX',
+    ramSlots: 4,
+    m2Slots: 2,
   },
   {
     name: 'PRO B650M-E',
@@ -74,6 +78,8 @@ const components = [
     socket: 'AM5',
     ramType: 'DDR5',
     formFactor: 'Micro-ATX',
+    ramSlots: 4,
+    m2Slots: 2,
   },
   {
     name: 'Prime B760M-K',
@@ -83,6 +89,8 @@ const components = [
     socket: 'LGA1700',
     ramType: 'DDR4',
     formFactor: 'Micro-ATX',
+    ramSlots: 4,
+    m2Slots: 1,
   },
   {
     name: 'B550M DS3H',
@@ -92,6 +100,8 @@ const components = [
     socket: 'AM4',
     ramType: 'DDR4',
     formFactor: 'Micro-ATX',
+    ramSlots: 2,
+    m2Slots: 1,
   },
 
   // ==================== RAM ====================
@@ -192,12 +202,15 @@ const components = [
   },
 
   // ==================== KASA ====================
+  // ==================== KASA ====================
+  // ==================== KASA ====================
   {
     name: 'DLM21 Micro-ATX',
     brand: 'Darkflash',
     type: ComponentType.CASE,
     price: 1499,
     formFactor: 'Micro-ATX',
+    sataSlots: 2,
   },
   {
     name: 'H510 ATX',
@@ -205,6 +218,7 @@ const components = [
     type: ComponentType.CASE,
     price: 4499,
     formFactor: 'ATX',
+    sataSlots: 3,
   },
   {
     name: 'Lancool 215 ATX',
@@ -212,6 +226,7 @@ const components = [
     type: ComponentType.CASE,
     price: 4999,
     formFactor: 'ATX',
+    sataSlots: 4,
   },
   {
     name: 'MasterBox Q300L Micro-ATX',
@@ -219,6 +234,7 @@ const components = [
     type: ComponentType.CASE,
     price: 2199,
     formFactor: 'Micro-ATX',
+    sataSlots: 2,
   },
 
   // ==================== DEPOLAMA ====================

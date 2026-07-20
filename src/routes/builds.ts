@@ -1,11 +1,15 @@
 import { Router } from 'express';
 import { prisma } from '../db.js';
 import {
+  validateBuild,
+  checkRamSlotCompatibility,
+  checkStorageSlotCompatibility,
+} from '../services/compatibility.js';
+import {
   requireAuth,
   optionalAuth,
   type AuthRequest,
 } from '../middleware/auth.js';
-import { validateBuild } from '../services/compatibility.js';
 import {
   containsBannedWord,
   anyContainsBannedWord,
@@ -106,6 +110,24 @@ router.post(
         res.status(422).json({
           error: 'Seçilen parçalar uyumlu değil.',
           issues: result.issues,
+        });
+        return;
+      }
+
+      const storageComponents = components.filter((c) => c.type === 'STORAGE');
+      const slotIssues = [
+        ...checkRamSlotCompatibility(parts.motherboard, 1), // Şimdilik tek RAM modülü destekleniyor, ileride çoklu RAM eklenince burası güncellenecek
+        ...checkStorageSlotCompatibility(
+          parts.motherboard,
+          parts.pcCase,
+          storageComponents,
+        ),
+      ];
+
+      if (slotIssues.some((i) => i.level === 'error')) {
+        res.status(422).json({
+          error: 'Seçilen parçalar uyumlu değil.',
+          issues: slotIssues,
         });
         return;
       }

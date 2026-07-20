@@ -182,3 +182,68 @@ export function validateBuild(parts: {
     issues,
   };
 }
+
+// ==============================
+// 5) RAM SLOT SAYISI KONTROLÜ (Anakart <-> Seçilen RAM Adedi)
+// ==============================
+export function checkRamSlotCompatibility(
+  motherboard: Component,
+  ramCount: number,
+): CompatibilityIssue[] {
+  const issues: CompatibilityIssue[] = [];
+
+  if (!motherboard.ramSlots) {
+    return issues;
+  }
+
+  if (ramCount > motherboard.ramSlots) {
+    issues.push({
+      level: 'error',
+      message: `Anakartın (${motherboard.ramSlots} RAM slotu) seçtiğin ${ramCount} RAM modülünü kaldıramaz.`,
+    });
+  }
+
+  return issues;
+}
+
+// ==============================
+// 6) DEPOLAMA SLOT SAYISI KONTROLÜ (Anakart M.2 + Kasa SATA <-> Seçilen Depolama)
+// ==============================
+export function checkStorageSlotCompatibility(
+  motherboard: Component,
+  pcCase: Component,
+  storageComponents: Component[],
+): CompatibilityIssue[] {
+  const issues: CompatibilityIssue[] = [];
+
+  const m2Count = storageComponents.filter(
+    (c) =>
+      c.name.toLowerCase().includes('m.2') ||
+      c.name.toLowerCase().includes('nvme'),
+  ).length;
+  const sataCount = storageComponents.filter(
+    (c) =>
+      !c.name.toLowerCase().includes('m.2') &&
+      !c.name.toLowerCase().includes('nvme'),
+  ).length;
+
+  if (motherboard.m2Slots !== null && motherboard.m2Slots !== undefined) {
+    if (m2Count > motherboard.m2Slots) {
+      issues.push({
+        level: 'error',
+        message: `Anakartın (${motherboard.m2Slots} M.2 slotu) seçtiğin ${m2Count} M.2 SSD'yi kaldıramaz.`,
+      });
+    }
+  }
+
+  if (pcCase.sataSlots !== null && pcCase.sataSlots !== undefined) {
+    if (sataCount > pcCase.sataSlots) {
+      issues.push({
+        level: 'error',
+        message: `Kasanın (${pcCase.sataSlots} SATA yuvası) seçtiğin ${sataCount} SATA diski kaldıramaz.`,
+      });
+    }
+  }
+
+  return issues;
+}

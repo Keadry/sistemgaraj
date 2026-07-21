@@ -26,6 +26,7 @@ export default function ComponentPicker({
   selectedId,
   selectedIds,
   multiple = false,
+  incompatibleIds,
   onSelect,
 }: {
   label: string;
@@ -33,6 +34,7 @@ export default function ComponentPicker({
   selectedId?: string | null;
   selectedIds?: string[];
   multiple?: boolean;
+  incompatibleIds?: Set<string>;
   onSelect: (id: string) => void;
 }) {
   const isSelected = (id: string) =>
@@ -53,15 +55,20 @@ export default function ComponentPicker({
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {components.map((component) => {
             const selected = isSelected(component.id);
+            const isIncompatible = incompatibleIds?.has(component.id) ?? false;
+
             return (
               <button
                 key={component.id}
                 type="button"
+                disabled={isIncompatible}
                 onClick={() => onSelect(component.id)}
                 className={`text-left rounded-xl border p-4 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
-                  selected
-                    ? 'border-trace bg-trace/5'
-                    : 'border-hairline hover:border-ink-muted'
+                  isIncompatible
+                    ? 'border-hairline opacity-40 cursor-not-allowed'
+                    : selected
+                      ? 'border-trace bg-trace/5'
+                      : 'border-hairline hover:border-ink-muted'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -78,6 +85,9 @@ export default function ComponentPicker({
                 <p className="font-[family-name:var(--font-mono)] text-sm font-semibold mt-2">
                   {formatPrice(component.price)}
                 </p>
+                {isIncompatible && (
+                  <p className="text-xs text-incompatible mt-1.5">Uyumsuz</p>
+                )}
               </button>
             );
           })}

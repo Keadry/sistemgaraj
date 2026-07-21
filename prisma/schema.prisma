@@ -54,6 +54,7 @@ model User {
   builds   Build[]
   likes    Like[]
   comments Comment[]
+  buildCommentLikes CommentLike[]
 
   profileCommentsAuthored ProfileComment[] @relation("ProfileCommentAuthor")
   profileCommentsReceived ProfileComment[] @relation("ProfileCommentTarget")
@@ -177,17 +178,36 @@ model Like {
 // YORUM
 // ==============================
 model Comment {
-  id        String        @id @default(cuid())
-  content   String
-  status    CommentStatus @default(APPROVED)
+  id           String        @id @default(cuid())
+  content      String
+  status       CommentStatus @default(APPROVED)
+  createdAt    DateTime      @default(now())
   lastEditedAt DateTime?
-  createdAt DateTime      @default(now())
 
   user   User   @relation(fields: [userId], references: [id])
   userId String
 
   build   Build  @relation(fields: [buildId], references: [id], onDelete: Cascade)
   buildId String
+
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId String?
+  replies  Comment[] @relation("CommentReplies")
+
+  likes CommentLike[]
+}
+
+model CommentLike {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String
+
+  @@unique([userId, commentId])
 }
 
 

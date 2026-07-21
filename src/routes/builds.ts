@@ -235,8 +235,31 @@ router.get('/:id', optionalAuth, async (req: AuthRequest, res) => {
         components: { include: { component: true } },
         likes: true,
         comments: {
-          where: { status: 'APPROVED' },
-          include: { user: { select: { id: true, username: true } } },
+          where: { status: 'APPROVED', parentId: null },
+          include: {
+            user: { select: { id: true, username: true, avatarUrl: true } },
+            likes: true,
+            replies: {
+              where: { status: 'APPROVED' },
+              include: {
+                user: {
+                  select: { id: true, username: true, avatarUrl: true },
+                },
+                likes: true,
+                replies: {
+                  where: { status: 'APPROVED' },
+                  include: {
+                    user: {
+                      select: { id: true, username: true, avatarUrl: true },
+                    },
+                    likes: true,
+                  },
+                  orderBy: { createdAt: 'asc' },
+                },
+              },
+              orderBy: { createdAt: 'asc' },
+            },
+          },
           orderBy: { createdAt: 'asc' },
         },
         images: { orderBy: { order: 'asc' } },
@@ -353,7 +376,7 @@ router.delete('/:id/like', requireAuth, async (req: AuthRequest, res) => {
 router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
   try {
     const buildId = req.params.id as string;
-    const { content } = req.body;
+    const { content, parentId } = req.body;
 
     if (!content || content.trim().length === 0) {
       res.status(400).json({ error: 'Yorum içeriği boş olamaz.' });
@@ -388,9 +411,28 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
 
     const status = containsBannedWord(content) ? 'PENDING' : 'APPROVED';
 
+    if (parentId) {
+      const parent = await prisma.comment.findUnique({
+        where: { id: parentId },
+      });
+      if (!parent || parent.buildId !== buildId) {
+        res.status(400).json({ error: 'Geçersiz yanıt hedefi.' });
+        return;
+      }
+    }
+
     const comment = await prisma.comment.create({
-      data: { content, userId: req.userId!, buildId, status },
-      include: { user: { select: { id: true, username: true } } },
+      data: {
+        content,
+        userId: req.userId!,
+        buildId,
+        status,
+        parentId: parentId || null,
+      },
+      include: {
+        user: { select: { id: true, username: true, avatarUrl: true } },
+        likes: true,
+      },
     });
 
     res.status(201).json({
@@ -819,6 +861,59 @@ router.delete(
       await prisma.buildImage.delete({ where: { id: imageId } });
 
       res.json({ message: 'Görsel silindi.' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// YORUMU BEĞEN
+// ==============================
+router.post(
+  '/:id/comments/:commentId/like',
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const commentId = req.params.commentId as string;
+
+      const existing = await prisma.commentLike.findUnique({
+        where: { userId_commentId: { userId: req.userId!, commentId } },
+      });
+
+      if (existing) {
+        res.status(409).json({ error: 'Bu yorumu zaten beğendin.' });
+        return;
+      }
+
+      await prisma.commentLike.create({
+        data: { userId: req.userId!, commentId },
+      });
+
+      res.status(201).json({ message: 'Beğenildi.' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// YORUM BEĞENİSİNİ GERİ AL
+// ==============================
+router.delete(
+  '/:id/comments/:commentId/like',
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const commentId = req.params.commentId as string;
+
+      await prisma.commentLike.delete({
+        where: { userId_commentId: { userId: req.userId!, commentId } },
+      });
+
+      res.json({ message: 'Beğeni geri alındı.' });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Sunucu hatası.' });

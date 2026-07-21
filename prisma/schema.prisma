@@ -204,7 +204,7 @@ model BuildEditRequest {
 
   cpuId         String?
   motherboardId String?
-  ramId         String?
+  ramIds        String[] @default([])
   gpuId         String?
   psuId         String?
   caseId        String?

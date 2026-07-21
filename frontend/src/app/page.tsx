@@ -29,7 +29,7 @@ export default async function Home() {
           <p className="text-ink-muted mb-6">
             Editör seçimi — SistemGaraj ekibinin öne çıkardığı sistemler.
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
             {' '}
             {featuredBuilds.map((build) => (
               <FeaturedBuildCard key={build.id} build={build} />
@@ -64,7 +64,7 @@ export default async function Home() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
               {communityBuilds.slice(0, 10).map((build) => (
                 <BuildCard key={build.id} build={build} />
               ))}

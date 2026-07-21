@@ -6,10 +6,10 @@ type EditRequestData = {
   description: string | null;
   cpuId: string | null;
   motherboardId: string | null;
-  ramId: string | null;
   gpuId: string | null;
   psuId: string | null;
   caseId: string | null;
+  ramIds: string[];
   storageId: string[];
   images: { url: string; order: number }[];
   notes: { componentType: string; note: string }[];
@@ -31,11 +31,14 @@ export async function applyEditRequestChanges(
 
   const currentByType: Record<string, string> = {};
   const currentNoteByType: Record<string, string | null> = {};
-  const currentStorageId: string[] = [];
+  const currentStorageIds: string[] = [];
+  const currentRamIds: string[] = [];
 
   for (const bc of build.components) {
     if (bc.component.type === 'STORAGE') {
-      currentStorageId.push(bc.componentId);
+      currentStorageIds.push(bc.componentId);
+    } else if (bc.component.type === 'RAM') {
+      currentRamIds.push(bc.componentId);
     } else {
       currentByType[bc.component.type] = bc.componentId;
     }
@@ -45,17 +48,22 @@ export async function applyEditRequestChanges(
   const finalSingleIds: Record<string, string> = {
     CPU: editRequest.cpuId || currentByType['CPU'],
     MOTHERBOARD: editRequest.motherboardId || currentByType['MOTHERBOARD'],
-    RAM: editRequest.ramId || currentByType['RAM'],
     GPU: editRequest.gpuId || currentByType['GPU'],
     PSU: editRequest.psuId || currentByType['PSU'],
     CASE: editRequest.caseId || currentByType['CASE'],
   };
 
+  const finalRamIds =
+    editRequest.ramIds.length > 0 ? editRequest.ramIds : currentRamIds;
+
   const finalStorageIds =
-    editRequest.storageId.length > 0 ? editRequest.storageId : currentStorageId;
+    editRequest.storageId.length > 0
+      ? editRequest.storageId
+      : currentStorageIds;
 
   const allComponentIds = [
     ...Object.values(finalSingleIds),
+    ...finalRamIds,
     ...finalStorageIds,
   ];
 
@@ -96,6 +104,24 @@ export async function applyEditRequestChanges(
             ? storageNote
               ? storageNote.note
               : (currentNoteByType['STORAGE'] ?? null)
+            : null,
+        noteStatus: 'APPROVED',
+      },
+    });
+  }
+
+  const ramNote = editRequest.notes.find((n) => n.componentType === 'RAM');
+
+  for (let i = 0; i < finalRamIds.length; i++) {
+    await tx.buildComponent.create({
+      data: {
+        buildId,
+        componentId: finalRamIds[i],
+        note:
+          i === 0
+            ? ramNote
+              ? ramNote.note
+              : (currentNoteByType['RAM'] ?? null)
             : null,
         noteStatus: 'APPROVED',
       },

@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import ComponentPicker from './ComponentPicker';
-import { setExistingImageMain, deleteExistingImage } from '@/lib/api';
 import {
   getComponents,
   submitEditRequest,
+  setExistingImageMain,
+  deleteExistingImage,
   type Build,
   type Component,
   type EditRequestNoteInput,
@@ -16,7 +17,6 @@ import {
 const CATEGORIES: { type: string; label: string; key: string }[] = [
   { type: 'CPU', label: 'İşlemci (CPU)', key: 'cpuId' },
   { type: 'MOTHERBOARD', label: 'Anakart', key: 'motherboardId' },
-  { type: 'RAM', label: 'RAM', key: 'ramId' },
   { type: 'GPU', label: 'Ekran Kartı', key: 'gpuId' },
   { type: 'PSU', label: 'Güç Kaynağı', key: 'psuId' },
   { type: 'CASE', label: 'Kasa', key: 'caseId' },
@@ -33,6 +33,7 @@ type Selection = Record<string, string>;
 function isCompatible(
   component: Component,
   selection: Selection,
+  ramTypeSelected: string | null,
   components: Component[],
 ): boolean {
   const byId = (id: string | undefined) =>
@@ -40,7 +41,6 @@ function isCompatible(
 
   const cpu = byId(selection.cpuId);
   const motherboard = byId(selection.motherboardId);
-  const ram = byId(selection.ramId);
   const pcCase = byId(selection.caseId);
 
   if (component.type === 'CPU' && motherboard) {
@@ -49,7 +49,7 @@ function isCompatible(
 
   if (component.type === 'MOTHERBOARD') {
     if (cpu && component.socket !== cpu.socket) return false;
-    if (ram && component.ramType !== ram.ramType) return false;
+    if (ramTypeSelected && component.ramType !== ramTypeSelected) return false;
     if (pcCase && component.formFactor && pcCase.formFactor) {
       if (
         FORM_FACTOR_SIZE[component.formFactor] >
@@ -57,10 +57,6 @@ function isCompatible(
       )
         return false;
     }
-  }
-
-  if (component.type === 'RAM' && motherboard) {
-    if (component.ramType !== motherboard.ramType) return false;
   }
 
   if (component.type === 'CASE' && motherboard) {
@@ -89,10 +85,10 @@ export default function EditPanel({
 
   const [components, setComponents] = useState<Component[]>([]);
   const [isLoadingComponents, setIsLoadingComponents] = useState(true);
-  const [imageActionId, setImageActionId] = useState<string | null>(null);
   const [selection, setSelection] = useState<Selection>({});
-  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [ramIds, setRamIds] = useState<string[]>([]);
   const [storageIds, setStorageIds] = useState<string[]>([]);
+  const [notes, setNotes] = useState<Record<string, string>>({});
   const [name, setName] = useState(build.name);
   const [description, setDescription] = useState(build.description ?? '');
   const [images, setImages] = useState<File[]>([]);
@@ -100,13 +96,13 @@ export default function EditPanel({
   const [error, setError] = useState<string | null>(null);
   const [issues, setIssues] = useState<CompatibilityIssue[]>([]);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [imageActionId, setImageActionId] = useState<string | null>(null);
 
   useEffect(() => {
     getComponents()
       .then((all) => {
         setComponents(all);
 
-        // Başlangıçta mevcut parçaları seçili göster
         const initial: Selection = {};
         for (const cat of CATEGORIES) {
           const current = build.components.find(
@@ -116,7 +112,11 @@ export default function EditPanel({
         }
         setSelection(initial);
 
-        // Mevcut depolama parçalarını (birden fazla olabilir) başlangıçta seçili göster
+        const initialRam = build.components
+          .filter((bc) => bc.component.type === 'RAM')
+          .map((bc) => bc.component.id);
+        setRamIds(initialRam);
+
         const initialStorage = build.components
           .filter((bc) => bc.component.type === 'STORAGE')
           .map((bc) => bc.component.id);
@@ -131,7 +131,11 @@ export default function EditPanel({
       .finally(() => setIsLoadingComponents(false));
   }, [build]);
 
-  // Uyumsuz hale gelen seçimleri otomatik temizle
+  const ramTypeSelected =
+    ramIds.length > 0
+      ? (components.find((c) => c.id === ramIds[0])?.ramType ?? null)
+      : null;
+
   useEffect(() => {
     if (components.length === 0) return;
 
@@ -143,7 +147,10 @@ export default function EditPanel({
         const currentId = prev[cat.key];
         if (!currentId) continue;
         const component = components.find((c) => c.id === currentId);
-        if (component && !isCompatible(component, prev, components)) {
+        if (
+          component &&
+          !isCompatible(component, prev, ramTypeSelected, components)
+        ) {
           delete next[cat.key];
           changed = true;
         }
@@ -155,18 +162,24 @@ export default function EditPanel({
   }, [
     selection.cpuId,
     selection.motherboardId,
-    selection.ramId,
     selection.caseId,
+    ramTypeSelected,
     components,
   ]);
 
   function getIncompatibleIds(type: string): Set<string> {
     const ofType = components.filter((c) => c.type === type);
     const incompatible = ofType.filter(
-      (c) => !isCompatible(c, selection, components),
+      (c) => !isCompatible(c, selection, ramTypeSelected, components),
     );
     return new Set(incompatible.map((c) => c.id));
   }
+
+  const motherboard = components.find((c) => c.id === selection.motherboardId);
+  const ramComponents = components.filter((c) => c.type === 'RAM');
+  const compatibleRam = motherboard
+    ? ramComponents.filter((c) => c.ramType === motherboard.ramType)
+    : ramComponents;
 
   async function handleSetMain(imageId: string) {
     if (!token) return;
@@ -203,7 +216,6 @@ export default function EditPanel({
     setIssues([]);
     setSuccessMessage(null);
 
-    // Sadece mevcut halinden FARKLI olan parçaları gönderiyoruz
     const changedParts: Record<string, string> = {};
     for (const cat of CATEGORIES) {
       const current = build.components.find(
@@ -215,7 +227,14 @@ export default function EditPanel({
       }
     }
 
-    // Depolama değişti mi kontrol et (sıra bağımsız karşılaştırma)
+    const currentRamIds = build.components
+      .filter((bc) => bc.component.type === 'RAM')
+      .map((bc) => bc.component.id)
+      .sort();
+    const sortedRamIds = [...ramIds].sort();
+    const ramChanged =
+      JSON.stringify(currentRamIds) !== JSON.stringify(sortedRamIds);
+
     const currentStorageIds = build.components
       .filter((bc) => bc.component.type === 'STORAGE')
       .map((bc) => bc.component.id)
@@ -228,8 +247,6 @@ export default function EditPanel({
       .filter(([, value]) => value && value.trim().length > 0)
       .map(([componentType, note]) => ({ componentType, note }));
 
-    // Sadece mevcut halinden FARKLI olan parçaları gönderiyoruz
-
     const result = await submitEditRequest(
       build.id,
       {
@@ -237,6 +254,7 @@ export default function EditPanel({
           name.trim() && name.trim() !== build.name ? name.trim() : undefined,
         description: description.trim() || undefined,
         ...changedParts,
+        ramIds: ramChanged ? ramIds : undefined,
         storageIds: storageChanged ? storageIds : undefined,
         notes: noteInputs.length > 0 ? noteInputs : undefined,
         images: images.length > 0 ? images : undefined,
@@ -261,6 +279,7 @@ export default function EditPanel({
       <h3 className="font-[family-name:var(--font-display)] text-lg font-semibold mb-4">
         Sistemi Düzenle
       </h3>
+
       <div className="mb-5">
         <label className="block text-sm font-medium mb-1.5">Sistem Adı</label>
         <input
@@ -270,6 +289,7 @@ export default function EditPanel({
           className="w-full rounded-xl border border-hairline px-4 py-2.5 text-sm outline-none focus:border-trace transition-colors bg-paper"
         />
       </div>
+
       <div>
         <label className="block text-sm font-medium mb-1.5">Açıklama</label>
         <textarea
@@ -370,8 +390,8 @@ export default function EditPanel({
           <div className="mt-3 space-y-2">
             <p className="text-xs text-trace">
               {images.length} yeni görsel seçildi (
-              {build.images.length + images.length}
-              /5 toplam). Görsel eklersen bu düzenleme admin onayına düşer.
+              {build.images.length + images.length}/5 toplam). Görsel eklersen
+              bu düzenleme admin onayına düşer.
             </p>
             <div className="flex flex-wrap gap-2">
               {images.map((file, index) => {
@@ -409,41 +429,138 @@ export default function EditPanel({
         <p className="text-ink-muted text-sm mt-6">Parçalar yükleniyor...</p>
       ) : (
         <div className="mt-6 space-y-8">
-          {CATEGORIES.map((cat) => {
-            const ofType = components.filter((c) => c.type === cat.type);
-            const compatibleList = ofType.filter((c) =>
-              isCompatible(c, selection, components),
-            );
+          {/* CPU */}
+          <div>
+            <ComponentPicker
+              label="İşlemci (CPU)"
+              components={components.filter((c) => c.type === 'CPU')}
+              selectedId={selection.cpuId ?? null}
+              incompatibleIds={getIncompatibleIds('CPU')}
+              onSelect={(id) =>
+                setSelection((prev) => ({ ...prev, cpuId: id }))
+              }
+            />
+            <div className="mt-2">
+              <textarea
+                value={notes['CPU'] ?? ''}
+                onChange={(e) =>
+                  setNotes((prev) => ({ ...prev, CPU: e.target.value }))
+                }
+                rows={2}
+                placeholder="İşlemci hakkında not ekle (opsiyonel)..."
+                className="w-full rounded-lg border border-hairline px-3 py-2 text-xs outline-none focus:border-trace transition-colors resize-none bg-paper"
+              />
+            </div>
+          </div>
 
-            return (
-              <div key={cat.key}>
-                <ComponentPicker
-                  label={cat.label}
-                  components={compatibleList}
-                  selectedId={selection[cat.key] ?? null}
-                  onSelect={(id) =>
-                    setSelection((prev) => ({ ...prev, [cat.key]: id }))
-                  }
-                />
-                <div className="mt-2">
-                  <textarea
-                    value={notes[cat.type] ?? ''}
-                    onChange={(e) =>
-                      setNotes((prev) => ({
-                        ...prev,
-                        [cat.type]: e.target.value,
-                      }))
-                    }
-                    rows={2}
-                    placeholder={`${cat.label} hakkında not ekle (opsiyonel)...`}
-                    className="w-full rounded-lg border border-hairline px-3 py-2 text-xs outline-none focus:border-trace transition-colors resize-none bg-paper"
-                  />
-                </div>
-              </div>
-            );
-          })}
+          {/* ANAKART */}
+          <div>
+            <ComponentPicker
+              label="Anakart"
+              components={components.filter((c) => c.type === 'MOTHERBOARD')}
+              selectedId={selection.motherboardId ?? null}
+              incompatibleIds={getIncompatibleIds('MOTHERBOARD')}
+              onSelect={(id) =>
+                setSelection((prev) => ({ ...prev, motherboardId: id }))
+              }
+            />
+            <div className="mt-2">
+              <textarea
+                value={notes['MOTHERBOARD'] ?? ''}
+                onChange={(e) =>
+                  setNotes((prev) => ({
+                    ...prev,
+                    MOTHERBOARD: e.target.value,
+                  }))
+                }
+                rows={2}
+                placeholder="Anakart hakkında not ekle (opsiyonel)..."
+                className="w-full rounded-lg border border-hairline px-3 py-2 text-xs outline-none focus:border-trace transition-colors resize-none bg-paper"
+              />
+            </div>
+          </div>
 
-          {/* DEPOLAMA — çoklu seçim */}
+          {/* RAM — ÇOKLU SEÇİM */}
+          <div>
+            <ComponentPicker
+              label={`RAM (birden fazla seçilebilir${
+                motherboard?.ramSlots
+                  ? `, en fazla ${motherboard.ramSlots}`
+                  : ''
+              })`}
+              components={compatibleRam}
+              selectedIds={ramIds}
+              multiple
+              onSelect={(id) =>
+                setRamIds((prev) =>
+                  prev.includes(id)
+                    ? prev.filter((r) => r !== id)
+                    : [...prev, id],
+                )
+              }
+            />
+            <div className="mt-2">
+              <textarea
+                value={notes['RAM'] ?? ''}
+                onChange={(e) =>
+                  setNotes((prev) => ({ ...prev, RAM: e.target.value }))
+                }
+                rows={2}
+                placeholder="RAM hakkında not ekle (opsiyonel)..."
+                className="w-full rounded-lg border border-hairline px-3 py-2 text-xs outline-none focus:border-trace transition-colors resize-none bg-paper"
+              />
+            </div>
+          </div>
+
+          {/* GPU */}
+          <div>
+            <ComponentPicker
+              label="Ekran Kartı"
+              components={components.filter((c) => c.type === 'GPU')}
+              selectedId={selection.gpuId ?? null}
+              incompatibleIds={getIncompatibleIds('GPU')}
+              onSelect={(id) =>
+                setSelection((prev) => ({ ...prev, gpuId: id }))
+              }
+            />
+            <div className="mt-2">
+              <textarea
+                value={notes['GPU'] ?? ''}
+                onChange={(e) =>
+                  setNotes((prev) => ({ ...prev, GPU: e.target.value }))
+                }
+                rows={2}
+                placeholder="Ekran kartı hakkında not ekle (opsiyonel)..."
+                className="w-full rounded-lg border border-hairline px-3 py-2 text-xs outline-none focus:border-trace transition-colors resize-none bg-paper"
+              />
+            </div>
+          </div>
+
+          {/* PSU */}
+          <div>
+            <ComponentPicker
+              label="Güç Kaynağı"
+              components={components.filter((c) => c.type === 'PSU')}
+              selectedId={selection.psuId ?? null}
+              incompatibleIds={getIncompatibleIds('PSU')}
+              onSelect={(id) =>
+                setSelection((prev) => ({ ...prev, psuId: id }))
+              }
+            />
+            <div className="mt-2">
+              <textarea
+                value={notes['PSU'] ?? ''}
+                onChange={(e) =>
+                  setNotes((prev) => ({ ...prev, PSU: e.target.value }))
+                }
+                rows={2}
+                placeholder="Güç kaynağı hakkında not ekle (opsiyonel)..."
+                className="w-full rounded-lg border border-hairline px-3 py-2 text-xs outline-none focus:border-trace transition-colors resize-none bg-paper"
+              />
+            </div>
+          </div>
+
+          {/* DEPOLAMA — ÇOKLU SEÇİM */}
           <div>
             <ComponentPicker
               label="Depolama (SATA / M.2, birden fazla seçilebilir)"
@@ -466,6 +583,30 @@ export default function EditPanel({
                 }
                 rows={2}
                 placeholder="Depolama hakkında not ekle (opsiyonel)..."
+                className="w-full rounded-lg border border-hairline px-3 py-2 text-xs outline-none focus:border-trace transition-colors resize-none bg-paper"
+              />
+            </div>
+          </div>
+
+          {/* KASA */}
+          <div>
+            <ComponentPicker
+              label="Kasa"
+              components={components.filter((c) => c.type === 'CASE')}
+              selectedId={selection.caseId ?? null}
+              incompatibleIds={getIncompatibleIds('CASE')}
+              onSelect={(id) =>
+                setSelection((prev) => ({ ...prev, caseId: id }))
+              }
+            />
+            <div className="mt-2">
+              <textarea
+                value={notes['CASE'] ?? ''}
+                onChange={(e) =>
+                  setNotes((prev) => ({ ...prev, CASE: e.target.value }))
+                }
+                rows={2}
+                placeholder="Kasa hakkında not ekle (opsiyonel)..."
                 className="w-full rounded-lg border border-hairline px-3 py-2 text-xs outline-none focus:border-trace transition-colors resize-none bg-paper"
               />
             </div>

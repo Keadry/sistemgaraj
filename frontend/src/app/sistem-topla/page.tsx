@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, Fragment } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import ComponentPicker from '@/components/ComponentPicker';
@@ -16,23 +16,22 @@ import {
 type Selection = {
   cpuId: string | null;
   motherboardId: string | null;
-  ramId: string | null;
   gpuId: string | null;
   psuId: string | null;
   caseId: string | null;
 };
 
-type StepKey = keyof Selection | 'storageId';
+type StepKey = keyof Selection | 'ramId' | 'storageId';
 
 const CATEGORIES: { key: keyof Selection; type: string; label: string }[] = [
   { key: 'cpuId', type: 'CPU', label: 'İşlemci (CPU)' },
   { key: 'motherboardId', type: 'MOTHERBOARD', label: 'Anakart' },
-  { key: 'ramId', type: 'RAM', label: 'RAM' },
   { key: 'gpuId', type: 'GPU', label: 'Ekran Kartı' },
   { key: 'psuId', type: 'PSU', label: 'Güç Kaynağı' },
   { key: 'caseId', type: 'CASE', label: 'Kasa' },
 ];
 
+// Ekranda gösterilecek sıra
 const STEP_ORDER: StepKey[] = [
   'cpuId',
   'motherboardId',
@@ -60,6 +59,7 @@ function formatPrice(price: number): string {
 function isCompatible(
   component: Component,
   selection: Selection,
+  ramTypeSelected: string | null,
   components: Component[],
 ): boolean {
   const byId = (id: string | null) =>
@@ -67,7 +67,6 @@ function isCompatible(
 
   const cpu = byId(selection.cpuId);
   const motherboard = byId(selection.motherboardId);
-  const ram = byId(selection.ramId);
   const pcCase = byId(selection.caseId);
 
   if (component.type === 'CPU' && motherboard) {
@@ -76,7 +75,7 @@ function isCompatible(
 
   if (component.type === 'MOTHERBOARD') {
     if (cpu && component.socket !== cpu.socket) return false;
-    if (ram && component.ramType !== ram.ramType) return false;
+    if (ramTypeSelected && component.ramType !== ramTypeSelected) return false;
     if (pcCase && component.formFactor && pcCase.formFactor) {
       if (
         FORM_FACTOR_SIZE[component.formFactor] >
@@ -116,11 +115,11 @@ export default function SistemToplaPage() {
   const [selection, setSelection] = useState<Selection>({
     cpuId: null,
     motherboardId: null,
-    ramId: null,
     gpuId: null,
     psuId: null,
     caseId: null,
   });
+  const [ramIds, setRamIds] = useState<string[]>([]);
   const [storageIds, setStorageIds] = useState<string[]>([]);
 
   const [issues, setIssues] = useState<CompatibilityIssue[]>([]);
@@ -128,9 +127,6 @@ export default function SistemToplaPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [activeCategory, setActiveCategory] = useState<StepKey | null>('cpuId');
-
-  // Kaydırma odaklaması için referans nesnesi
-  const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     if (!isAuthLoading && !user) {
@@ -145,18 +141,12 @@ export default function SistemToplaPage() {
       .finally(() => setIsLoadingComponents(false));
   }, []);
 
-  // Yeni bir kategori aktif olduğunda o bileşenin hizasına pürüzsüz kaydırma yapar
-  useEffect(() => {
-    if (activeCategory) {
-      const activeEl = categoryRefs.current[activeCategory];
-      if (activeEl) {
-        setTimeout(() => {
-          activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 180);
-      }
-    }
-  }, [activeCategory]);
+  const ramTypeSelected =
+    ramIds.length > 0
+      ? (components.find((c) => c.id === ramIds[0])?.ramType ?? null)
+      : null;
 
+  // Uyumsuz hale gelen tekli seçimleri otomatik temizle
   useEffect(() => {
     if (components.length === 0) return;
 
@@ -168,7 +158,10 @@ export default function SistemToplaPage() {
         const currentId = prev[cat.key];
         if (!currentId) continue;
         const component = components.find((c) => c.id === currentId);
-        if (component && !isCompatible(component, prev, components)) {
+        if (
+          component &&
+          !isCompatible(component, prev, ramTypeSelected, components)
+        ) {
           next[cat.key] = null;
           changed = true;
         }
@@ -176,15 +169,34 @@ export default function SistemToplaPage() {
 
       return changed ? next : prev;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     selection.cpuId,
     selection.motherboardId,
-    selection.ramId,
     selection.caseId,
+    ramTypeSelected,
     components,
   ]);
 
+  // Anakart değişince, artık uyumsuz olan RAM'leri otomatik temizle
+  useEffect(() => {
+    if (components.length === 0 || ramIds.length === 0) return;
+    const motherboard = components.find(
+      (c) => c.id === selection.motherboardId,
+    );
+    if (!motherboard) return;
+
+    setRamIds((prev) =>
+      prev.filter((id) => {
+        const ram = components.find((c) => c.id === id);
+        return ram && ram.ramType === motherboard.ramType;
+      }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection.motherboardId]);
+
   function isStepComplete(key: StepKey): boolean {
+    if (key === 'ramId') return ramIds.length > 0;
     if (key === 'storageId') return storageIds.length > 0;
     return selection[key] !== null;
   }
@@ -233,6 +245,19 @@ export default function SistemToplaPage() {
     }
   }
 
+  function handleRamToggle(id: string) {
+    const wasEmpty = ramIds.length === 0;
+    const isRemoving = ramIds.includes(id);
+
+    setRamIds((prev) =>
+      isRemoving ? prev.filter((r) => r !== id) : [...prev, id],
+    );
+
+    if (!isRemoving && wasEmpty) {
+      advanceAfter('ramId');
+    }
+  }
+
   function handleStorageToggle(id: string) {
     const wasEmpty = storageIds.length === 0;
     const isRemoving = storageIds.includes(id);
@@ -251,6 +276,9 @@ export default function SistemToplaPage() {
       const id = selection[cat.key];
       return components.find((c) => c.id === id) ?? null;
     }).filter((c): c is Component => c !== null),
+    ...ramIds
+      .map((id) => components.find((c) => c.id === id))
+      .filter((c): c is Component => c !== undefined),
     ...storageIds
       .map((id) => components.find((c) => c.id === id))
       .filter((c): c is Component => c !== undefined),
@@ -258,6 +286,7 @@ export default function SistemToplaPage() {
 
   const isComplete =
     CATEGORIES.every((cat) => selection[cat.key] !== null) &&
+    ramIds.length > 0 &&
     storageIds.length > 0;
 
   async function handleSubmit() {
@@ -272,7 +301,7 @@ export default function SistemToplaPage() {
         name: name.trim() || 'Adsız Sistem',
         cpuId: selection.cpuId!,
         motherboardId: selection.motherboardId!,
-        ramId: selection.ramId!,
+        ramIds,
         gpuId: selection.gpuId!,
         psuId: selection.psuId!,
         caseId: selection.caseId!,
@@ -303,8 +332,16 @@ export default function SistemToplaPage() {
     return null;
   }
 
-  const beforeCaseCategories = CATEGORIES.filter((c) => c.key !== 'caseId');
-  const caseCategory = CATEGORIES.find((c) => c.key === 'caseId')!;
+  const motherboard = components.find((c) => c.id === selection.motherboardId);
+
+  const ramComponents = components.filter((c) => c.type === 'RAM');
+  const compatibleRam = motherboard
+    ? ramComponents.filter((c) => c.ramType === motherboard.ramType)
+    : ramComponents;
+  const selectedRamComponents = ramIds
+    .map((id) => components.find((c) => c.id === id))
+    .filter((c): c is Component => c !== undefined);
+  const isRamOpen = activeCategory === 'ramId';
 
   const storageComponents = components.filter((c) => c.type === 'STORAGE');
   const selectedStorageComponents = storageIds
@@ -312,28 +349,10 @@ export default function SistemToplaPage() {
     .filter((c): c is Component => c !== undefined);
   const isStorageOpen = activeCategory === 'storageId';
 
-  // Depolama isim metnini kontrol eden fonksiyon
-  function renderStorageNames(): string {
-    if (selectedStorageComponents.length === 0) return 'Bileşen Seçilmedi';
-
-    // En fazla 2 tanesinin ismini birleştir
-    const firstTwo = selectedStorageComponents
-      .slice(0, 2)
-      .map((c) => `${c.brand} ${c.name}`)
-      .join(', ');
-
-    // Eğer 2'den fazla varsa sonuna kaç tane kaldığını ekle
-    if (selectedStorageComponents.length > 2) {
-      return `${firstTwo} ve ${selectedStorageComponents.length - 2} parça daha...`;
-    }
-
-    return firstTwo;
-  }
-
   function renderCategoryRow(cat: (typeof CATEGORIES)[number]) {
     const ofType = components.filter((c) => c.type === cat.type);
     const compatibleList = ofType.filter((c) =>
-      isCompatible(c, selection, components),
+      isCompatible(c, selection, ramTypeSelected, components),
     );
     const selectedComponent = components.find(
       (c) => c.id === selection[cat.key],
@@ -341,13 +360,7 @@ export default function SistemToplaPage() {
     const isOpen = activeCategory === cat.key;
 
     return (
-      <div
-        key={cat.key}
-        ref={(el) => {
-          categoryRefs.current[cat.key] = el;
-        }}
-        className="transition-colors duration-200"
-      >
+      <div key={cat.key} className="transition-colors duration-200">
         <button
           type="button"
           onClick={() => setActiveCategory(isOpen ? null : cat.key)}
@@ -355,12 +368,12 @@ export default function SistemToplaPage() {
             isOpen ? 'bg-surface/50' : 'bg-paper'
           }`}
         >
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0">
             <span className="text-xs font-bold uppercase tracking-wider text-ink-muted font-[family-name:var(--font-mono)]">
               {cat.label}
             </span>
             {selectedComponent ? (
-              <p className="text-sm font-semibold text-ink mt-0.5 truncate max-w-[180px] sm:max-w-[300px]">
+              <p className="text-sm font-semibold text-ink mt-0.5 truncate">
                 {selectedComponent.brand} {selectedComponent.name}
               </p>
             ) : (
@@ -398,6 +411,79 @@ export default function SistemToplaPage() {
               components={compatibleList}
               selectedId={selection[cat.key]}
               onSelect={(id) => handleSelect(cat.key, id)}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderMultiRow(opts: {
+    label: string;
+    isOpen: boolean;
+    onToggleOpen: () => void;
+    components: Component[];
+    selectedIds: string[];
+    selectedComponents: Component[];
+    onSelect: (id: string) => void;
+  }) {
+    return (
+      <div className="transition-colors duration-200">
+        <button
+          type="button"
+          onClick={opts.onToggleOpen}
+          className={`w-full flex items-center justify-between p-4 text-left transition-all duration-300 ${
+            opts.isOpen ? 'bg-surface/50' : 'bg-paper'
+          }`}
+        >
+          <div className="min-w-0">
+            <span className="text-xs font-bold uppercase tracking-wider text-ink-muted font-[family-name:var(--font-mono)]">
+              {opts.label}
+            </span>
+            {opts.selectedComponents.length > 0 ? (
+              <p className="text-sm font-semibold text-ink mt-0.5 truncate">
+                {opts.selectedComponents
+                  .map((c) => `${c.brand} ${c.name}`)
+                  .join(', ')}
+              </p>
+            ) : (
+              <p className="text-xs text-ink-muted mt-0.5 font-medium">
+                Bileşen Seçilmedi
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-3 shrink-0 ml-4">
+            {opts.selectedComponents.length > 0 && (
+              <span className="text-xs font-bold font-[family-name:var(--font-mono)] text-trace bg-trace/10 px-2 py-1 rounded-lg">
+                {formatPrice(
+                  opts.selectedComponents.reduce((s, c) => s + c.price, 0),
+                )}
+              </span>
+            )}
+            <span
+              className={`text-ink-muted text-[10px] transition-transform duration-300 ease-in-out ${
+                opts.isOpen ? 'rotate-180' : 'rotate-0'
+              }`}
+            >
+              ▼
+            </span>
+          </div>
+        </button>
+
+        <div
+          className={`grid transition-all duration-300 ease-in-out border-hairline ${
+            opts.isOpen
+              ? 'grid-rows-[1fr] opacity-100 border-t p-4 bg-surface/20'
+              : 'grid-rows-[0fr] opacity-0 p-0 pointer-events-none'
+          }`}
+        >
+          <div className="overflow-hidden">
+            <ComponentPicker
+              label=""
+              components={opts.components}
+              selectedIds={opts.selectedIds}
+              multiple
+              onSelect={opts.onSelect}
             />
           </div>
         </div>
@@ -474,6 +560,7 @@ export default function SistemToplaPage() {
                           key={index}
                           className="relative group w-16 h-16 rounded-xl border border-hairline overflow-hidden bg-surface"
                         >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={previewUrl}
                             alt="Önizleme"
@@ -502,73 +589,41 @@ export default function SistemToplaPage() {
             </p>
           ) : (
             <div className="mt-8 border border-hairline bg-paper rounded-2xl divide-y divide-hairline overflow-hidden shadow-sm">
-              {beforeCaseCategories.map((cat) => renderCategoryRow(cat))}
+              {renderCategoryRow(CATEGORIES[0])}
+              {renderCategoryRow(CATEGORIES[1])}
 
-              {/* DEPOLAMA — KASA'DAN ÖNCE, ÇOKLU SEÇİM SARMALAYICISI */}
-              <div
-                ref={(el) => {
-                  categoryRefs.current['storageId'] = el;
-                }}
-                className="transition-colors duration-200"
-              >
-                <button
-                  type="button"
-                  onClick={() =>
-                    setActiveCategory(isStorageOpen ? null : 'storageId')
-                  }
-                  className={`w-full flex items-center justify-between p-4 text-left transition-all duration-300 ${
-                    isStorageOpen ? 'bg-surface/50' : 'bg-paper'
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-ink-muted font-[family-name:var(--font-mono)]">
-                      Depolama (SATA, SSD, M.2 birden fazla seçilebilir)
-                    </span>
-                    <p className="text-sm font-semibold text-ink mt-0.5 truncate max-w-[180px] sm:max-w-[420px]">
-                      {renderStorageNames()}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0 ml-4">
-                    {selectedStorageComponents.length > 0 && (
-                      <span className="text-xs font-bold font-[family-name:var(--font-mono)] text-trace bg-trace/10 px-2 py-1 rounded-lg">
-                        {formatPrice(
-                          selectedStorageComponents.reduce(
-                            (s, c) => s + c.price,
-                            0,
-                          ),
-                        )}
-                      </span>
-                    )}
-                    <span
-                      className={`text-ink-muted text-[10px] transition-transform duration-300 ease-in-out ${
-                        isStorageOpen ? 'rotate-180' : 'rotate-0'
-                      }`}
-                    >
-                      ▼
-                    </span>
-                  </div>
-                </button>
+              {/* RAM — ANAKART'TAN SONRA, ÇOKLU SEÇİM */}
+              {renderMultiRow({
+                label: `RAM (birden fazla seçilebilir${
+                  motherboard?.ramSlots
+                    ? `, en fazla ${motherboard.ramSlots}`
+                    : ''
+                })`,
+                isOpen: isRamOpen,
+                onToggleOpen: () =>
+                  setActiveCategory(isRamOpen ? null : 'ramId'),
+                components: compatibleRam,
+                selectedIds: ramIds,
+                selectedComponents: selectedRamComponents,
+                onSelect: handleRamToggle,
+              })}
 
-                <div
-                  className={`grid transition-all duration-300 ease-in-out border-hairline ${
-                    isStorageOpen
-                      ? 'grid-rows-[1fr] opacity-100 border-t p-4 bg-surface/20'
-                      : 'grid-rows-[0fr] opacity-0 p-0 pointer-events-none'
-                  }`}
-                >
-                  <div className="overflow-hidden">
-                    <ComponentPicker
-                      label=""
-                      components={storageComponents}
-                      selectedIds={storageIds}
-                      multiple
-                      onSelect={handleStorageToggle}
-                    />
-                  </div>
-                </div>
-              </div>
+              {renderCategoryRow(CATEGORIES[2])}
+              {renderCategoryRow(CATEGORIES[3])}
 
-              {renderCategoryRow(caseCategory)}
+              {/* DEPOLAMA — PSU'DAN SONRA, ÇOKLU SEÇİM */}
+              {renderMultiRow({
+                label: 'Depolama (SATA / M.2, birden fazla seçilebilir)',
+                isOpen: isStorageOpen,
+                onToggleOpen: () =>
+                  setActiveCategory(isStorageOpen ? null : 'storageId'),
+                components: storageComponents,
+                selectedIds: storageIds,
+                selectedComponents: selectedStorageComponents,
+                onSelect: handleStorageToggle,
+              })}
+
+              {renderCategoryRow(CATEGORIES[4])}
             </div>
           )}
 
@@ -603,7 +658,7 @@ export default function SistemToplaPage() {
         <div>
           <p className="text-[10px] text-ink-muted font-bold uppercase tracking-wider">
             Maliyet
-          </p>{' '}
+          </p>
           <p className="font-[family-name:var(--font-mono)] text-xl font-extrabold text-ink tracking-tight">
             {formatPrice(selectedComponents.reduce((s, c) => s + c.price, 0))}
           </p>
@@ -617,7 +672,7 @@ export default function SistemToplaPage() {
             ? 'Kontrol ediliyor...'
             : isComplete
               ? 'Sistemi Oluştur'
-              : `${selectedComponents.length}/7 parça seçildi`}
+              : 'Eksik parça var'}
         </button>
       </div>
     </main>

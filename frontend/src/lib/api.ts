@@ -10,6 +10,7 @@ export type Component = {
   ramType: string | null;
   wattage: number | null;
   formFactor: string | null;
+  ramSlots: number | null;
 };
 
 export type BuildComponent = {
@@ -164,7 +165,7 @@ export async function createBuild(
     name: string;
     cpuId: string;
     motherboardId: string;
-    ramId: string;
+    ramIds: string[];
     gpuId: string;
     psuId: string;
     caseId: string;
@@ -183,7 +184,7 @@ export async function createBuild(
   formData.append('name', params.name);
   formData.append('cpuId', params.cpuId);
   formData.append('motherboardId', params.motherboardId);
-  formData.append('ramId', params.ramId);
+  params.ramIds.forEach((id) => formData.append('ramIds', id));
   formData.append('gpuId', params.gpuId);
   formData.append('psuId', params.psuId);
   formData.append('caseId', params.caseId);
@@ -656,7 +657,7 @@ export async function submitEditRequest(
     description?: string;
     cpuId?: string;
     motherboardId?: string;
-    ramId?: string;
+    ramIds?: string[];
     gpuId?: string;
     psuId?: string;
     storageIds?: string[];
@@ -673,7 +674,9 @@ export async function submitEditRequest(
   if (params.cpuId) formData.append('cpuId', params.cpuId);
   if (params.motherboardId)
     formData.append('motherboardId', params.motherboardId);
-  if (params.ramId) formData.append('ramId', params.ramId);
+  if (params.ramIds && params.ramIds.length > 0) {
+    params.ramIds.forEach((id) => formData.append('ramIds', id));
+  }
   if (params.gpuId) formData.append('gpuId', params.gpuId);
   if (params.psuId) formData.append('psuId', params.psuId);
   if (params.storageIds && params.storageIds.length > 0) {

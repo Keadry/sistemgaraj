@@ -78,7 +78,7 @@ export default function GirisPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-full bg-ink text-paper text-sm font-medium px-6 py-3 hover:bg-trace transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+            className="w-full rounded-xl bg-ink text-paper text-sm font-medium px-6 py-3 hover:bg-trace transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
           >
             {isSubmitting ? 'Giriş yapılıyor...' : 'Giriş Yap'}
           </button>

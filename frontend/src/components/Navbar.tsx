@@ -58,7 +58,7 @@ export default function Navbar() {
                   </Link>
                   <Link
                     href="/kayit"
-                    className="rounded-lg bg-trace text-paper text-sm font-medium px-5 py-2 hover:bg-trace-dark transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+                    className="rounded-xl bg-trace text-paper text-sm font-medium px-5 py-2 hover:bg-trace-dark transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
                   >
                     Kayıt Ol
                   </Link>

@@ -589,14 +589,14 @@ export default function EditPanel({
         <button
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="rounded-lg bg-ink text-paper text-sm font-medium px-6 py-2.5 hover:bg-trace transition-colors disabled:opacity-50"
+          className="rounded-xl bg-ink text-paper text-sm font-medium px-6 py-2.5 hover:bg-trace transition-colors disabled:opacity-50"
         >
           {isSubmitting ? 'Gönderiliyor...' : 'Değişiklikleri Gönder'}
         </button>
         <button
           onClick={onDone}
           disabled={isSubmitting}
-          className="rounded-lg border border-hairline text-sm font-medium px-6 py-2.5 hover:border-ink transition-colors disabled:opacity-50"
+          className="rounded-xl border border-hairline text-sm font-medium px-6 py-2.5 hover:border-ink transition-colors disabled:opacity-50"
         >
           Vazgeç
         </button>

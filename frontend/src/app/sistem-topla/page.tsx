@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import ComponentPicker from '@/components/ComponentPicker';
 import LiveSidebar from '@/components/LiveSidebar';
+import { isCompatible } from '@/lib/compatibility-client';
 import { useAuth } from '@/lib/auth-context';
 import {
   getComponents,
@@ -42,64 +43,12 @@ const STEP_ORDER: StepKey[] = [
   'caseId',
 ];
 
-const FORM_FACTOR_SIZE: Record<string, number> = {
-  'Mini-ITX': 1,
-  'Micro-ATX': 2,
-  ATX: 3,
-};
-
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', {
     style: 'currency',
     currency: 'TRY',
     maximumFractionDigits: 0,
   }).format(price);
-}
-
-function isCompatible(
-  component: Component,
-  selection: Selection,
-  ramTypeSelected: string | null,
-  components: Component[],
-): boolean {
-  const byId = (id: string | null) =>
-    id ? (components.find((c) => c.id === id) ?? null) : null;
-
-  const cpu = byId(selection.cpuId);
-  const motherboard = byId(selection.motherboardId);
-  const pcCase = byId(selection.caseId);
-
-  if (component.type === 'CPU' && motherboard) {
-    if (component.socket !== motherboard.socket) return false;
-  }
-
-  if (component.type === 'MOTHERBOARD') {
-    if (cpu && component.socket !== cpu.socket) return false;
-    if (ramTypeSelected && component.ramType !== ramTypeSelected) return false;
-    if (pcCase && component.formFactor && pcCase.formFactor) {
-      if (
-        FORM_FACTOR_SIZE[component.formFactor] >
-        FORM_FACTOR_SIZE[pcCase.formFactor]
-      )
-        return false;
-    }
-  }
-
-  if (component.type === 'RAM' && motherboard) {
-    if (component.ramType !== motherboard.ramType) return false;
-  }
-
-  if (component.type === 'CASE' && motherboard) {
-    if (component.formFactor && motherboard.formFactor) {
-      if (
-        FORM_FACTOR_SIZE[motherboard.formFactor] >
-        FORM_FACTOR_SIZE[component.formFactor]
-      )
-        return false;
-    }
-  }
-
-  return true;
 }
 
 export default function SistemToplaPage() {

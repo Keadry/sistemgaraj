@@ -126,20 +126,20 @@ npm run dev
 
 The application will be live at http://localhost:3000.
 
-🗺️ Roadmap
-[x] Real-time compatibility engine
+---
 
-[x] RESTful API architecture with admin moderation
+## 🗺️ Roadmap
 
-[x] Community interaction features (likes, comments, build sharing)
+- [x] Real-time compatibility engine
+- [x] RESTful API architecture with admin moderation
+- [x] Community interaction features (likes, comments, build sharing)
+- [x] Modern UI redesign with floating navigation & ambient themes
+- [x] Extended User Profiles (avatars, cover images, profile walls)
+- [ ] Automatic web scraper for real-time local hardware pricing
+- [ ] AI-powered build recommendation assistant based on budget & use-case
 
-[x] Modern UI redesign with floating navigation & ambient themes
+---
 
-[x] Extended User Profiles (avatars, cover images, profile walls)
+## 📄 License
 
-[ ] Automatic web scraper for real-time local hardware pricing
-
-[ ] AI-powered build recommendation assistant based on budget & use-case
-
-📄 License
 Developed for personal and educational purposes.

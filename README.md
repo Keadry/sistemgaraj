@@ -1,119 +1,153 @@
 # 🛠️ SistemGaraj
 
-**Türkçe PC parça, sistem paylaşma ve topluluk platformu.** SistemGaraj, kullanıcıların PC sistemlerini uyumluluk kontrolünden geçirerek toplamasını, paylaşmasını ve topluluktan geri bildirim almasını sağlar.
+**A modern Turkish PC hardware configurator, build sharing, and tech community platform.**
 
-## ✨ Özellikler
+SistemGaraj enables users to assemble custom PC builds with a real-time compatibility engine, showcase their rigs, explore community configurations, and interact with fellow tech enthusiasts.
 
-### 🔧 Uyum Zekası Motoru
+---
 
-- CPU-Anakart soket uyumu (AM5, AM4, LGA1700)
-- RAM nesli uyumu (DDR4/DDR5)
-- Güç kaynağı yeterlilik kontrolü (%20 güvenlik payı ile)
-- Kasa-Anakart fiziksel boyut uyumu
-- Parça seçim ekranında uyumsuz seçenekler otomatik soluklaşır
+## ✨ Key Features
 
-### 👥 Topluluk
+### 🔧 Compatibility Engine
 
-- Sistem paylaşma, keşfetme, beğenme ve yorum yapma
-- **Önerilen Sistemler** — editör seçimi öne çıkan sistemler
-- Otomatik + manuel yorum moderasyonu (yasaklı kelime filtresi + onay kuyruğu)
-- Yorum spam engeli (bekleme süresi + tekrar mesaj engeli)
+- **Socket & Chipset Verification:** Automatic socket checking for CPUs and Motherboards (e.g., AM5, AM4, LGA1700).
+- **Memory Generation Matching:** DDR4 / DDR5 motherboard and RAM compatibility validation.
+- **Power Budget Calculator:** Smart PSU wattage sufficiency check featuring a 20% safety headroom margin.
+- **Form Factor Validation:** Physical dimension and expansion alignment across cases and components.
+- **Interactive Picker:** Incompatible hardware options automatically dim or lock during the build process.
 
-### 🛡️ Yönetim Paneli
+### 👤 User Profiles & Community
 
-- Rol tabanlı yetkilendirme (User / Moderatör / Admin)
-- Kullanıcı susturma (geçici) ve banlama (kalıcı)
-- Yorum onaylama/reddetme/silme
-- Sistemleri öne çıkarma
-- Kullanıcı bazlı aktivite geçmişi (beğeniler + yorumlar)
+- **Custom Profile Hub:** Showcase user-curated builds with personal avatars and cover banners.
+- **Profile Wall:** Interactive guestbook/wall on user profile pages for community messages.
+- **Build Showcase:** Share, discover, like, and comment on PC configurations with dynamic image galleries.
+- **Featured Systems:** Editor-picked builds highlighted on the landing page.
+- **Smart Content Moderation:** Banned-word filter, automated approval queue, and anti-spam timeout protections.
 
-### 🔐 Kimlik Doğrulama
+### 🛡️ Admin Dashboard
 
-- JWT tabanlı kayıt/giriş sistemi
-- bcrypt ile şifreleme
+- **Role-Based Access Control (RBAC):** `User`, `Moderator`, and `Admin` permissions.
+- **User Management:** Temporary muting and permanent banning system.
+- **Moderation Queue:** Approve, reject, or delete submitted builds and comments.
+- **Activity Tracking:** Comprehensive logs for user interactions, likes, and feedback.
 
-## 🧱 Teknoloji Yığını
+### 🔐 Authentication & Security
 
-**Backend**
+- JWT-based authentication flow with HTTP-only tokens and `bcrypt` password hashing.
 
-- Node.js + TypeScript + Express 5
-- PostgreSQL 16 (Docker)
-- Prisma 6 ORM
-- JWT + bcryptjs
+---
 
-**Frontend**
+## 🧱 Tech Stack
 
-- Next.js 15 (App Router)
-- Tailwind CSS 4
-- TypeScript
+### Frontend
 
-## 📁 Proje Yapısı
+- **Framework:** Next.js 15 (App Router, Client & Server Components)
+- **Styling:** Tailwind CSS 4 with custom CSS variables (`@theme`)
+- **Language:** TypeScript
+- **UI Architecture:** Floating island layout, glassmorphism, responsive bento grids
 
-```
+### Backend
+
+- **Runtime:** Node.js + Express 5
+- **Database:** PostgreSQL 16
+- **ORM:** Prisma 6
+- **Authentication:** JWT (JSON Web Tokens) + `bcryptjs`
+
+---
+
+## 📁 Repository Structure
+
+```text
 SistemGaraj/
-├── src/                       # Backend kaynak kodu
-│   ├── routes/                 # API rotaları (auth, builds, admin, components)
-│   ├── middleware/               # Auth & yetkilendirme ara katmanları
-│   ├── services/                   # Uyum algoritması & moderasyon
-│   └── index.ts                      # Express giriş noktası
+├── src/                    # Express backend source code
+│   ├── routes/             # API endpoints (auth, builds, admin, components)
+│   ├── middleware/         # Auth, validation & moderation middlewares
+│   ├── services/           # Compatibility algorithms & moderation logic
+│   └── index.ts            # Express server entry point
 ├── prisma/
-│   └── schema.prisma                   # Veritabanı şeması
-├── frontend/                    # Next.js uygulaması
+│   ├── schema.prisma       # Database schema
+│   └── seed.ts             # Initial component data seeder
+├── frontend/               # Next.js frontend application
 │   └── src/
-│       ├── app/                   # Sayfalar (feed, sistem detay, admin, auth)
-│       ├── components/               # UI bileşenleri
-│       └── lib/                        # API istemcisi & auth context
-└── requests.http                  # API test istekleri (REST Client)
+│       ├── app/            # App Router pages (feed, build-topla, profiles, auth)
+│       ├── components/     # Reusable UI components & modals
+│       └── lib/            # API client, types & AuthContext
+└── requests.http           # REST Client API test requests
 ```
 
-## 🚀 Kurulum
+# 🛠️ SistemGaraj
 
-### Gereksinimler
+**A modern Turkish PC hardware configurator, build sharing, and tech community platform.**
 
-- Node.js 18+
-- Docker Desktop
+SistemGaraj enables users to assemble custom PC builds with a real-time compatibility engine, showcase their rigs, explore community configurations, and interact with fellow tech enthusiasts.
 
-### 1. Veritabanını Başlat
+---
 
-```bash
-docker run --name sistemgaraj-db \
-  -e POSTGRES_USER=sistemgaraj_user \
-  -e POSTGRES_PASSWORD=sistemgaraj_pass \
-  -e POSTGRES_DB=sistemgaraj_db \
-  -p 5432:5432 -d postgres:16
+## ✨ Key Features
+
+### 🔧 Compatibility Engine
+
+- **Socket & Chipset Verification:** Automatic socket checking for CPUs and Motherboards (e.g., AM5, AM4, LGA1700).
+- **Memory Generation Matching:** DDR4 / DDR5 motherboard and RAM compatibility validation.
+- **Power Budget Calculator:** Smart PSU wattage sufficiency check featuring a 20% safety headroom margin.
+- **Form Factor Validation:** Physical dimension and expansion alignment across cases and components.
+- **Interactive Picker:** Incompatible hardware options automatically dim or lock during the build process.
+
+### 👤 User Profiles & Community
+
+- **Custom Profile Hub:** Showcase user-curated builds with personal avatars and cover banners.
+- **Profile Wall:** Interactive guestbook/wall on user profile pages for community messages.
+- **Build Showcase:** Share, discover, like, and comment on PC configurations with dynamic image galleries.
+- **Featured Systems:** Editor-picked builds highlighted on the landing page.
+- **Smart Content Moderation:** Banned-word filter, automated approval queue, and anti-spam timeout protections.
+
+### 🛡️ Admin Dashboard
+
+- **Role-Based Access Control (RBAC):** `User`, `Moderator`, and `Admin` permissions.
+- **User Management:** Temporary muting and permanent banning system.
+- **Moderation Queue:** Approve, reject, or delete submitted builds and comments.
+- **Activity Tracking:** Comprehensive logs for user interactions, likes, and feedback.
+
+### 🔐 Authentication & Security
+
+- JWT-based authentication flow with HTTP-only tokens and `bcrypt` password hashing.
+
+---
+
+## 🧱 Tech Stack
+
+### Frontend
+
+- **Framework:** Next.js 15 (App Router, Client & Server Components)
+- **Styling:** Tailwind CSS 4 with custom CSS variables (`@theme`)
+- **Language:** TypeScript
+- **UI Architecture:** Floating island layout, glassmorphism, responsive bento grids
+
+### Backend
+
+- **Runtime:** Node.js + Express 5
+- **Database:** PostgreSQL 16
+- **ORM:** Prisma 6
+- **Authentication:** JWT (JSON Web Tokens) + `bcryptjs`
+
+---
+
+## 📁 Repository Structure
+
+```text
+SistemGaraj/
+├── src/                    # Express backend source code
+│   ├── routes/             # API endpoints (auth, builds, admin, components)
+│   ├── middleware/         # Auth, validation & moderation middlewares
+│   ├── services/           # Compatibility algorithms & moderation logic
+│   └── index.ts            # Express server entry point
+├── prisma/
+│   ├── schema.prisma       # Database schema
+│   └── seed.ts             # Initial component data seeder
+├── frontend/               # Next.js frontend application
+│   └── src/
+│       ├── app/            # App Router pages (feed, build-topla, profiles, auth)
+│       ├── components/     # Reusable UI components & modals
+│       └── lib/            # API client, types & AuthContext
+└── requests.http           # REST Client API test requests
 ```
-
-### 2. Backend
-
-```bash
-npm install
-# .env dosyasını oluştur (DATABASE_URL, JWT_SECRET, PORT=4000)
-npx prisma migrate dev
-npm run seed
-npm run dev
-```
-
-### 3. Frontend
-
-```bash
-cd frontend
-npm install
-# .env.local dosyasını oluştur (NEXT_PUBLIC_API_URL=http://localhost:4000)
-npm run dev
-```
-
-Uygulama `http://localhost:3000` adresinde çalışacaktır.
-
-## 🗺️ Yol Haritası
-
-- [x] Uyum kontrol motoru
-- [x] Backend API (auth, builds, moderasyon)
-- [x] Topluluk özellikleri (beğeni, yorum, paylaşım)
-- [x] Yönetim paneli
-- [ ] Fiyat/parça verisi için otomatik veri kazıma (scraper)
-- [ ] AI destekli sistem önerisi (bütçeye göre otomatik build)
-- [ ] Kullanıcı profil sayfaları
-
-## 📄 Lisans
-
-Bu proje kişisel/eğitim amaçlı geliştirilmektedir.

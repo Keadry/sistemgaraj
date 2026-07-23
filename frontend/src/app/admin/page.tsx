@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { changeUsername } from '@/lib/api';
-import Navbar from '@/components/Navbar';
 import Link from 'next/link';
+import Navbar from '@/components/Navbar';
 import { useAuth } from '@/lib/auth-context';
 import UserDetailPanel from '@/components/UserDetailPanel';
 import {
@@ -14,23 +13,22 @@ import {
   banUser,
   unbanUser,
   changeUserRole,
+  changeUsername,
   getAllBuildsAdmin,
   toggleFeatured,
   getAllComments,
   deleteComment,
   approveComment,
   rejectComment,
-  type AdminUser,
-  type Build,
-  type AdminComment,
-} from '@/lib/api';
-import {
   getNewBuildsForReview,
   approveNewBuild,
   rejectNewBuild,
   getEditRequestsForReview,
   approveEditRequest,
   rejectEditRequest,
+  type AdminUser,
+  type Build,
+  type AdminComment,
   type NewBuildForReview,
   type AdminEditRequest,
 } from '@/lib/api';
@@ -93,7 +91,7 @@ export default function AdminPage() {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
                 tab === t.key
                   ? 'border-trace text-trace'
                   : 'border-transparent text-ink-muted hover:text-ink'
@@ -265,7 +263,7 @@ function UsersTab({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setSelectedUserId(u.id)}
-                        className="text-left hover:text-trace transition-colors"
+                        className="text-left hover:text-trace transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace rounded"
                       >
                         <p className="font-medium">@{u.username}</p>
                         <p className="text-ink-muted text-xs">{u.email}</p>
@@ -275,7 +273,7 @@ function UsersTab({
                           onClick={() => handleUsernameChange(u.id)}
                           disabled={actionUserId === u.id}
                           title="Kullanıcı adını değiştir"
-                          className="text-ink-muted hover:text-trace transition-colors disabled:opacity-50"
+                          className="text-ink-muted hover:text-trace transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace rounded"
                         >
                           ✎
                         </button>
@@ -288,7 +286,7 @@ function UsersTab({
                         value={u.role}
                         disabled={isBusy}
                         onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                        className="rounded-lg border border-hairline px-2 py-1 text-xs bg-paper"
+                        className="rounded-xl border border-hairline px-2 py-1 text-xs bg-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
                       >
                         <option value="USER">USER</option>
                         <option value="MODERATOR">MODERATOR</option>
@@ -330,7 +328,7 @@ function UsersTab({
                           <button
                             disabled={isBusy}
                             onClick={() => handleUnmute(u.id)}
-                            className="text-xs rounded-full border border-hairline px-3 py-1 hover:border-trace transition-colors disabled:opacity-50"
+                            className="text-xs rounded-full border border-hairline px-3 py-1 hover:border-trace transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
                           >
                             Susturmayı Kaldır
                           </button>
@@ -338,7 +336,7 @@ function UsersTab({
                           <button
                             disabled={isBusy}
                             onClick={() => handleMute(u.id)}
-                            className="text-xs rounded-full border border-hairline px-3 py-1 hover:border-trace transition-colors disabled:opacity-50"
+                            className="text-xs rounded-full border border-hairline px-3 py-1 hover:border-trace transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
                           >
                             Sustur
                           </button>
@@ -350,7 +348,7 @@ function UsersTab({
                               <button
                                 disabled={isBusy}
                                 onClick={() => handleUnban(u.id)}
-                                className="text-xs rounded-full border border-hairline px-3 py-1 hover:border-trace transition-colors disabled:opacity-50"
+                                className="text-xs rounded-full border border-hairline px-3 py-1 hover:border-trace transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
                               >
                                 Banı Kaldır
                               </button>
@@ -358,7 +356,7 @@ function UsersTab({
                               <button
                                 disabled={isBusy}
                                 onClick={() => handleBan(u.id)}
-                                className="text-xs rounded-full border border-incompatible text-incompatible px-3 py-1 hover:bg-incompatible/10 transition-colors disabled:opacity-50"
+                                className="text-xs rounded-full border border-incompatible text-incompatible px-3 py-1 hover:bg-incompatible/10 transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-incompatible"
                               >
                                 Banla
                               </button>
@@ -440,8 +438,7 @@ function BuildsTab({ token }: { token: string }) {
                 <a
                   href={`/sistemler/${b.id}`}
                   target="_blank"
-                  className="font-medium text-sm text-trace
-                hover:underline"
+                  className="font-medium text-sm text-trace hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace rounded"
                 >
                   {b.name}
                 </a>
@@ -457,7 +454,7 @@ function BuildsTab({ token }: { token: string }) {
                 <button
                   disabled={actionId === b.id}
                   onClick={() => handleToggle(b.id)}
-                  className={`text-xs rounded-full border px-3 py-1 transition-colors disabled:opacity-50 ${
+                  className={`text-xs rounded-full border px-3 py-1 transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
                     b.isFeatured
                       ? 'border-trace bg-trace/10 text-trace'
                       : 'border-hairline hover:border-trace'
@@ -474,9 +471,6 @@ function BuildsTab({ token }: { token: string }) {
   );
 }
 
-// ==============================
-// SEKME 3: YORUMLAR
-// ==============================
 // ==============================
 // SEKME 3: YORUMLAR
 // ==============================
@@ -554,7 +548,7 @@ function CommentsTab({ token }: { token: string }) {
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => setFilter('ALL')}
-          className={`text-xs rounded-full px-3 py-1.5 border transition-colors ${
+          className={`text-xs rounded-full px-3 py-1.5 border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
             filter === 'ALL'
               ? 'border-trace bg-trace/10 text-trace'
               : 'border-hairline text-ink-muted hover:border-trace'
@@ -564,7 +558,7 @@ function CommentsTab({ token }: { token: string }) {
         </button>
         <button
           onClick={() => setFilter('PENDING')}
-          className={`text-xs rounded-full px-3 py-1.5 border transition-colors ${
+          className={`text-xs rounded-full px-3 py-1.5 border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
             filter === 'PENDING'
               ? 'border-trace bg-trace/10 text-trace'
               : 'border-hairline text-ink-muted hover:border-trace'
@@ -601,7 +595,7 @@ function CommentsTab({ token }: { token: string }) {
                     <Link
                       href={`/sistemler/${c.build.id}`}
                       target="_blank"
-                      className="text-trace hover:underline"
+                      className="text-trace hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace rounded"
                     >
                       {c.build.name}
                     </Link>
@@ -628,14 +622,14 @@ function CommentsTab({ token }: { token: string }) {
                       <button
                         disabled={isBusy}
                         onClick={() => handleApprove(c.id)}
-                        className="text-xs rounded-full border border-compatible text-compatible px-3 py-1.5 hover:bg-compatible/10 transition-colors disabled:opacity-50"
+                        className="text-xs rounded-full border border-compatible text-compatible px-3 py-1.5 hover:bg-compatible/10 transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-compatible"
                       >
                         Onayla
                       </button>
                       <button
                         disabled={isBusy}
                         onClick={() => handleReject(c.id)}
-                        className="text-xs rounded-full border border-incompatible text-incompatible px-3 py-1.5 hover:bg-incompatible/10 transition-colors disabled:opacity-50"
+                        className="text-xs rounded-full border border-incompatible text-incompatible px-3 py-1.5 hover:bg-incompatible/10 transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-incompatible"
                       >
                         Reddet
                       </button>
@@ -644,7 +638,7 @@ function CommentsTab({ token }: { token: string }) {
                   <button
                     disabled={isBusy}
                     onClick={() => handleDelete(c.id)}
-                    className="text-xs rounded-full border border-hairline text-ink-muted px-3 py-1.5 hover:border-incompatible hover:text-incompatible transition-colors disabled:opacity-50"
+                    className="text-xs rounded-full border border-hairline text-ink-muted px-3 py-1.5 hover:border-incompatible hover:text-incompatible transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-incompatible"
                   >
                     Sil
                   </button>
@@ -715,14 +709,14 @@ function NewBuildsTab({ token }: { token: string }) {
               <button
                 disabled={actionId === build.id}
                 onClick={() => handleApprove(build.id)}
-                className="text-xs rounded-full border border-compatible text-compatible px-3 py-1.5 hover:bg-compatible/10 disabled:opacity-50"
+                className="text-xs rounded-full border border-compatible text-compatible px-3 py-1.5 hover:bg-compatible/10 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-compatible"
               >
                 Onayla
               </button>
               <button
                 disabled={actionId === build.id}
                 onClick={() => handleReject(build.id)}
-                className="text-xs rounded-full border border-incompatible text-incompatible px-3 py-1.5 hover:bg-incompatible/10 disabled:opacity-50"
+                className="text-xs rounded-full border border-incompatible text-incompatible px-3 py-1.5 hover:bg-incompatible/10 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-incompatible"
               >
                 Reddet
               </button>
@@ -736,7 +730,7 @@ function NewBuildsTab({ token }: { token: string }) {
                   key={img.id}
                   src={`${API_URL}${img.url}`}
                   alt=""
-                  className="w-24 h-20 object-cover rounded-lg shrink-0"
+                  className="w-24 h-20 object-cover rounded-xl shrink-0"
                 />
               ))}
             </div>
@@ -803,7 +797,7 @@ function EditRequestsTab({ token }: { token: string }) {
               <a
                 href={`/sistemler/${req.build.id}`}
                 target="_blank"
-                className="font-medium text-sm text-trace hover:underline"
+                className="font-medium text-sm text-trace hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace rounded"
               >
                 {req.build.name}
               </a>
@@ -820,14 +814,14 @@ function EditRequestsTab({ token }: { token: string }) {
               <button
                 disabled={actionId === req.id}
                 onClick={() => handleApprove(req.id)}
-                className="text-xs rounded-full border border-compatible text-compatible px-3 py-1.5 hover:bg-compatible/10 disabled:opacity-50"
+                className="text-xs rounded-full border border-compatible text-compatible px-3 py-1.5 hover:bg-compatible/10 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-compatible"
               >
                 Onayla
               </button>
               <button
                 disabled={actionId === req.id}
                 onClick={() => handleReject(req.id)}
-                className="text-xs rounded-full border border-incompatible text-incompatible px-3 py-1.5 hover:bg-incompatible/10 disabled:opacity-50"
+                className="text-xs rounded-full border border-incompatible text-incompatible px-3 py-1.5 hover:bg-incompatible/10 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-incompatible"
               >
                 Reddet
               </button>
@@ -859,7 +853,7 @@ function EditRequestsTab({ token }: { token: string }) {
                   key={img.id}
                   src={`${API_URL}${img.url}`}
                   alt=""
-                  className="w-24 h-20 object-cover rounded-lg shrink-0"
+                  className="w-24 h-20 object-cover rounded-xl shrink-0"
                 />
               ))}
             </div>

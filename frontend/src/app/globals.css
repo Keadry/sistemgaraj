@@ -42,4 +42,47 @@ body {
   background-color: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-body), sans-serif;
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* GLOBAL MOR ARKA PLAN ISILTILARI (GLOWS) */
+
+/* 1. Üst Orta Mor Radyal Glow */
+body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1000px;
+  height: 380px;
+  background: radial-gradient(
+    circle at top,
+    rgba(78, 73, 246, 0.12) 0%,
+    rgba(78, 73, 246, 0.03) 50%,
+    transparent 80%
+  );
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 2. Sağ Taraf İkincil Yumuşak Parıltı */
+body::after {
+  content: '';
+  position: absolute;
+  top: 240px;
+  right: -100px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(
+    circle,
+    rgba(78, 73, 246, 0.07) 0%,
+    transparent 70%
+  );
+  filter: blur(50px);
+  pointer-events: none;
+  z-index: 0;
 }

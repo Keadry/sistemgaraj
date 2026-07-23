@@ -8,42 +8,54 @@ export default function Navbar() {
   const { user, isLoading, logout } = useAuth();
 
   return (
-    <div className="sticky top-4 z-40 px-4 md:px-6">
-      <nav className="max-w-6xl mx-auto flex items-center justify-between gap-4 rounded-2xl bg-paper border border-hairline text-ink px-5 py-3.5 shadow-lg shadow-ink/5">
-        {' '}
-        <Link href="/" className="shrink-0">
+    <div className="sticky top-4 z-50 px-4 md:px-8">
+      {/* Opak Beyaz + İnce Gri Çerçeve + Mor Süzülen Gölge */}
+      <nav className="max-w-7xl mx-auto flex items-center justify-between gap-4 rounded-2xl bg-white border border-slate-200/90 px-6 py-3.5 shadow-[0_12px_30px_-8px_rgba(78,73,246,0.12)] transition-all">
+        {/* LOGO */}
+        <Link
+          href="/"
+          className="shrink-0 transition-transform active:scale-95"
+        >
           <Logo />
         </Link>
-        <div className="hidden md:flex items-center gap-6 text-sm text-ink-muted">
-          <Link href="/" className="hover:text-ink transition-colors">
+
+        {/* ORTA NAVİGASYON */}
+        <div className="hidden md:flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl text-sm font-medium text-slate-600 border border-slate-200/40">
+          <Link
+            href="/"
+            className="px-4 py-1.5 rounded-lg hover:text-slate-900 hover:bg-white transition-all shadow-2xs"
+          >
             Keşfet
           </Link>
-          <Link href="/sistemler" className="hover:text-ink transition-colors">
+          <Link
+            href="/sistemler"
+            className="px-4 py-1.5 rounded-lg hover:text-slate-900 hover:bg-white transition-all shadow-2xs"
+          >
             Sistemler
           </Link>
           <Link
             href="/sistem-topla"
-            className="hover:text-ink transition-colors"
+            className="px-4 py-1.5 rounded-lg hover:text-slate-900 hover:bg-white transition-all shadow-2xs"
           >
             Sistem Topla
           </Link>
         </div>
+
+        {/* SAĞ AKSİYON BÖLÜMÜ */}
         <div className="flex items-center gap-3 shrink-0">
           {!isLoading && (
             <>
               {user ? (
                 <>
-                  <span className="text-sm text-ink-muted hidden sm:inline">
-                    <Link
-                      href={`/kullanici/${user.username}`}
-                      className="hover:text-ink transition-colors"
-                    >
-                      {user.username}
-                    </Link>
-                  </span>
+                  <Link
+                    href={`/kullanici/${user.username}`}
+                    className="text-sm font-semibold text-slate-800 hover:text-[#4e49f6] transition-colors hidden sm:inline px-2"
+                  >
+                    @{user.username}
+                  </Link>
                   <button
                     onClick={logout}
-                    className="text-sm text-ink-muted hover:text-incompatible transition-colors"
+                    className="text-sm font-medium text-slate-500 hover:text-red-600 transition-colors px-2 py-1 cursor-pointer"
                   >
                     Çıkış
                   </button>
@@ -52,13 +64,13 @@ export default function Navbar() {
                 <>
                   <Link
                     href="/giris"
-                    className="text-sm text-ink-muted hover:text-ink transition-colors"
+                    className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors px-3 py-2"
                   >
                     Giriş Yap
                   </Link>
                   <Link
                     href="/kayit"
-                    className="rounded-xl bg-trace text-paper text-sm font-medium px-5 py-2 hover:bg-trace-dark transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+                    className="rounded-xl bg-[#4e49f6] hover:bg-[#3d39c4] text-white text-sm font-semibold px-4 py-2 transition-all shadow-md shadow-[#4e49f6]/25 active:scale-95"
                   >
                     Kayıt Ol
                   </Link>

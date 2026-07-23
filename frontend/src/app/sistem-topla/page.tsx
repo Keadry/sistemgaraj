@@ -32,7 +32,6 @@ const CATEGORIES: { key: keyof Selection; type: string; label: string }[] = [
   { key: 'caseId', type: 'CASE', label: 'Kasa' },
 ];
 
-// Ekranda gösterilecek sıra
 const STEP_ORDER: StepKey[] = [
   'cpuId',
   'motherboardId',
@@ -309,37 +308,48 @@ export default function SistemToplaPage() {
     const isOpen = activeCategory === cat.key;
 
     return (
-      <div key={cat.key} className="transition-colors duration-200">
+      <div key={cat.key} className="transition-all duration-200">
         <button
           type="button"
           onClick={() => setActiveCategory(isOpen ? null : cat.key)}
-          className={`w-full flex items-center justify-between p-4 text-left transition-all duration-300 ${
-            isOpen ? 'bg-surface/50' : 'bg-paper'
+          className={`w-full flex items-center justify-between p-4 text-left transition-all duration-200 cursor-pointer ${
+            isOpen
+              ? 'bg-[#4e49f6]/5'
+              : selectedComponent
+                ? 'bg-white hover:bg-slate-50/80'
+                : 'bg-white hover:bg-slate-50/50'
           }`}
         >
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-ink-muted font-[family-name:var(--font-mono)]">
-              {cat.label}
-            </span>
+          <div className="min-w-0 pr-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-[family-name:var(--font-mono)]">
+                {cat.label}
+              </span>
+              {selectedComponent && (
+                <span className="w-2 h-2 rounded-full bg-[#4e49f6]" />
+              )}
+            </div>
+
             {selectedComponent ? (
-              <p className="text-sm font-semibold text-ink mt-0.5 truncate">
+              <p className="text-sm font-bold text-slate-900 mt-0.5 truncate">
                 {selectedComponent.brand} {selectedComponent.name}
               </p>
             ) : (
-              <p className="text-xs text-ink-muted mt-0.5 font-medium">
-                Bileşen Seçilmedi
+              <p className="text-xs text-slate-400 mt-0.5 font-medium italic">
+                Bileşen Seçilmedi — Seçmek için tıklayın
               </p>
             )}
           </div>
-          <div className="flex items-center gap-3 shrink-0 ml-4">
+
+          <div className="flex items-center gap-3 shrink-0">
             {selectedComponent && (
-              <span className="text-xs font-bold font-[family-name:var(--font-mono)] text-trace bg-trace/10 px-2 py-1 rounded-lg">
+              <span className="text-xs font-bold font-[family-name:var(--font-mono)] text-[#4e49f6] bg-[#4e49f6]/10 px-2.5 py-1 rounded-lg border border-[#4e49f6]/20">
                 {formatPrice(selectedComponent.price)}
               </span>
             )}
             <span
-              className={`text-ink-muted text-[10px] transition-transform duration-300 ease-in-out ${
-                isOpen ? 'rotate-180' : 'rotate-0'
+              className={`text-slate-400 text-xs transition-transform duration-300 ease-in-out ${
+                isOpen ? 'rotate-180 text-[#4e49f6]' : 'rotate-0'
               }`}
             >
               ▼
@@ -348,9 +358,9 @@ export default function SistemToplaPage() {
         </button>
 
         <div
-          className={`grid transition-all duration-300 ease-in-out border-hairline ${
+          className={`grid transition-all duration-300 ease-in-out ${
             isOpen
-              ? 'grid-rows-[1fr] opacity-100 border-t p-4 bg-surface/20'
+              ? 'grid-rows-[1fr] opacity-100 border-t border-slate-200/80 p-4 bg-slate-50/60'
               : 'grid-rows-[0fr] opacity-0 p-0 pointer-events-none'
           }`}
         >
@@ -376,42 +386,65 @@ export default function SistemToplaPage() {
     selectedComponents: Component[];
     onSelect: (id: string) => void;
   }) {
+    const hasSelection = opts.selectedComponents.length > 0;
+
+    // 2 veya daha fazla eleman seçilince ismin uzamasını engelleyen format
+    const formatSelectedNames = () => {
+      if (opts.selectedComponents.length === 0) return '';
+      if (opts.selectedComponents.length === 1) {
+        return `${opts.selectedComponents[0].brand} ${opts.selectedComponents[0].name}`;
+      }
+      // İlk parçayı gösterip yanına ek parça sayısını ekliyoruz
+      const first = `${opts.selectedComponents[0].brand} ${opts.selectedComponents[0].name}`;
+      const extraCount = opts.selectedComponents.length - 1;
+      return `${first} (+${extraCount} parça daha)`;
+    };
+
     return (
-      <div className="transition-colors duration-200">
+      <div className="transition-all duration-200">
         <button
           type="button"
           onClick={opts.onToggleOpen}
-          className={`w-full flex items-center justify-between p-4 text-left transition-all duration-300 ${
-            opts.isOpen ? 'bg-surface/50' : 'bg-paper'
+          className={`w-full flex items-center justify-between p-4 text-left transition-all duration-200 cursor-pointer ${
+            opts.isOpen
+              ? 'bg-[#4e49f6]/5'
+              : hasSelection
+                ? 'bg-white hover:bg-slate-50/80'
+                : 'bg-white hover:bg-slate-50/50'
           }`}
         >
-          <div className="min-w-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-ink-muted font-[family-name:var(--font-mono)]">
-              {opts.label}
-            </span>
-            {opts.selectedComponents.length > 0 ? (
-              <p className="text-sm font-semibold text-ink mt-0.5 truncate">
-                {opts.selectedComponents
-                  .map((c) => `${c.brand} ${c.name}`)
-                  .join(', ')}
+          <div className="min-w-0 pr-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-[family-name:var(--font-mono)]">
+                {opts.label}
+              </span>
+              {hasSelection && (
+                <span className="w-2 h-2 rounded-full bg-[#4e49f6]" />
+              )}
+            </div>
+
+            {hasSelection ? (
+              <p className="text-sm font-bold text-slate-900 mt-0.5 truncate">
+                {formatSelectedNames()}
               </p>
             ) : (
-              <p className="text-xs text-ink-muted mt-0.5 font-medium">
-                Bileşen Seçilmedi
+              <p className="text-xs text-slate-400 mt-0.5 font-medium italic">
+                Bileşen Seçilmedi — Seçmek için tıklayın
               </p>
             )}
           </div>
-          <div className="flex items-center gap-3 shrink-0 ml-4">
-            {opts.selectedComponents.length > 0 && (
-              <span className="text-xs font-bold font-[family-name:var(--font-mono)] text-trace bg-trace/10 px-2 py-1 rounded-lg">
+
+          <div className="flex items-center gap-3 shrink-0">
+            {hasSelection && (
+              <span className="text-xs font-bold font-[family-name:var(--font-mono)] text-[#4e49f6] bg-[#4e49f6]/10 px-2.5 py-1 rounded-lg border border-[#4e49f6]/20">
                 {formatPrice(
                   opts.selectedComponents.reduce((s, c) => s + c.price, 0),
                 )}
               </span>
             )}
             <span
-              className={`text-ink-muted text-[10px] transition-transform duration-300 ease-in-out ${
-                opts.isOpen ? 'rotate-180' : 'rotate-0'
+              className={`text-slate-400 text-xs transition-transform duration-300 ease-in-out ${
+                opts.isOpen ? 'rotate-180 text-[#4e49f6]' : 'rotate-0'
               }`}
             >
               ▼
@@ -420,9 +453,9 @@ export default function SistemToplaPage() {
         </button>
 
         <div
-          className={`grid transition-all duration-300 ease-in-out border-hairline ${
+          className={`grid transition-all duration-300 ease-in-out ${
             opts.isOpen
-              ? 'grid-rows-[1fr] opacity-100 border-t p-4 bg-surface/20'
+              ? 'grid-rows-[1fr] opacity-100 border-t border-slate-200/80 p-4 bg-slate-50/60'
               : 'grid-rows-[0fr] opacity-0 p-0 pointer-events-none'
           }`}
         >
@@ -439,26 +472,33 @@ export default function SistemToplaPage() {
       </div>
     );
   }
-
   return (
-    <main className="min-h-screen pb-32">
+    <main className="min-h-screen pb-36 text-slate-900 relative">
       <Navbar />
 
-      <div className="px-6 md:px-12 py-10 max-w-6xl mx-auto grid lg:grid-cols-[1fr_300px] gap-8">
+      <div className="px-4 md:px-8 py-8 md:py-10 max-w-7xl mx-auto grid lg:grid-cols-[1fr_320px] gap-8 relative z-10">
+        {/* SOL TARAF: FORM & BİLEŞEN SEÇİM ALANI */}
         <div>
-          <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight">
-            Sistem Topla
-          </h1>
-          <p className="text-ink-muted mt-2 text-sm">
-            Kategorilere tıklayarak parça listesini açabilir, sisteminizi adım
-            adım toplayabilirsiniz.
-          </p>
+          <div className="space-y-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#4e49f6]/10 border border-[#4e49f6]/20 text-[#4e49f6] text-xs font-semibold tracking-wide">
+              <span className="w-2 h-2 rounded-full bg-[#4e49f6] animate-pulse" />
+              Sistem Yapılandırıcı
+            </div>
+            <h1 className="font-[family-name:var(--font-display)] text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
+              Sistem Topla
+            </h1>
+            <p className="text-slate-500 text-sm">
+              Kategorilere tıklayarak parça listesini açabilir, sisteminizi adım
+              adım oluşturabilirsiniz.
+            </p>
+          </div>
 
-          <div className="mt-8 p-5 bg-paper border border-hairline rounded-2xl space-y-4 shadow-sm">
+          {/* SİSTEM BİLGİLERİ FORM KARTI */}
+          <div className="mt-8 p-6 bg-white border border-slate-200/80 rounded-3xl space-y-5 shadow-xs">
             <div>
               <label
                 htmlFor="build-name"
-                className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5"
+                className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 font-[family-name:var(--font-mono)]"
               >
                 Sistem Adı
               </label>
@@ -468,22 +508,22 @@ export default function SistemToplaPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Örn: Bütçe Dostu Oyun Bilgisayarı"
-                className="w-full max-w-md rounded-xl border border-hairline px-4 py-2.5 text-sm outline-none focus:border-trace transition-colors bg-surface/30"
+                className="w-full max-w-md rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-[#4e49f6] focus:ring-2 focus:ring-[#4e49f6]/15 transition-all bg-slate-50/50 font-medium placeholder:text-slate-400"
               />
             </div>
 
-            <label className="flex items-center gap-2.5 text-sm cursor-pointer w-fit text-ink font-medium">
+            <label className="flex items-center gap-3 text-sm cursor-pointer w-fit text-slate-700 font-semibold select-none">
               <input
                 type="checkbox"
                 checked={isPublic}
                 onChange={(e) => setIsPublic(e.target.checked)}
-                className="w-4 h-4 rounded border-hairline accent-trace"
+                className="w-4 h-4 rounded border-slate-300 accent-[#4e49f6] cursor-pointer"
               />
               Herkese açık olsun (topluluk akışında görünsün)
             </label>
 
-            <div className="pt-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5">
+            <div className="pt-2 border-t border-slate-100">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 font-[family-name:var(--font-mono)]">
                 Sistem Görselleri (En fazla 5 adet)
               </label>
               <input
@@ -492,22 +532,22 @@ export default function SistemToplaPage() {
                 multiple
                 disabled={images.length >= 5}
                 onChange={handleImageChange}
-                className="block text-xs text-ink-muted file:mr-4 file:rounded-xl file:border file:border-hairline file:bg-surface file:px-4 file:py-2 file:text-xs file:font-semibold file:text-ink hover:file:bg-hairline file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="block text-xs text-slate-500 file:mr-4 file:rounded-xl file:border file:border-slate-200 file:bg-slate-50 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-100 file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               />
 
               {images.length > 0 && (
                 <div className="mt-4 space-y-2">
-                  <p className="text-xs text-trace font-medium">
+                  <p className="text-xs text-[#4e49f6] font-semibold">
                     ✓ {images.length}/5 görsel seçildi. Görseller admin
                     onayından sonra yayınlanır.
                   </p>
-                  <div className="flex flex-wrap gap-2 pt-1">
+                  <div className="flex flex-wrap gap-3 pt-1">
                     {images.map((file, index) => {
                       const previewUrl = URL.createObjectURL(file);
                       return (
                         <div
                           key={index}
-                          className="relative group w-16 h-16 rounded-xl border border-hairline overflow-hidden bg-surface"
+                          className="relative group w-20 h-20 rounded-2xl border border-slate-200 overflow-hidden bg-slate-100 shadow-2xs"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
@@ -519,7 +559,7 @@ export default function SistemToplaPage() {
                           <button
                             type="button"
                             onClick={() => removeImage(index)}
-                            className="absolute inset-0 bg-ink/50 flex items-center justify-center text-paper font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+                            className="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer"
                           >
                             Kaldır
                           </button>
@@ -532,12 +572,15 @@ export default function SistemToplaPage() {
             </div>
           </div>
 
+          {/* ACCORDION BİLEŞEN SEÇİM LİSTESİ */}
           {isLoadingComponents ? (
-            <p className="text-ink-muted text-sm mt-12 animate-pulse">
-              Parçalar yükleniyor...
-            </p>
+            <div className="mt-8 p-8 bg-white border border-slate-200/80 rounded-3xl text-center">
+              <p className="text-slate-400 text-sm font-medium animate-pulse">
+                Bileşenler ve uyumluluk verileri yükleniyor...
+              </p>
+            </div>
           ) : (
-            <div className="mt-8 border border-hairline bg-paper rounded-2xl divide-y divide-hairline overflow-hidden shadow-sm">
+            <div className="mt-8 bg-white border border-slate-200/80 rounded-3xl divide-y divide-slate-100 overflow-hidden shadow-xs">
               {renderCategoryRow(CATEGORIES[0])}
               {renderCategoryRow(CATEGORIES[1])}
 
@@ -576,53 +619,58 @@ export default function SistemToplaPage() {
             </div>
           )}
 
+          {/* HATA BİLDİRİMLERİ */}
           {generalError && (
-            <p className="mt-6 text-sm text-incompatible font-medium bg-incompatible/5 p-3 rounded-xl border border-incompatible/20">
+            <p className="mt-6 text-sm text-red-600 font-semibold bg-red-50 p-4 rounded-2xl border border-red-200/80 shadow-2xs">
               {generalError}
             </p>
           )}
 
           {issues.length > 0 && (
-            <div className="mt-6 rounded-xl border border-incompatible bg-incompatible/5 p-4">
-              <p className="font-bold text-sm text-incompatible mb-2">
-                Seçilen parçalar uyumlu değil:
+            <div className="mt-6 rounded-2xl border border-red-200/80 bg-red-50/90 p-5 space-y-2 shadow-2xs">
+              <p className="font-bold text-sm text-red-700 flex items-center gap-1.5">
+                <span>⚠️</span> Seçilen parçalar arasında uyumsuzluk tespit
+                edildi:
               </p>
-              <ul className="space-y-1">
+              <ul className="space-y-1.5 pl-5 list-disc text-sm text-red-600 font-medium">
                 {issues.map((issue, i) => (
-                  <li key={i} className="text-sm text-incompatible font-medium">
-                    • {issue.message}
-                  </li>
+                  <li key={i}>{issue.message}</li>
                 ))}
               </ul>
             </div>
           )}
         </div>
 
-        <aside className="hidden lg:block">
+        {/* SAĞ TARAF: CANLI SİSTEM ÖZETİ (SIDEBAR) */}
+        <aside className="hidden lg:block lg:sticky lg:top-24 h-fit">
           <LiveSidebar selectedComponents={selectedComponents} />
         </aside>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-paper border-t border-hairline px-6 md:px-12 py-4 flex items-center justify-between shadow-md z-40">
-        <div>
-          <p className="text-[10px] text-ink-muted font-bold uppercase tracking-wider">
-            Maliyet
-          </p>
-          <p className="font-[family-name:var(--font-mono)] text-xl font-extrabold text-ink tracking-tight">
-            {formatPrice(selectedComponents.reduce((s, c) => s + c.price, 0))}
-          </p>
+      {/* ALT YAPİŞKAN MALİYET BAR (FIXED BOTTOM BAR) */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200/90 px-4 md:px-8 py-4 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.05)] z-40">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-[family-name:var(--font-mono)]">
+              Toplam Konfigürasyon Tutarı
+            </p>
+            <p className="font-[family-name:var(--font-mono)] text-xl md:text-2xl font-extrabold text-[#4e49f6] tracking-tight">
+              {formatPrice(selectedComponents.reduce((s, c) => s + c.price, 0))}
+            </p>
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={!isComplete || isSubmitting}
+            className="rounded-xl bg-[#4e49f6] hover:bg-[#3d39c4] text-white text-sm font-bold px-8 py-3.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-[#4e49f6]/25 active:scale-95 cursor-pointer"
+          >
+            {isSubmitting
+              ? 'Uyumluluk Kontrol Ediliyor...'
+              : isComplete
+                ? 'Sistemi Oluştur'
+                : 'Tüm Parçaları Tamamla'}
+          </button>
         </div>
-        <button
-          onClick={handleSubmit}
-          disabled={!isComplete || isSubmitting}
-          className="rounded-xl bg-ink text-paper text-sm font-bold px-8 py-3.5 hover:bg-trace transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
-        >
-          {isSubmitting
-            ? 'Kontrol ediliyor...'
-            : isComplete
-              ? 'Sistemi Oluştur'
-              : 'Eksik parça var'}
-        </button>
       </div>
     </main>
   );

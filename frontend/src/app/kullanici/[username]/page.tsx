@@ -1,17 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { notFound } from 'next/navigation';
 import { deleteBuild } from '@/lib/api';
-import { getFeed } from '@/lib/api';
-import { use } from 'react';
 import Navbar from '@/components/Navbar';
 import BuildCard from '@/components/BuildCard';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import ProfileCover from '@/components/ProfileCover';
 import { useAuth } from '@/lib/auth-context';
 import ProfileWall from '@/components/ProfileWall';
-import FeaturedBuildCard from '@/components/FeaturedBuildCard';
 import {
   getUserProfileWithWall,
   type Build,
@@ -66,12 +63,22 @@ export default function UserProfilePage({
     notFound();
   }
 
+  /* 1. TAZE YÜKLENİYOR SKELETON EKRANI (GENİŞ YERLEŞİM) */
   if (isLoading || isAuthLoading) {
     return (
       <main className="min-h-screen pb-20">
         <Navbar />
-        <div className="px-6 md:px-12 py-10">
-          <p className="text-ink-muted">Yükleniyor...</p>
+        <div className="px-6 md:px-12 py-10 space-y-8 animate-pulse">
+          <div className="w-full h-48 md:h-64 bg-slate-200 rounded-3xl" />
+          <div className="flex items-end gap-4 -mt-16 px-4">
+            <div className="w-24 h-24 rounded-full bg-slate-300 ring-4 ring-white" />
+            <div className="h-12 bg-slate-200 rounded-2xl w-56" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pt-6">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="h-64 bg-slate-200 rounded-2xl" />
+            ))}
+          </div>
         </div>
       </main>
     );
@@ -83,106 +90,139 @@ export default function UserProfilePage({
     <main className="min-h-screen pb-20">
       <Navbar />
 
-      <div className="px-6 md:px-12 py-10">
-        <ProfileCover
-          coverUrl={profile.coverUrl}
-          isOwner={isOwner}
-          token={token}
-          onUploaded={(url) =>
-            setProfile((prev) => (prev ? { ...prev, coverUrl: url } : prev))
-          }
-        />
-
-        <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 px-2 relative z-10">
-          <ProfileAvatar
-            username={profile.username}
-            avatarUrl={profile.avatarUrl}
+      {/* Ekran genişliğine yayılan ana alan (px-6 md:px-12) */}
+      <div className="px-6 md:px-12 py-10 space-y-8">
+        {/* KAPAK VE BÜYÜK AVATAR ALANI */}
+        <div>
+          <ProfileCover
+            coverUrl={profile.coverUrl}
             isOwner={isOwner}
             token={token}
             onUploaded={(url) =>
-              setProfile((prev) => (prev ? { ...prev, avatarUrl: url } : prev))
+              setProfile((prev) => (prev ? { ...prev, coverUrl: url } : prev))
             }
           />
-          <div className="sm:pb-2 bg-ink/70 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-paper/10 w-fit">
-            <h1 className="font-[family-name:var(--font-display)] text-2xl md:text-2xl font-semibold tracking-tight text-paper">
-              {profile.username}
-            </h1>
-            <div className="flex items-center gap-2 mt-1.5 text-sm text-paper/70">
-              <span className="font-[family-name:var(--font-mono)]">
-                {builds.length} sistem
-              </span>
-              <span className="text-paper/30">·</span>
-              <span>{formatDate(profile.createdAt)} tarihinde katıldı</span>
+
+          <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12 px-2 relative z-10">
+            <ProfileAvatar
+              username={profile.username}
+              avatarUrl={profile.avatarUrl}
+              isOwner={isOwner}
+              token={token}
+              onUploaded={(url) =>
+                setProfile((prev) =>
+                  prev ? { ...prev, avatarUrl: url } : prev,
+                )
+              }
+            />
+
+            {/* 2. TAZE KULLANICI BİLGİ BARI & VURGULU SİSTEM SAYACI */}
+            <div className="sm:pb-2 bg-slate-900/80 backdrop-blur-md rounded-2xl px-5 py-3 border border-white/10 text-white w-fit shadow-xl flex items-center gap-4">
+              <div>
+                <h1 className="font-[family-name:var(--font-display)] text-2xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                  {profile.username}
+                </h1>
+                <p className="text-xs text-slate-300 font-medium mt-0.5">
+                  {formatDate(profile.createdAt)} tarihinde katıldı
+                </p>
+              </div>
+
+              {/* Vurgulu Sistem Sayıcı Rozeti */}
+              <div className="h-9 w-px bg-white/15" />
+              <div className="text-center px-1">
+                <span className="font-[family-name:var(--font-mono)] text-xl font-extrabold text-[#C084FC] block leading-none">
+                  {builds.length}
+                </span>
+                <span className="text-[10px] text-slate-300 font-medium uppercase tracking-wider">
+                  Sistem
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
+        {/* PROFiL SAHİBİ BİLGİLENDİRME */}
         {isOwner && (
-          <p className="text-xs text-ink-muted mt-3 p-3">
-            Özel sistemlerin de dahil edilerek gösteriliyor — sadece sen
-            görebiliyorsun.
-          </p>
+          <div className="bg-[#4e49f6]/10 border border-[#4e49f6]/20 rounded-2xl p-3.5 text-xs font-semibold text-[#4e49f6] flex items-center gap-2">
+            <span>🔒</span>
+            <span>
+              Özel sistemlerin de listede gösteriliyor — bunu sadece sen
+              görebiliyorsun.
+            </span>
+          </div>
         )}
 
+        {/* 3. TAZE BOŞ DURUM KARTI VEYA SİSTEM KARTLARI */}
         {builds.length === 0 ? (
-          <div className="text-center py-20 border border-dashed border-hairline rounded-2xl mt-8">
-            <p className="text-ink-muted">
+          <div className="text-center py-20 border-2 border-dashed border-slate-200 rounded-3xl mt-8 bg-white/50 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-[#4e49f6]/10 border border-[#4e49f6]/20 text-[#4e49f6] flex items-center justify-center mx-auto text-xl shadow-xs">
+              🖥️
+            </div>
+            <p className="text-slate-800 font-bold text-base">
               {isOwner
                 ? 'Henüz bir sistem oluşturmadın. Hemen ilk sistemini topla!'
                 : 'Bu kullanıcı henüz bir sistem paylaşmamış.'}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {' '}
-            {builds.map((build) => (
-              <div key={build.id} className="relative">
-                {isOwner && !build.isPublic && (
-                  <span className="absolute top-3 right-3 z-10 text-xs bg-ink text-paper rounded-full px-2.5 py-1">
-                    Özel
-                  </span>
-                )}
-                {isOwner && (
-                  <button
-                    onClick={async (e) => {
-                      e.preventDefault();
-                      if (!token) return;
-                      if (
-                        !confirm(
-                          `"${build.name}" sistemini silmek istediğine emin misin? Bu işlem geri alınamaz.`,
+          <div>
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold text-slate-900 mb-4">
+              Paylaşılan Sistemler
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {builds.map((build) => (
+                <div key={build.id} className="relative group">
+                  {isOwner && !build.isPublic && (
+                    <span className="absolute top-3 right-3 z-10 text-xs bg-slate-900 text-white font-bold rounded-full px-2.5 py-1 border border-slate-700">
+                      Özel
+                    </span>
+                  )}
+                  {isOwner && (
+                    <button
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        if (!token) return;
+                        if (
+                          !confirm(
+                            `"${build.name}" sistemini silmek istediğine emin misin? Bu işlem geri alınamaz.`,
+                          )
                         )
-                      )
-                        return;
-                      try {
-                        await deleteBuild(build.id, token);
-                        setBuilds((prev) =>
-                          prev.filter((b) => b.id !== build.id),
-                        );
-                      } catch (err) {
-                        alert(
-                          err instanceof Error
-                            ? err.message
-                            : 'Bir hata oluştu.',
-                        );
-                      }
-                    }}
-                    className="absolute bottom-3 right-3 z-10 text-xs bg-incompatible text-paper rounded-full w-7 h-7 flex items-center justify-center hover:bg-incompatible/80 transition-colors"
-                    title="Sistemi sil"
-                  >
-                    🗑
-                  </button>
-                )}
-                <BuildCard build={build} />
-              </div>
-            ))}
+                          return;
+                        try {
+                          await deleteBuild(build.id, token);
+                          setBuilds((prev) =>
+                            prev.filter((b) => b.id !== build.id),
+                          );
+                        } catch (err) {
+                          alert(
+                            err instanceof Error
+                              ? err.message
+                              : 'Bir hata oluştu.',
+                          );
+                        }
+                      }}
+                      className="absolute bottom-3 right-3 z-10 text-xs bg-[#e1483d] hover:bg-[#e1483d]/80 text-white rounded-full w-7 h-7 flex items-center justify-center transition-colors cursor-pointer shadow-sm active:scale-95"
+                      title="Sistemi sil"
+                    >
+                      🗑
+                    </button>
+                  )}
+                  <BuildCard build={build} />
+                </div>
+              ))}
+            </div>
           </div>
         )}
+
+        {/* PROFiL DUVARI */}
         {profile && (
-          <ProfileWall
-            username={profile.username}
-            profileUserId={profile.id}
-            initialComments={wallComments}
-          />
+          <div className="mt-8">
+            <ProfileWall
+              username={profile.username}
+              profileUserId={profile.id}
+              initialComments={wallComments}
+            />
+          </div>
         )}
       </div>
     </main>

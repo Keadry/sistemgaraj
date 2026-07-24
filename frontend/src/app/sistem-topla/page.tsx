@@ -312,17 +312,17 @@ export default function SistemToplaPage() {
         <button
           type="button"
           onClick={() => setActiveCategory(isOpen ? null : cat.key)}
-          className={`w-full flex items-center justify-between p-4 text-left transition-all duration-200 cursor-pointer ${
+          className={`w-full flex items-center justify-between p-4 text-left transition-all duration-200 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
             isOpen
-              ? 'bg-[#4e49f6]/5'
+              ? 'bg-trace/5'
               : selectedComponent
-                ? 'bg-white hover:bg-slate-50/80'
-                : 'bg-white hover:bg-slate-50/50'
+                ? 'bg-paper hover:bg-surface/80'
+                : 'bg-paper hover:bg-surface/50'
           }`}
         >
           <div className="min-w-0 pr-2">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-[family-name:var(--font-mono)]">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted font-[family-name:var(--font-mono)]">
                 {cat.label}
               </span>
               {selectedComponent && (
@@ -335,7 +335,7 @@ export default function SistemToplaPage() {
                 {selectedComponent.brand} {selectedComponent.name}
               </p>
             ) : (
-              <p className="text-xs text-slate-400 mt-0.5 font-medium italic">
+              <p className="text-xs text-ink-muted mt-0.5 font-medium italic">
                 Bileşen Seçilmedi — Seçmek için tıklayın
               </p>
             )}
@@ -348,7 +348,7 @@ export default function SistemToplaPage() {
               </span>
             )}
             <span
-              className={`text-slate-400 text-xs transition-transform duration-300 ease-in-out ${
+              className={`text-ink-muted text-xs transition-transform duration-300 ease-in-out ${
                 isOpen ? 'rotate-180 text-[#4e49f6]' : 'rotate-0'
               }`}
             >
@@ -415,7 +415,7 @@ export default function SistemToplaPage() {
         >
           <div className="min-w-0 pr-2">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 font-[family-name:var(--font-mono)]">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted font-[family-name:var(--font-mono)]">
                 {opts.label}
               </span>
               {hasSelection && (
@@ -428,7 +428,7 @@ export default function SistemToplaPage() {
                 {formatSelectedNames()}
               </p>
             ) : (
-              <p className="text-xs text-slate-400 mt-0.5 font-medium italic">
+              <p className="text-xs text-ink-muted mt-0.5 font-medium italic">
                 Bileşen Seçilmedi — Seçmek için tıklayın
               </p>
             )}
@@ -443,7 +443,7 @@ export default function SistemToplaPage() {
               </span>
             )}
             <span
-              className={`text-slate-400 text-xs transition-transform duration-300 ease-in-out ${
+              className={`text-ink-muted text-xs transition-transform duration-300 ease-in-out ${
                 opts.isOpen ? 'rotate-180 text-[#4e49f6]' : 'rotate-0'
               }`}
             >
@@ -498,7 +498,7 @@ export default function SistemToplaPage() {
             <div>
               <label
                 htmlFor="build-name"
-                className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 font-[family-name:var(--font-mono)]"
+                className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-2 font-[family-name:var(--font-mono)]"
               >
                 Sistem Adı
               </label>
@@ -508,7 +508,7 @@ export default function SistemToplaPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Örn: Bütçe Dostu Oyun Bilgisayarı"
-                className="w-full max-w-md rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-[#4e49f6] focus:ring-2 focus:ring-[#4e49f6]/15 transition-all bg-slate-50/50 font-medium placeholder:text-slate-400"
+                className="w-full max-w-md rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-[#4e49f6] focus:ring-2 focus:ring-[#4e49f6]/15 transition-all bg-slate-50/50 font-medium placeholder:text-ink-muted"
               />
             </div>
 
@@ -523,7 +523,7 @@ export default function SistemToplaPage() {
             </label>
 
             <div className="pt-2 border-t border-slate-100">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 font-[family-name:var(--font-mono)]">
+              <label className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-2 font-[family-name:var(--font-mono)]">
                 Sistem Görselleri (En fazla 5 adet)
               </label>
               <input
@@ -575,7 +575,7 @@ export default function SistemToplaPage() {
           {/* ACCORDION BİLEŞEN SEÇİM LİSTESİ */}
           {isLoadingComponents ? (
             <div className="mt-8 p-8 bg-white border border-slate-200/80 rounded-3xl text-center">
-              <p className="text-slate-400 text-sm font-medium animate-pulse">
+              <p className="text-ink-muted text-sm font-medium animate-pulse">
                 Bileşenler ve uyumluluk verileri yükleniyor...
               </p>
             </div>
@@ -651,7 +651,7 @@ export default function SistemToplaPage() {
       <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200/90 px-4 md:px-8 py-4 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.05)] z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider font-[family-name:var(--font-mono)]">
+            <p className="text-[10px] text-ink-muted font-bold uppercase tracking-wider font-[family-name:var(--font-mono)]">
               Toplam Konfigürasyon Tutarı
             </p>
             <p className="font-[family-name:var(--font-mono)] text-xl md:text-2xl font-extrabold text-[#4e49f6] tracking-tight">

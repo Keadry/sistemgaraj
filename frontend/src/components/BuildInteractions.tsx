@@ -110,7 +110,7 @@ export default function BuildInteractions({
         <CommentForm
           buildId={buildId}
           onCommentAdded={(comment) =>
-            setComments((prev) => [...prev, { ...comment, replies: [] }])
+            setComments((prev) => [{ ...comment, replies: [] }, ...prev])
           }
         />
 

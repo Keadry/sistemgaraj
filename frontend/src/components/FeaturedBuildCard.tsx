@@ -38,7 +38,7 @@ export default function FeaturedBuildCard({ build }: { build: Build }) {
         <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/0 to-ink/0 opacity-0 group-hover:opacity-100 transition-opacity" />
 
         <span className="absolute top-3 left-3 flex items-center gap-1 text-[11px] font-semibold bg-trace text-paper rounded-full px-2.5 py-1 shadow-sm">
-          ★ Önerilen
+          ★ Öne Çıkan
         </span>
       </div>
 

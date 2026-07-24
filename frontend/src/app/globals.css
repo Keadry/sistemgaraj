@@ -38,6 +38,14 @@
   --font-mono: var(--font-jetbrains-mono);
 }
 
+/* Trace renginin rgb() bileşenleri — gölge/glow gibi Tailwind'in tema
+   token'ını doğrudan okuyamadığı yerlerde kullanılır. --color-trace'i
+   değiştirirsen bunu da güncellemen yeterli, başka hiçbir yerde ham hex
+   renk aramana gerek kalmaz. */
+:root {
+  --color-trace-rgb: 78, 73, 246;
+}
+
 body {
   background-color: var(--color-paper);
   color: var(--color-ink);
@@ -47,9 +55,8 @@ body {
   overflow-x: hidden;
 }
 
-/* GLOBAL MOR ARKA PLAN ISILTILARI (GLOWS) */
+/* GLOBAL MOR ARKA PLAN ISILTILARI (GLOWS) — tek kaynak, sayfalarda tekrar etmez */
 
-/* 1. Üst Orta Mor Radyal Glow */
 body::before {
   content: '';
   position: absolute;
@@ -60,8 +67,8 @@ body::before {
   height: 380px;
   background: radial-gradient(
     circle at top,
-    rgba(78, 73, 246, 0.12) 0%,
-    rgba(78, 73, 246, 0.03) 50%,
+    rgba(var(--color-trace-rgb), 0.12) 0%,
+    rgba(var(--color-trace-rgb), 0.03) 50%,
     transparent 80%
   );
   filter: blur(40px);
@@ -69,7 +76,6 @@ body::before {
   z-index: 0;
 }
 
-/* 2. Sağ Taraf İkincil Yumuşak Parıltı */
 body::after {
   content: '';
   position: absolute;
@@ -79,7 +85,7 @@ body::after {
   height: 500px;
   background: radial-gradient(
     circle,
-    rgba(78, 73, 246, 0.07) 0%,
+    rgba(var(--color-trace-rgb), 0.07) 0%,
     transparent 70%
   );
   filter: blur(50px);

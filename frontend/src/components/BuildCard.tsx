@@ -30,11 +30,11 @@ export default function BuildCard({ build }: { build: Build }) {
   return (
     <Link
       href={`/sistemler/${build.id}`}
-      className="group block rounded-2xl border border-hairline bg-paper overflow-hidden hover:border-[#4e49f6]/40 transition-all duration-300 hover:shadow-xl hover:shadow-[#4e49f6]/5 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4e49f6]"
+      className="group block rounded-2xl border border-hairline bg-paper overflow-hidden hover:border-trace/40 transition-all duration-300 hover:shadow-xl hover:shadow-trace/5 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
     >
-      <div className="aspect-[4/3] bg-slate-100 relative overflow-hidden">
+      <div className="aspect-[4/3] bg-surface relative overflow-hidden">
         {build.isFeatured && (
-          <span className="absolute top-3 left-3 bg-[#4e49f6] text-white rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-sm z-10 flex items-center gap-1">
+          <span className="absolute top-3 left-3 bg-trace text-paper rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-sm z-10 flex items-center gap-1">
             ★ Öne Çıkan
           </span>
         )}
@@ -43,10 +43,10 @@ export default function BuildCard({ build }: { build: Build }) {
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-[family-name:var(--font-display)] text-base font-bold tracking-tight text-slate-900 group-hover:text-[#4e49f6] transition-colors line-clamp-1">
+          <h3 className="font-[family-name:var(--font-display)] text-base font-bold tracking-tight text-ink group-hover:text-trace transition-colors line-clamp-1">
             {build.name}
           </h3>
-          <span className="font-[family-name:var(--font-mono)] text-sm font-bold text-[#4e49f6] whitespace-nowrap shrink-0">
+          <span className="font-[family-name:var(--font-mono)] text-sm font-bold text-trace whitespace-nowrap shrink-0">
             {formatPrice(build.totalPrice)}
           </span>
         </div>
@@ -56,24 +56,24 @@ export default function BuildCard({ build }: { build: Build }) {
         </p>
 
         {(cpu || gpu) && (
-          <div className="mt-3 space-y-1 bg-slate-50 p-2.5 rounded-xl border border-hairline/60">
+          <div className="mt-3 space-y-1 bg-surface p-2.5 rounded-xl border border-hairline/60">
             {cpu && (
-              <p className="text-xs text-slate-700 truncate">
-                <span className="text-slate-400 font-medium">CPU:</span>{' '}
+              <p className="text-xs text-ink-muted truncate">
+                <span className="text-ink-muted/70 font-medium">CPU:</span>{' '}
                 {cpu.name}
               </p>
             )}
             {gpu && (
-              <p className="text-xs text-slate-700 truncate">
-                <span className="text-slate-400 font-medium">GPU:</span>{' '}
+              <p className="text-xs text-ink-muted truncate">
+                <span className="text-ink-muted/70 font-medium">GPU:</span>{' '}
                 {gpu.name}
               </p>
             )}
           </div>
         )}
 
-        <div className="mt-4 flex items-center gap-4 text-xs text-slate-500 pt-3 border-t border-hairline">
-          <span className="flex items-center gap-1.5 hover:text-[#4e49f6] transition-colors">
+        <div className="mt-4 flex items-center gap-4 text-xs text-ink-muted pt-3 border-t border-hairline">
+          <span className="flex items-center gap-1.5 hover:text-trace transition-colors">
             <svg
               width="14"
               height="14"
@@ -86,7 +86,7 @@ export default function BuildCard({ build }: { build: Build }) {
             </svg>
             {build.likes.length}
           </span>
-          <span className="flex items-center gap-1.5 hover:text-[#4e49f6] transition-colors">
+          <span className="flex items-center gap-1.5 hover:text-trace transition-colors">
             <svg
               width="14"
               height="14"

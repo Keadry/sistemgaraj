@@ -459,6 +459,7 @@ function BuildsTab({ token }: { token: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionId, setActionId] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     getAllBuildsAdmin(token)
@@ -476,8 +477,17 @@ function BuildsTab({ token }: { token: string }) {
           b.id === buildId ? { ...b, isFeatured: updated.isFeatured } : b,
         ),
       );
+      showToast(
+        updated.isFeatured
+          ? 'Sistem öne çıkarıldı.'
+          : 'Öne çıkarma kaldırıldı.',
+        'success',
+      );
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setActionId(null);
     }
@@ -542,6 +552,8 @@ function BuildsTab({ token }: { token: string }) {
 // SEKME 3: YORUMLAR
 // ==============================
 function CommentsTab({ token }: { token: string }) {
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
   const [comments, setComments] = useState<AdminComment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -556,14 +568,24 @@ function CommentsTab({ token }: { token: string }) {
   }, [token]);
 
   async function handleDelete(commentId: string) {
-    if (!confirm('Bu yorumu silmek istediğine emin misin?')) return;
+    const ok = await confirmDialog({
+      title: 'Yorumu sil',
+      description: 'Bu işlem geri alınamaz.',
+      confirmLabel: 'Sil',
+      danger: true,
+    });
+    if (!ok) return;
 
     setActionId(commentId);
     try {
       await deleteComment(commentId, token);
       setComments((prev) => prev.filter((c) => c.id !== commentId));
+      showToast('Yorum silindi.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setActionId(null);
     }
@@ -578,8 +600,12 @@ function CommentsTab({ token }: { token: string }) {
           c.id === commentId ? { ...c, status: 'APPROVED' as const } : c,
         ),
       );
+      showToast('Yorum onaylandı.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setActionId(null);
     }
@@ -594,8 +620,12 @@ function CommentsTab({ token }: { token: string }) {
           c.id === commentId ? { ...c, status: 'REJECTED' as const } : c,
         ),
       );
+      showToast('Yorum reddedildi.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setActionId(null);
     }
@@ -726,6 +756,8 @@ function NewBuildsTab({ token }: { token: string }) {
   const API_URL = process.env.NEXT_PUBLIC_API_URL;
   const [builds, setBuilds] = useState<NewBuildForReview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
   const [actionId, setActionId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -739,21 +771,30 @@ function NewBuildsTab({ token }: { token: string }) {
     try {
       await approveNewBuild(id, token);
       setBuilds((prev) => prev.filter((b) => b.id !== id));
+      showToast('Sistem onaylandı.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Hata oluştu.');
+      showToast(err instanceof Error ? err.message : 'Hata oluştu.', 'error');
     } finally {
       setActionId(null);
     }
   }
 
   async function handleReject(id: string) {
-    if (!confirm('Bu sistemi reddetmek istediğine emin misin?')) return;
+    const ok = await confirmDialog({
+      title: 'Sistemi reddet',
+      description: 'Görseller silinecek, sistem yayınlanmayacak.',
+      confirmLabel: 'Reddet',
+      danger: true,
+    });
+    if (!ok) return;
+
     setActionId(id);
     try {
       await rejectNewBuild(id, token);
       setBuilds((prev) => prev.filter((b) => b.id !== id));
+      showToast('Sistem reddedildi.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Hata oluştu.');
+      showToast(err instanceof Error ? err.message : 'Hata oluştu.', 'error');
     } finally {
       setActionId(null);
     }
@@ -816,6 +857,8 @@ function EditRequestsTab({ token }: { token: string }) {
   const [requests, setRequests] = useState<AdminEditRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
 
   useEffect(() => {
     getEditRequestsForReview(token)
@@ -828,22 +871,29 @@ function EditRequestsTab({ token }: { token: string }) {
     try {
       await approveEditRequest(id, token);
       setRequests((prev) => prev.filter((r) => r.id !== id));
+      showToast('Düzenleme onaylandı.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Hata oluştu.');
+      showToast(err instanceof Error ? err.message : 'Hata oluştu.', 'error');
     } finally {
       setActionId(null);
     }
   }
 
   async function handleReject(id: string) {
-    if (!confirm('Bu düzenleme isteğini reddetmek istediğine emin misin?'))
-      return;
+    const ok = await confirmDialog({
+      title: 'Düzenlemeyi reddet',
+      confirmLabel: 'Reddet',
+      danger: true,
+    });
+    if (!ok) return;
+
     setActionId(id);
     try {
       await rejectEditRequest(id, token);
       setRequests((prev) => prev.filter((r) => r.id !== id));
+      showToast('Düzenleme isteği reddedildi.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Hata oluştu.');
+      showToast(err instanceof Error ? err.message : 'Hata oluştu.', 'error');
     } finally {
       setActionId(null);
     }

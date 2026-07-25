@@ -58,7 +58,12 @@ export default function UserDetailPanel({
 
         {detail && (
           <div className="mt-4">
-            <p className="font-medium">@{detail.username}</p>{' '}
+            <Link
+              href={`/kullanici/${detail.username}`}
+              className="font-medium text-sm hover:text-trace transition-colors"
+            >
+              @{detail.username}
+            </Link>
             <p className="text-sm text-ink-muted">{detail.email}</p>
             <p className="text-xs text-ink-muted mt-1">
               Kayıt: {formatDate(detail.createdAt)} · Rol: {detail.role}

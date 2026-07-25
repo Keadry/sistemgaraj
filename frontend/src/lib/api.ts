@@ -218,7 +218,7 @@ export async function createBuild(
 export type AdminUser = {
   id: string;
   email: string;
-  username: string | null;
+  username: string;
   role: 'USER' | 'MODERATOR' | 'ADMIN';
   isBanned: boolean;
   banReason: string | null;

@@ -4,7 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
+import BanDialog from '@/components/BanDialog';
+import MuteDialog from '@/components/MuteDialog';
+import UsernameDialog from '@/components/UsernameDialog';
 import { useAuth } from '@/lib/auth-context';
+import { useToast } from '@/lib/toast-context';
+import { useConfirm } from '@/lib/confirm-context';
 import UserDetailPanel from '@/components/UserDetailPanel';
 import {
   getUsers,
@@ -123,6 +128,12 @@ export default function AdminPage() {
 // ==============================
 // SEKME 1: KULLANICILAR
 // ==============================
+// ==============================
+// SEKME 1: KULLANICILAR
+// ==============================
+// ==============================
+// SEKME 1: KULLANICILAR
+// ==============================
 function UsersTab({
   token,
   isAdmin,
@@ -132,11 +143,19 @@ function UsersTab({
   isAdmin: boolean;
   currentUserId: string;
 }) {
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
+
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionUserId, setActionUserId] = useState<string | null>(null);
+
+  const [muteDialogUserId, setMuteDialogUserId] = useState<string | null>(null);
+  const [banDialogUserId, setBanDialogUserId] = useState<string | null>(null);
+  const [usernameDialogUser, setUsernameDialogUser] =
+    useState<AdminUser | null>(null);
 
   useEffect(() => {
     getUsers(token)
@@ -150,17 +169,20 @@ function UsersTab({
     setUsers(fresh);
   }
 
-  async function handleMute(userId: string) {
-    const hours = prompt('Kaç saat susturulsun?', '24');
-    if (!hours) return;
-    const reason = prompt('Sebep (opsiyonel):') || '';
-
+  async function handleMuteConfirm(hours: number, reason: string) {
+    if (!muteDialogUserId) return;
+    const userId = muteDialogUserId;
+    setMuteDialogUserId(null);
     setActionUserId(userId);
     try {
-      await muteUser(userId, Number(hours), reason, token);
+      await muteUser(userId, hours, reason, token);
       await refresh();
+      showToast('Kullanıcı susturuldu.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setActionUserId(null);
     }
@@ -171,38 +193,54 @@ function UsersTab({
     try {
       await unmuteUser(userId, token);
       await refresh();
+      showToast('Susturma kaldırıldı.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setActionUserId(null);
     }
   }
 
-  async function handleBan(userId: string) {
-    if (
-      !confirm('Bu kullanıcıyı kalıcı olarak banlamak istediğine emin misin?')
-    )
-      return;
-    const reason = prompt('Ban sebebi:') || 'Belirtilmedi';
-
+  async function handleBanConfirm(reason: string) {
+    if (!banDialogUserId) return;
+    const userId = banDialogUserId;
+    setBanDialogUserId(null);
     setActionUserId(userId);
     try {
       await banUser(userId, reason, token);
       await refresh();
+      showToast('Kullanıcı banlandı.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setActionUserId(null);
     }
   }
 
   async function handleUnban(userId: string) {
+    const ok = await confirmDialog({
+      title: 'Banı kaldır',
+      description: 'Bu kullanıcının hesabı tekrar aktif hale gelecek.',
+      confirmLabel: 'Banı Kaldır',
+    });
+    if (!ok) return;
+
     setActionUserId(userId);
     try {
       await unbanUser(userId, token);
       await refresh();
+      showToast('Ban kaldırıldı.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setActionUserId(null);
     }
@@ -213,23 +251,31 @@ function UsersTab({
     try {
       await changeUserRole(userId, role, token);
       await refresh();
+      showToast('Rol güncellendi.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setActionUserId(null);
     }
   }
 
-  async function handleUsernameChange(userId: string) {
-    const newUsername = prompt('Yeni kullanıcı adı:');
-    if (!newUsername) return;
-
+  async function handleUsernameConfirm(newUsername: string) {
+    if (!usernameDialogUser) return;
+    const userId = usernameDialogUser.id;
+    setUsernameDialogUser(null);
     setActionUserId(userId);
     try {
       await changeUsername(userId, newUsername, token);
       await refresh();
+      showToast('Kullanıcı adı güncellendi.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setActionUserId(null);
     }
@@ -270,7 +316,7 @@ function UsersTab({
                       </button>
                       {isAdmin && (
                         <button
-                          onClick={() => handleUsernameChange(u.id)}
+                          onClick={() => setUsernameDialogUser(u)}
                           disabled={actionUserId === u.id}
                           title="Kullanıcı adını değiştir"
                           className="text-ink-muted hover:text-trace transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace rounded"
@@ -335,7 +381,7 @@ function UsersTab({
                         ) : (
                           <button
                             disabled={isBusy}
-                            onClick={() => handleMute(u.id)}
+                            onClick={() => setMuteDialogUserId(u.id)}
                             className="text-xs rounded-full border border-hairline px-3 py-1 hover:border-trace transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
                           >
                             Sustur
@@ -355,7 +401,7 @@ function UsersTab({
                             ) : (
                               <button
                                 disabled={isBusy}
-                                onClick={() => handleBan(u.id)}
+                                onClick={() => setBanDialogUserId(u.id)}
                                 className="text-xs rounded-full border border-incompatible text-incompatible px-3 py-1 hover:bg-incompatible/10 transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-incompatible"
                               >
                                 Banla
@@ -380,10 +426,31 @@ function UsersTab({
           onClose={() => setSelectedUserId(null)}
         />
       )}
+
+      {muteDialogUserId && (
+        <MuteDialog
+          onConfirm={handleMuteConfirm}
+          onCancel={() => setMuteDialogUserId(null)}
+        />
+      )}
+
+      {banDialogUserId && (
+        <BanDialog
+          onConfirm={handleBanConfirm}
+          onCancel={() => setBanDialogUserId(null)}
+        />
+      )}
+
+      {usernameDialogUser && (
+        <UsernameDialog
+          currentUsername={usernameDialogUser.username}
+          onConfirm={handleUsernameConfirm}
+          onCancel={() => setUsernameDialogUser(null)}
+        />
+      )}
     </>
   );
 }
-
 // ==============================
 // SEKME 2: SİSTEMLER
 // ==============================

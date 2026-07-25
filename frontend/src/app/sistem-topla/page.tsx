@@ -6,6 +6,14 @@ import Navbar from '@/components/Navbar';
 import ComponentPicker from '@/components/ComponentPicker';
 import LiveSidebar from '@/components/LiveSidebar';
 import { isCompatible } from '@/lib/compatibility-client';
+import {
+  saveDraft,
+  loadDraft,
+  clearDraft,
+  hasDraftContent,
+} from '@/lib/build-draft';
+import { useToast } from '@/lib/toast-context';
+import { useConfirm } from '@/lib/confirm-context';
 import { useAuth } from '@/lib/auth-context';
 import {
   getComponents,
@@ -53,6 +61,9 @@ function formatPrice(price: number): string {
 export default function SistemToplaPage() {
   const { user, token, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
+  const [draftRestored, setDraftRestored] = useState(false);
 
   const [components, setComponents] = useState<Component[]>([]);
   const [isLoadingComponents, setIsLoadingComponents] = useState(true);
@@ -88,6 +99,49 @@ export default function SistemToplaPage() {
       .catch(() => setGeneralError('Parçalar yüklenirken bir hata oluştu.'))
       .finally(() => setIsLoadingComponents(false));
   }, []);
+
+  // Sayfa ilk açıldığında, varsa kaydedilmiş taslağı geri yükle
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft && hasDraftContent(draft)) {
+      setName(draft.name);
+      setIsPublic(draft.isPublic);
+      setSelection({
+        cpuId: draft.cpuId,
+        motherboardId: draft.motherboardId,
+        gpuId: draft.gpuId,
+        psuId: draft.psuId,
+        caseId: draft.caseId,
+      });
+      setRamIds(draft.ramIds);
+      setStorageIds(draft.storageIds);
+    }
+    setDraftRestored(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Herhangi bir seçim değiştiğinde taslağı otomatik kaydet
+  useEffect(() => {
+    if (!draftRestored) return; // ilk yükleme bitmeden kaydetmeyelim, üzerine yazmayalım
+
+    const draft = {
+      name,
+      isPublic,
+      cpuId: selection.cpuId,
+      motherboardId: selection.motherboardId,
+      gpuId: selection.gpuId,
+      psuId: selection.psuId,
+      caseId: selection.caseId,
+      ramIds,
+      storageIds,
+    };
+
+    if (hasDraftContent(draft)) {
+      saveDraft(draft);
+    } else {
+      clearDraft();
+    }
+  }, [name, isPublic, selection, ramIds, storageIds, draftRestored]);
 
   const ramTypeSelected =
     ramIds.length > 0
@@ -272,6 +326,7 @@ export default function SistemToplaPage() {
     }
 
     if (result.build) {
+      clearDraft();
       router.push(`/sistemler/${result.build.id}`);
     }
   }
@@ -331,7 +386,7 @@ export default function SistemToplaPage() {
             </div>
 
             {selectedComponent ? (
-              <p className="text-sm font-bold text-slate-900 mt-0.5 truncate">
+              <p className="text-sm font-bold text-ink mt-0.5 truncate">
                 {selectedComponent.brand} {selectedComponent.name}
               </p>
             ) : (
@@ -343,13 +398,13 @@ export default function SistemToplaPage() {
 
           <div className="flex items-center gap-3 shrink-0">
             {selectedComponent && (
-              <span className="text-xs font-bold font-[family-name:var(--font-mono)] text-[#4e49f6] bg-[#4e49f6]/10 px-2.5 py-1 rounded-lg border border-[#4e49f6]/20">
+              <span className="text-xs font-bold font-[family-name:var(--font-mono)] text-trace bg-trace/10 px-2.5 py-1 rounded-lg border border-trace/20">
                 {formatPrice(selectedComponent.price)}
               </span>
             )}
             <span
               className={`text-ink-muted text-xs transition-transform duration-300 ease-in-out ${
-                isOpen ? 'rotate-180 text-[#4e49f6]' : 'rotate-0'
+                isOpen ? 'rotate-180 text-trace' : 'rotate-0'
               }`}
             >
               ▼
@@ -360,7 +415,7 @@ export default function SistemToplaPage() {
         <div
           className={`grid transition-all duration-300 ease-in-out ${
             isOpen
-              ? 'grid-rows-[1fr] opacity-100 border-t border-slate-200/80 p-4 bg-slate-50/60'
+              ? 'grid-rows-[1fr] opacity-100 border-t border-hairline p-4 bg-surface/60'
               : 'grid-rows-[0fr] opacity-0 p-0 pointer-events-none'
           }`}
         >
@@ -424,7 +479,7 @@ export default function SistemToplaPage() {
             </div>
 
             {hasSelection ? (
-              <p className="text-sm font-bold text-slate-900 mt-0.5 truncate">
+              <p className="text-sm font-bold text-ink mt-0.5 truncate">
                 {formatSelectedNames()}
               </p>
             ) : (
@@ -436,7 +491,7 @@ export default function SistemToplaPage() {
 
           <div className="flex items-center gap-3 shrink-0">
             {hasSelection && (
-              <span className="text-xs font-bold font-[family-name:var(--font-mono)] text-[#4e49f6] bg-[#4e49f6]/10 px-2.5 py-1 rounded-lg border border-[#4e49f6]/20">
+              <span className="text-xs font-bold font-[family-name:var(--font-mono)] text-trace bg-trace/10 px-2.5 py-1 rounded-lg border border-trace/20">
                 {formatPrice(
                   opts.selectedComponents.reduce((s, c) => s + c.price, 0),
                 )}
@@ -444,7 +499,7 @@ export default function SistemToplaPage() {
             )}
             <span
               className={`text-ink-muted text-xs transition-transform duration-300 ease-in-out ${
-                opts.isOpen ? 'rotate-180 text-[#4e49f6]' : 'rotate-0'
+                opts.isOpen ? 'rotate-180 text-trace' : 'rotate-0'
               }`}
             >
               ▼
@@ -455,7 +510,7 @@ export default function SistemToplaPage() {
         <div
           className={`grid transition-all duration-300 ease-in-out ${
             opts.isOpen
-              ? 'grid-rows-[1fr] opacity-100 border-t border-slate-200/80 p-4 bg-slate-50/60'
+              ? 'grid-rows-[1fr] opacity-100 border-t border-hairline p-4 bg-surface/60'
               : 'grid-rows-[0fr] opacity-0 p-0 pointer-events-none'
           }`}
         >
@@ -473,28 +528,67 @@ export default function SistemToplaPage() {
     );
   }
   return (
-    <main className="min-h-screen pb-36 text-slate-900 relative">
+    <main className="min-h-screen pb-36 text-ink relative">
       <Navbar />
 
       <div className="px-4 md:px-8 py-8 md:py-10 max-w-7xl mx-auto grid lg:grid-cols-[1fr_320px] gap-8 relative z-10">
         {/* SOL TARAF: FORM & BİLEŞEN SEÇİM ALANI */}
         <div>
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#4e49f6]/10 border border-[#4e49f6]/20 text-[#4e49f6] text-xs font-semibold tracking-wide">
-              <span className="w-2 h-2 rounded-full bg-[#4e49f6] animate-pulse" />
-              Sistem Yapılandırıcı
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-trace/10 border border-trace/20 text-trace text-xs font-semibold tracking-wide">
+                <span className="w-2 h-2 rounded-full bg-trace animate-pulse" />
+                Sistem Yapılandırıcı
+              </div>
+              <h1 className="font-[family-name:var(--font-display)] text-3xl md:text-4xl font-extrabold tracking-tight text-ink">
+                Sistem Topla
+              </h1>
+              <p className="text-ink-muted text-sm">
+                Kategorilere tıklayarak parça listesini açabilir, sisteminizi
+                adım adım oluşturabilirsiniz. Seçimlerin otomatik kaydedilir.
+              </p>
             </div>
-            <h1 className="font-[family-name:var(--font-display)] text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-              Sistem Topla
-            </h1>
-            <p className="text-slate-500 text-sm">
-              Kategorilere tıklayarak parça listesini açabilir, sisteminizi adım
-              adım oluşturabilirsiniz.
-            </p>
+
+            {(name ||
+              Object.values(selection).some(Boolean) ||
+              ramIds.length > 0 ||
+              storageIds.length > 0) && (
+              <button
+                onClick={async () => {
+                  const ok = await confirmDialog({
+                    title: 'Yeni Başlangıç',
+                    description:
+                      'Şu ana kadar seçtiğin tüm parçalar silinecek.',
+                    confirmLabel: 'Sıfırla',
+                    danger: true,
+                  });
+                  if (!ok) return;
+
+                  setName('');
+                  setIsPublic(true);
+                  setSelection({
+                    cpuId: null,
+                    motherboardId: null,
+                    gpuId: null,
+                    psuId: null,
+                    caseId: null,
+                  });
+                  setRamIds([]);
+                  setStorageIds([]);
+                  setImages([]);
+                  clearDraft();
+                  setActiveCategory('cpuId');
+                  showToast('Taslak temizlendi.', 'success');
+                }}
+                className="shrink-0 text-sm text-ink-muted hover:text-incompatible transition-colors rounded-lg px-3 py-1.5 border border-hairline hover:border-incompatible focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-incompatible"
+              >
+                Yeni Başlangıç
+              </button>
+            )}
           </div>
 
           {/* SİSTEM BİLGİLERİ FORM KARTI */}
-          <div className="mt-8 p-6 bg-white border border-slate-200/80 rounded-3xl space-y-5 shadow-xs">
+          <div className="mt-8 p-6 bg-white border border-hairline rounded-3xl space-y-5 shadow-xs">
             <div>
               <label
                 htmlFor="build-name"
@@ -537,7 +631,7 @@ export default function SistemToplaPage() {
 
               {images.length > 0 && (
                 <div className="mt-4 space-y-2">
-                  <p className="text-xs text-[#4e49f6] font-semibold">
+                  <p className="text-xs text-trace font-semibold">
                     ✓ {images.length}/5 görsel seçildi. Görseller admin
                     onayından sonra yayınlanır.
                   </p>
@@ -574,13 +668,13 @@ export default function SistemToplaPage() {
 
           {/* ACCORDION BİLEŞEN SEÇİM LİSTESİ */}
           {isLoadingComponents ? (
-            <div className="mt-8 p-8 bg-white border border-slate-200/80 rounded-3xl text-center">
+            <div className="mt-8 p-8 bg-white border border-hairline rounded-3xl text-center">
               <p className="text-ink-muted text-sm font-medium animate-pulse">
                 Bileşenler ve uyumluluk verileri yükleniyor...
               </p>
             </div>
           ) : (
-            <div className="mt-8 bg-white border border-slate-200/80 rounded-3xl divide-y divide-slate-100 overflow-hidden shadow-xs">
+            <div className="mt-8 bg-white border border-hairline rounded-3xl divide-y divide-slate-100 overflow-hidden shadow-xs">
               {renderCategoryRow(CATEGORIES[0])}
               {renderCategoryRow(CATEGORIES[1])}
 
@@ -654,7 +748,7 @@ export default function SistemToplaPage() {
             <p className="text-[10px] text-ink-muted font-bold uppercase tracking-wider font-[family-name:var(--font-mono)]">
               Toplam Konfigürasyon Tutarı
             </p>
-            <p className="font-[family-name:var(--font-mono)] text-xl md:text-2xl font-extrabold text-[#4e49f6] tracking-tight">
+            <p className="font-[family-name:var(--font-mono)] text-xl md:text-2xl font-extrabold text-trace tracking-tight">
               {formatPrice(selectedComponents.reduce((s, c) => s + c.price, 0))}
             </p>
           </div>

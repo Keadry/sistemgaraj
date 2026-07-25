@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { useToast } from '@/lib/toast-context';
+import { useConfirm } from '@/lib/confirm-context';
 import {
   postWallComment,
   deleteWallComment,
@@ -59,6 +61,8 @@ function CommentItem({
   onDeleted: (id: string) => void;
 }) {
   const { user, token } = useAuth();
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
   const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,7 +88,10 @@ function CommentItem({
       setReplyText('');
       setIsReplying(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -92,12 +99,22 @@ function CommentItem({
 
   async function handleDelete() {
     if (!token) return;
-    if (!confirm('Bu yorumu silmek istediğine emin misin?')) return;
+    const ok = await confirmDialog({
+      title: 'Yorumu sil',
+      confirmLabel: 'Sil',
+      danger: true,
+    });
+    if (!ok) return;
+
     try {
       await deleteWallComment(comment.id, token);
       onDeleted(comment.id);
+      showToast('Yorum silindi.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     }
   }
 
@@ -195,18 +212,22 @@ function CommentItem({
                       <button
                         onClick={async () => {
                           if (!token) return;
-                          if (
-                            !confirm('Bu yanıtı silmek istediğine emin misin?')
-                          )
-                            return;
+                          const ok = await confirmDialog({
+                            title: 'Yanıtı sil',
+                            confirmLabel: 'Sil',
+                            danger: true,
+                          });
+                          if (!ok) return;
                           try {
                             await deleteWallComment(reply.id, token);
                             onDeleted(reply.id);
+                            showToast('Yanıt silindi.', 'success');
                           } catch (err) {
-                            alert(
+                            showToast(
                               err instanceof Error
                                 ? err.message
                                 : 'Bir hata oluştu.',
+                              'error',
                             );
                           }
                         }}

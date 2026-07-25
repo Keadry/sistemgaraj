@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { useToast } from '@/lib/toast-context';
+import { useConfirm } from '@/lib/confirm-context';
 import { isCompatible } from '@/lib/compatibility-client';
 import ComponentPicker from './ComponentPicker';
 import {
@@ -35,6 +37,8 @@ export default function EditPanel({
   onImagesChanged: () => void;
 }) {
   const { token } = useAuth();
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
 
   const [components, setComponents] = useState<Component[]>([]);
   const [isLoadingComponents, setIsLoadingComponents] = useState(true);
@@ -141,7 +145,10 @@ export default function EditPanel({
       await setExistingImageMain(build.id, imageId, token);
       onImagesChanged();
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setImageActionId(null);
     }
@@ -149,13 +156,24 @@ export default function EditPanel({
 
   async function handleDeleteImage(imageId: string) {
     if (!token) return;
-    if (!confirm('Bu görseli silmek istediğine emin misin?')) return;
+    const ok = await confirmDialog({
+      title: 'Görseli sil',
+      description: 'Bu işlem geri alınamaz.',
+      confirmLabel: 'Sil',
+      danger: true,
+    });
+    if (!ok) return;
+
     setImageActionId(imageId);
     try {
       await deleteExistingImage(build.id, imageId, token);
       onImagesChanged();
+      showToast('Görsel silindi.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setImageActionId(null);
     }

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import LikeButton from './LikeButton';
 import CommentForm from './CommentForm';
+import { useToast } from '@/lib/toast-context';
+import { useConfirm } from '@/lib/confirm-context';
 import { useAuth } from '@/lib/auth-context';
 import {
   editComment,
@@ -170,6 +172,8 @@ function CommentItem({
   onReplyAdded: (parentId: string, reply: Comment) => void;
 }) {
   const { user, token } = useAuth();
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(comment.content);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -214,12 +218,22 @@ function CommentItem({
 
   async function handleDelete() {
     if (!token) return;
-    if (!confirm('Bu yorumu silmek istediğine emin misin?')) return;
+    const ok = await confirmDialog({
+      title: 'Yorumu sil',
+      confirmLabel: 'Sil',
+      danger: true,
+    });
+    if (!ok) return;
+
     try {
       await deleteOwnComment(buildId, comment.id, token);
       onDeleted(comment.id);
+      showToast('Yorum silindi.', 'success');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     }
   }
 
@@ -237,7 +251,10 @@ function CommentItem({
       setReplyText('');
       setIsReplying(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setIsReplySubmitting(false);
     }
@@ -261,7 +278,10 @@ function CommentItem({
         });
       }
     } catch (err) {
-      // sessiz geç
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
     } finally {
       setIsLiking(false);
     }

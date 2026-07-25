@@ -5,6 +5,8 @@ import { notFound } from 'next/navigation';
 import { deleteBuild } from '@/lib/api';
 import Navbar from '@/components/Navbar';
 import BuildCard from '@/components/BuildCard';
+import { useToast } from '@/lib/toast-context';
+import { useConfirm } from '@/lib/confirm-context';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import ProfileCover from '@/components/ProfileCover';
 import { useAuth } from '@/lib/auth-context';
@@ -31,6 +33,8 @@ export default function UserProfilePage({
 }) {
   const { username } = use(params);
   const { token, isLoading: isAuthLoading } = useAuth();
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [builds, setBuilds] = useState<Build[]>([]);
@@ -183,22 +187,26 @@ export default function UserProfilePage({
                       onClick={async (e) => {
                         e.preventDefault();
                         if (!token) return;
-                        if (
-                          !confirm(
-                            `"${build.name}" sistemini silmek istediğine emin misin? Bu işlem geri alınamaz.`,
-                          )
-                        )
-                          return;
+                        const ok = await confirmDialog({
+                          title: 'Sistemi sil',
+                          description: `"${build.name}" sistemini silmek istediğine emin misin? Bu işlem geri alınamaz.`,
+                          confirmLabel: 'Sil',
+                          danger: true,
+                        });
+                        if (!ok) return;
+
                         try {
                           await deleteBuild(build.id, token);
                           setBuilds((prev) =>
                             prev.filter((b) => b.id !== build.id),
                           );
+                          showToast('Sistem silindi.', 'success');
                         } catch (err) {
-                          alert(
+                          showToast(
                             err instanceof Error
                               ? err.message
                               : 'Bir hata oluştu.',
+                            'error',
                           );
                         }
                       }}

@@ -203,6 +203,9 @@ router.get('/me/all', requireAuth, async (req: AuthRequest, res) => {
 router.get('/', async (req, res) => {
   try {
     const featuredOnly = req.query.featured === 'true';
+    const limit = req.query.limit
+      ? parseInt(req.query.limit as string, 10)
+      : undefined;
 
     const builds = await prisma.build.findMany({
       where: {
@@ -211,10 +214,26 @@ router.get('/', async (req, res) => {
         ...(featuredOnly ? { isFeatured: true } : {}),
       },
       orderBy: { createdAt: 'desc' },
+      ...(limit ? { take: limit } : {}),
       include: buildIncludes,
     });
 
     res.json({ builds });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
+
+// ==============================
+// TOPLAM SİSTEM SAYISI (hafif, sadece sayı döner)
+// ==============================
+router.get('/count', async (req, res) => {
+  try {
+    const count = await prisma.build.count({
+      where: { isPublic: true, reviewStatus: 'APPROVED' },
+    });
+    res.json({ count });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Sunucu hatası.' });

@@ -1,17 +1,22 @@
-import { getFeed } from '@/lib/api';
+import { getFeed, getBuildsCount } from '@/lib/api';
 import BuildCard from '@/components/BuildCard';
 import Navbar from '@/components/Navbar';
 import FeaturedBuildCard from '@/components/FeaturedBuildCard';
 import Link from 'next/link';
 
 export default async function Home() {
-  const [featuredBuilds, allBuilds] = await Promise.all([
+  const [featuredBuilds, communityBuildsRaw, totalCount] = await Promise.all([
     getFeed({ featured: true }),
-    getFeed(),
+    getFeed({ limit: 11 }), // gösterdiğimizden (10) 1 fazla — "daha var mı" bilgisini almak için
+    getBuildsCount(),
   ]);
 
   const featuredIds = new Set(featuredBuilds.map((b) => b.id));
-  const communityBuilds = allBuilds.filter((b) => !featuredIds.has(b.id));
+  const communityBuildsFiltered = communityBuildsRaw.filter(
+    (b) => !featuredIds.has(b.id),
+  );
+  const hasMoreCommunityBuilds = communityBuildsRaw.length > 10;
+  const communityBuilds = communityBuildsFiltered.slice(0, 10);
 
   return (
     <main className="min-h-screen relative overflow-hidden">
@@ -40,7 +45,7 @@ export default async function Home() {
             <div className="flex items-center gap-6 bg-paper/70 backdrop-blur-md p-4 rounded-2xl border border-hairline shadow-sm shrink-0">
               <div>
                 <div className="text-2xl font-bold text-ink font-mono tracking-tight">
-                  {allBuilds.length}+
+                  {totalCount}+
                 </div>
                 <div className="text-xs text-ink-muted font-medium">
                   Paylaşılan Sistem
@@ -100,7 +105,7 @@ export default async function Home() {
                 Topluluk üyeleri tarafından paylaşılan konfigürasyonlar.
               </p>
             </div>
-            {communityBuilds.length > 10 && (
+            {hasMoreCommunityBuilds && (
               <Link
                 href="/sistemler"
                 className="group inline-flex items-center gap-1 text-sm font-semibold text-trace hover:text-trace-dark transition-colors whitespace-nowrap shrink-0 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
@@ -128,12 +133,12 @@ export default async function Home() {
           ) : (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {communityBuilds.slice(0, 10).map((build) => (
+                {communityBuilds.map((build) => (
                   <BuildCard key={build.id} build={build} />
                 ))}
               </div>
 
-              {communityBuilds.length > 10 && (
+              {hasMoreCommunityBuilds && (
                 <div className="flex justify-center mt-12">
                   <Link
                     href="/sistemler"

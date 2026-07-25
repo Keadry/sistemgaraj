@@ -69,8 +69,13 @@ export type Build = {
 
 export async function getFeed(options?: {
   featured?: boolean;
+  limit?: number;
 }): Promise<Build[]> {
-  const query = options?.featured ? '?featured=true' : '';
+  const params = new URLSearchParams();
+  if (options?.featured) params.set('featured', 'true');
+  if (options?.limit) params.set('limit', String(options.limit));
+  const query = params.toString() ? `?${params.toString()}` : '';
+
   const res = await fetch(`${API_URL}/api/builds${query}`, {
     cache: 'no-store',
   });
@@ -81,6 +86,19 @@ export async function getFeed(options?: {
 
   const data = await res.json();
   return data.builds;
+}
+
+export async function getBuildsCount(): Promise<number> {
+  const res = await fetch(`${API_URL}/api/builds/count`, {
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error('Sayı alınamadı.');
+  }
+
+  const data = await res.json();
+  return data.count;
 }
 
 export async function getBuild(

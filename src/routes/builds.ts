@@ -206,14 +206,30 @@ router.get('/', async (req, res) => {
     const limit = req.query.limit
       ? parseInt(req.query.limit as string, 10)
       : undefined;
+    const offset = req.query.offset
+      ? parseInt(req.query.offset as string, 10)
+      : 0;
+    const search =
+      typeof req.query.search === 'string' ? req.query.search.trim() : '';
+
+    const where: any = {
+      isPublic: true,
+      reviewStatus: 'APPROVED',
+      ...(featuredOnly ? { isFeatured: true } : {}),
+    };
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { user: { username: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
 
     const builds = await prisma.build.findMany({
-      where: {
-        isPublic: true,
-        reviewStatus: 'APPROVED',
-        ...(featuredOnly ? { isFeatured: true } : {}),
-      },
+      where,
       orderBy: { createdAt: 'desc' },
+      // Arama aktifken sayfalamayı yok sayıyoruz, tüm eşleşen sonuçları (limit'e kadar) getiriyoruz
+      skip: search ? 0 : offset,
       ...(limit ? { take: limit } : {}),
       include: buildIncludes,
     });

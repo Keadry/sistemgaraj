@@ -22,8 +22,29 @@ function deleteUploadedFile(url: string) {
 // ==============================
 router.get('/users', requireAuth, requireModerator, async (req, res) => {
   try {
+    const limit = req.query.limit
+      ? parseInt(req.query.limit as string, 10)
+      : undefined;
+    const offset = req.query.offset
+      ? parseInt(req.query.offset as string, 10)
+      : 0;
+    const search =
+      typeof req.query.search === 'string' ? req.query.search.trim() : '';
+
+    const where: any = search
+      ? {
+          OR: [
+            { username: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+          ],
+        }
+      : {};
+
     const users = await prisma.user.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
+      skip: search ? 0 : offset,
+      ...(limit ? { take: limit } : {}),
       select: {
         id: true,
         email: true,
@@ -160,8 +181,30 @@ router.delete(
 // ==============================
 router.get('/comments', requireAuth, requireModerator, async (req, res) => {
   try {
+    const limit = req.query.limit
+      ? parseInt(req.query.limit as string, 10)
+      : undefined;
+    const offset = req.query.offset
+      ? parseInt(req.query.offset as string, 10)
+      : 0;
+    const search =
+      typeof req.query.search === 'string' ? req.query.search.trim() : '';
+
+    const where: any = search
+      ? {
+          OR: [
+            { content: { contains: search, mode: 'insensitive' } },
+            { user: { username: { contains: search, mode: 'insensitive' } } },
+            { build: { name: { contains: search, mode: 'insensitive' } } },
+          ],
+        }
+      : {};
+
     const comments = await prisma.comment.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
+      skip: search ? 0 : offset,
+      ...(limit ? { take: limit } : {}),
       include: {
         user: { select: { id: true, username: true, email: true } },
         build: { select: { id: true, name: true } },
@@ -174,7 +217,6 @@ router.get('/comments', requireAuth, requireModerator, async (req, res) => {
     res.status(500).json({ error: 'Sunucu hatası.' });
   }
 });
-
 // ==============================
 // YORUMU ONAYLA (moderatör+)
 // ==============================

@@ -1,39 +1,83 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Navbar from '@/components/Navbar';
 import BuildCard from '@/components/BuildCard';
 import { getFeed, type Build } from '@/lib/api';
 
+const PAGE_SIZE = 20;
+
 export default function TumSistemlerPage() {
   const [builds, setBuilds] = useState<Build[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
 
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+
+  // Kullanıcı yazmayı bırakınca 300ms sonra aramayı tetikle (her tuş vuruşunda
+  // sunucuya istek atmamak için)
   useEffect(() => {
-    getFeed()
-      .then((data) => {
-        const sorted = [...data].sort((a, b) => {
-          if (a.isFeatured && !b.isFeatured) return -1;
-          if (!a.isFeatured && b.isFeatured) return 1;
-          return 0;
-        });
-        setBuilds(sorted);
-      })
-      .catch(() => setError('Sistemler yüklenirken bir hata oluştu.'))
-      .finally(() => setIsLoading(false));
-  }, []);
+    const timeout = setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [searchInput]);
 
-  const filteredBuilds = useMemo(() => {
-    if (!searchQuery.trim()) return builds;
-    const query = searchQuery.toLowerCase();
-    return builds.filter(
-      (b) =>
-        b.name.toLowerCase().includes(query) ||
-        b.user.username.toLowerCase().includes(query),
-    );
-  }, [builds, searchQuery]);
+  const isSearching = debouncedSearch.length > 0;
+
+  function sortFeatured(list: Build[]): Build[] {
+    return [...list].sort((a, b) => {
+      if (a.isFeatured && !b.isFeatured) return -1;
+      if (!a.isFeatured && b.isFeatured) return 1;
+      return 0;
+    });
+  }
+
+  // Arama sorgusu değişince: temiz bir sayfa gibi baştan yükle
+  useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+
+    if (isSearching) {
+      getFeed({ search: debouncedSearch, limit: 50 })
+        .then((data) => {
+          setBuilds(data);
+          setHasMore(false);
+        })
+        .catch(() => setError('Sistemler yüklenirken bir hata oluştu.'))
+        .finally(() => setIsLoading(false));
+    } else {
+      getFeed({ limit: PAGE_SIZE, offset: 0 })
+        .then((data) => {
+          setBuilds(sortFeatured(data));
+          setOffset(data.length);
+          setHasMore(data.length === PAGE_SIZE);
+        })
+        .catch(() => setError('Sistemler yüklenirken bir hata oluştu.'))
+        .finally(() => setIsLoading(false));
+    }
+  }, [debouncedSearch, isSearching]);
+
+  const loadMore = useCallback(async () => {
+    if (isSearching || isLoadingMore || !hasMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const data = await getFeed({ limit: PAGE_SIZE, offset });
+      setBuilds((prev) => [...prev, ...data]);
+      setOffset((prev) => prev + data.length);
+      setHasMore(data.length === PAGE_SIZE);
+    } catch {
+      setError('Daha fazla sistem yüklenemedi.');
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isSearching, isLoadingMore, hasMore, offset]);
 
   return (
     <main className="min-h-screen text-ink pb-24 relative overflow-hidden">
@@ -56,30 +100,28 @@ export default function TumSistemlerPage() {
             </p>
           </div>
 
-          {!isLoading && !error && builds.length > 0 && (
-            <div className="relative w-full md:w-72">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-ink-muted">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.35-4.35" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Sistem veya kullanıcı ara..."
-                className="w-full pl-10 pr-4 py-2.5 bg-paper border border-hairline rounded-xl text-sm font-medium placeholder:text-ink-muted text-ink shadow-xs focus:outline-none focus:border-trace focus:ring-2 focus:ring-trace/15 transition-all"
-              />
+          <div className="relative w-full md:w-72">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-ink-muted">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
             </div>
-          )}
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Sistem veya kullanıcı ara..."
+              className="w-full pl-10 pr-4 py-2.5 bg-paper border border-hairline rounded-xl text-sm font-medium placeholder:text-ink-muted text-ink shadow-xs focus:outline-none focus:border-trace focus:ring-2 focus:ring-trace/15 transition-all"
+            />
+          </div>
         </div>
 
         <div className="pt-8">
@@ -113,44 +155,62 @@ export default function TumSistemlerPage() {
               </button>
             </div>
           ) : builds.length === 0 ? (
-            <div className="text-center py-20 px-4 bg-paper border border-hairline rounded-3xl space-y-3 shadow-xs">
-              <div className="w-12 h-12 rounded-2xl bg-trace/10 border border-trace/20 text-trace flex items-center justify-center mx-auto text-xl shadow-xs">
-                🖥️
-              </div>
-              <p className="text-ink font-semibold text-base">
-                Henüz paylaşılan bir sistem yok.
-              </p>
-              <p className="text-ink-muted text-sm max-w-sm mx-auto">
-                İlk sistemi sen topla ve toplulukta öne çık!
-              </p>
-            </div>
-          ) : filteredBuilds.length === 0 ? (
             <div className="text-center py-16 px-4 bg-paper border border-hairline rounded-3xl space-y-2 shadow-xs">
-              <p className="text-ink font-semibold text-base">
-                Aramanızla eşleşen sistem bulunamadı.
-              </p>
-              <p className="text-ink-muted text-sm">
-                &quot;{searchQuery}&quot; kelimesi ile kayıtlı bir sistem veya
-                kullanıcı yok.
-              </p>
-              <button
-                onClick={() => setSearchQuery('')}
-                className="mt-2 text-xs font-semibold text-trace hover:underline cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace rounded"
-              >
-                Aramayı Temizle
-              </button>
+              {isSearching ? (
+                <>
+                  <p className="text-ink font-semibold text-base">
+                    Aramanızla eşleşen sistem bulunamadı.
+                  </p>
+                  <p className="text-ink-muted text-sm">
+                    &quot;{debouncedSearch}&quot; kelimesi ile kayıtlı bir
+                    sistem veya kullanıcı yok.
+                  </p>
+                  <button
+                    onClick={() => setSearchInput('')}
+                    className="mt-2 text-xs font-semibold text-trace hover:underline cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace rounded"
+                  >
+                    Aramayı Temizle
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="w-12 h-12 rounded-2xl bg-trace/10 border border-trace/20 text-trace flex items-center justify-center mx-auto text-xl shadow-xs">
+                    🖥️
+                  </div>
+                  <p className="text-ink font-semibold text-base">
+                    Henüz paylaşılan bir sistem yok.
+                  </p>
+                  <p className="text-ink-muted text-sm max-w-sm mx-auto">
+                    İlk sistemi sen topla ve toplulukta öne çık!
+                  </p>
+                </>
+              )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {filteredBuilds.map((build) => (
-                <div
-                  key={build.id}
-                  className="transition-transform duration-200 hover:-translate-y-1"
-                >
-                  <BuildCard build={build} />
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {builds.map((build) => (
+                  <div
+                    key={build.id}
+                    className="transition-transform duration-200 hover:-translate-y-1"
+                  >
+                    <BuildCard build={build} />
+                  </div>
+                ))}
+              </div>
+
+              {!isSearching && hasMore && (
+                <div className="flex justify-center mt-10">
+                  <button
+                    onClick={loadMore}
+                    disabled={isLoadingMore}
+                    className="rounded-xl border border-hairline px-6 py-2.5 text-sm font-medium hover:border-trace transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+                  >
+                    {isLoadingMore ? 'Yükleniyor...' : 'Daha Fazla Yükle'}
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>

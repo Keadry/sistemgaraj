@@ -70,10 +70,14 @@ export type Build = {
 export async function getFeed(options?: {
   featured?: boolean;
   limit?: number;
+  offset?: number;
+  search?: string;
 }): Promise<Build[]> {
   const params = new URLSearchParams();
   if (options?.featured) params.set('featured', 'true');
   if (options?.limit) params.set('limit', String(options.limit));
+  if (options?.offset) params.set('offset', String(options.offset));
+  if (options?.search) params.set('search', options.search);
   const query = params.toString() ? `?${params.toString()}` : '';
 
   const res = await fetch(`${API_URL}/api/builds${query}`, {
@@ -244,8 +248,17 @@ export type AdminUser = {
   createdAt: string;
 };
 
-export async function getUsers(token: string): Promise<AdminUser[]> {
-  const res = await fetch(`${API_URL}/api/admin/users`, {
+export async function getUsers(
+  token: string,
+  options?: { limit?: number; offset?: number; search?: string },
+): Promise<AdminUser[]> {
+  const params = new URLSearchParams();
+  if (options?.limit) params.set('limit', String(options.limit));
+  if (options?.offset) params.set('offset', String(options.offset));
+  if (options?.search) params.set('search', options.search);
+  const query = params.toString() ? `?${params.toString()}` : '';
+
+  const res = await fetch(`${API_URL}/api/admin/users${query}`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store',
   });
@@ -375,8 +388,17 @@ export type AdminComment = {
   build: { id: string; name: string };
 };
 
-export async function getAllComments(token: string): Promise<AdminComment[]> {
-  const res = await fetch(`${API_URL}/api/admin/comments`, {
+export async function getAllComments(
+  token: string,
+  options?: { limit?: number; offset?: number; search?: string },
+): Promise<AdminComment[]> {
+  const params = new URLSearchParams();
+  if (options?.limit) params.set('limit', String(options.limit));
+  if (options?.offset) params.set('offset', String(options.offset));
+  if (options?.search) params.set('search', options.search);
+  const query = params.toString() ? `?${params.toString()}` : '';
+
+  const res = await fetch(`${API_URL}/api/admin/comments${query}`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store',
   });
@@ -389,9 +411,17 @@ export async function getAllComments(token: string): Promise<AdminComment[]> {
   return data.comments;
 }
 
-export async function getAllBuildsAdmin(token: string): Promise<Build[]> {
-  // Feed rotası zaten tüm herkese açık sistemleri (isFeatured dahil) döndürüyor
-  const res = await fetch(`${API_URL}/api/builds`, {
+export async function getAllBuildsAdmin(
+  token: string,
+  options?: { limit?: number; offset?: number; search?: string },
+): Promise<Build[]> {
+  const params = new URLSearchParams();
+  if (options?.limit) params.set('limit', String(options.limit));
+  if (options?.offset) params.set('offset', String(options.offset));
+  if (options?.search) params.set('search', options.search);
+  const query = params.toString() ? `?${params.toString()}` : '';
+
+  const res = await fetch(`${API_URL}/api/builds${query}`, {
     cache: 'no-store',
   });
 

@@ -11,12 +11,12 @@ timeout /t 5 /nobreak > nul
 
 :: 2. Backend'i Yeni Pencerede Çalıştır
 echo [2/4] Backend başlatılıyor...
-start "SistemGarajı - Backend" cmd /k "cd /d D:\SistemGaraj && npm run dev"
+start "SistemGarajı - Backend" cmd /k "cd /d D:\SistemGaraj && pnpm dev"
 timeout /t 7 /nobreak > nul
 
 :: 3. Frontend'i Yeni Pencerede Çalıştır
 echo [3/4] Frontend başlatılıyor...
-start "SistemGarajı - Frontend" cmd /k "cd /d D:\SistemGaraj\frontend && npm run dev"
+start "SistemGarajı - Frontend" cmd /k "cd /d D:\SistemGaraj\frontend && pnpm dev"
 timeout /t 10 /nobreak > nul
 
 :: 4. Servislerin Hazır Olmasını Bekle (5 Saniye)
@@ -30,4 +30,4 @@ start http://localhost:3000
 echo ==========================================
 echo   Tüm servisler başarıyla tetiklendi!
 echo ==========================================
-pause
+pause

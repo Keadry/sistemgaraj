@@ -73,37 +73,48 @@ export async function getFeed(options?: {
   offset?: number;
   search?: string;
 }): Promise<Build[]> {
-  const params = new URLSearchParams();
-  if (options?.featured) params.set('featured', 'true');
-  if (options?.limit) params.set('limit', String(options.limit));
-  if (options?.offset) params.set('offset', String(options.offset));
-  if (options?.search) params.set('search', options.search);
-  const query = params.toString() ? `?${params.toString()}` : '';
+  try {
+    if (!API_URL) return [];
+    const params = new URLSearchParams();
+    if (options?.featured) params.set('featured', 'true');
+    if (options?.limit) params.set('limit', String(options.limit));
+    if (options?.offset) params.set('offset', String(options.offset));
+    if (options?.search) params.set('search', options.search);
+    const query = params.toString() ? `?${params.toString()}` : '';
 
-  const res = await fetch(`${API_URL}/api/builds${query}`, {
-    cache: 'no-store',
-  });
+    const res = await fetch(`${API_URL}/api/builds${query}`, {
+      cache: 'no-store',
+    });
 
-  if (!res.ok) {
-    throw new Error('Sistemler yüklenemedi.');
+    if (!res.ok) {
+      return [];
+    }
+
+    const data = await res.json();
+    return data.builds ?? [];
+  } catch {
+    return [];
   }
-
-  const data = await res.json();
-  return data.builds;
 }
 
 export async function getBuildsCount(): Promise<number> {
-  const res = await fetch(`${API_URL}/api/builds/count`, {
-    cache: 'no-store',
-  });
+  try {
+    if (!API_URL) return 0;
+    const res = await fetch(`${API_URL}/api/builds/count`, {
+      cache: 'no-store',
+    });
 
-  if (!res.ok) {
-    throw new Error('Sayı alınamadı.');
+    if (!res.ok) {
+      return 0;
+    }
+
+    const data = await res.json();
+    return data.count ?? 0;
+  } catch {
+    return 0;
   }
-
-  const data = await res.json();
-  return data.count;
 }
+
 
 export async function getBuild(
   id: string,

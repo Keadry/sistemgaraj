@@ -5,10 +5,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "seed": "tsx src/seed.ts",
-    "dev": "tsx watch src/index.ts",
+    "seed": "pnpm tsx src/seed.ts",
+    "dev": "pnpm tsx watch src/index.ts",
     "build": "tsc",
-    "start": "npx tsx src/index.ts"
+    "start": "pnpm tsx src/index.ts"
   },
   "keywords": [],
   "author": "",
@@ -34,4 +34,6 @@
     "tsx": "^4.23.0"
   }
 }
+
+
 

@@ -1,6 +1,7 @@
 # Bağımlılıklar
 node_modules/
 frontend/node_modules/
+pnpm-lock.yaml
 
 # Ortam değişkenleri (gizli bilgiler)
 .env

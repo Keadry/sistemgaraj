@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import BanDialog from '@/components/BanDialog';
+import { SkeletonLine } from '@/components/Skeleton';
 import MuteDialog from '@/components/MuteDialog';
 import UsernameDialog from '@/components/UsernameDialog';
 import { useAuth } from '@/lib/auth-context';
@@ -358,7 +359,11 @@ function UsersTab({
       />
 
       {isLoading ? (
-        <p className="text-ink-muted">Yükleniyor...</p>
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonLine key={i} className="h-14 w-full rounded-xl" />
+          ))}
+        </div>
       ) : error ? (
         <p className="text-incompatible">{error}</p>
       ) : users.length === 0 ? (
@@ -660,7 +665,11 @@ function BuildsTab({ token }: { token: string }) {
       />
 
       {isLoading ? (
-        <p className="text-ink-muted">Yükleniyor...</p>
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonLine key={i} className="h-14 w-full rounded-xl" />
+          ))}
+        </div>
       ) : error ? (
         <p className="text-incompatible">{error}</p>
       ) : builds.length === 0 ? (
@@ -874,7 +883,14 @@ function CommentsTab({ token }: { token: string }) {
     }
   }
 
-  if (isLoading) return <p className="text-ink-muted">Yükleniyor...</p>;
+  if (isLoading)
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <SkeletonLine key={i} className="h-14 w-full rounded-xl" />
+        ))}
+      </div>
+    );
   if (error) return <p className="text-incompatible">{error}</p>;
 
   const pendingCount = comments.filter((c) => c.status === 'PENDING').length;
@@ -1070,7 +1086,14 @@ function NewBuildsTab({ token }: { token: string }) {
     }
   }
 
-  if (isLoading) return <p className="text-ink-muted">Yükleniyor...</p>;
+  if (isLoading)
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <SkeletonLine key={i} className="h-14 w-full rounded-xl" />
+        ))}
+      </div>
+    );
   if (builds.length === 0)
     return <p className="text-ink-muted text-sm">Onay bekleyen sistem yok.</p>;
 
@@ -1169,7 +1192,14 @@ function EditRequestsTab({ token }: { token: string }) {
     }
   }
 
-  if (isLoading) return <p className="text-ink-muted">Yükleniyor...</p>;
+  if (isLoading)
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <SkeletonLine key={i} className="h-14 w-full rounded-xl" />
+        ))}
+      </div>
+    );
   if (requests.length === 0)
     return (
       <p className="text-ink-muted text-sm">Onay bekleyen düzenleme yok.</p>

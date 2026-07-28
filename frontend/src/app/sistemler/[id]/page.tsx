@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { use } from 'react';
+import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import ProfileAvatar from '@/components/ProfileAvatar';
 import Navbar from '@/components/Navbar';
 import BuildGallery from '@/components/BuildGallery';
+import { SkeletonBuildDetail } from '@/components/Skeleton';
 import BuildInteractions from '@/components/BuildInteractions';
 import EditPanel from '@/components/EditPanel';
 import { useAuth } from '@/lib/auth-context';
@@ -66,8 +67,8 @@ export default function BuildDetailPage({
     return (
       <main className="min-h-screen pb-20">
         <Navbar />
-        <div className="px-6 md:px-12 py-10">
-          <p className="text-ink-muted">Yükleniyor...</p>
+        <div className="px-6 md:px-12 py-10 max-w-3xl mx-auto">
+          <SkeletonBuildDetail />
         </div>
       </main>
     );
@@ -108,15 +109,22 @@ export default function BuildDetailPage({
             <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight">
               {build.name}
             </h1>
-            <p className="text-ink-muted mt-2">
-              <a
-                href={`/kullanici/${build.user.username}`}
-                className="text-trace hover:underline"
-              >
-                @{build.user.username}
-              </a>{' '}
-              tarafından {formatDate(build.createdAt)} tarihinde paylaşıldı
-            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="relative w-6 h-6 rounded-full bg-trace/10 text-trace font-bold flex items-center justify-center text-xs overflow-hidden shrink-0 border border-trace/20">
+                <span className="select-none">
+                  {build.user.username.slice(0, 2).toUpperCase()}
+                </span>
+              </div>
+              <p className="text-ink-muted text-sm">
+                <a
+                  href={`/kullanici/${build.user.username}`}
+                  className="text-trace hover:underline font-medium"
+                >
+                  @{build.user.username}
+                </a>{' '}
+                tarafından {formatDate(build.createdAt)} tarihinde paylaşıldı
+              </p>
+            </div>
           </div>
           <span className="font-[family-name:var(--font-mono)] text-2xl font-semibold text-trace whitespace-nowrap">
             {formatPrice(build.totalPrice)}

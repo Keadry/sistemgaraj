@@ -12,6 +12,10 @@ import ProfileCover from '@/components/ProfileCover';
 import { useAuth } from '@/lib/auth-context';
 import ProfileWall from '@/components/ProfileWall';
 import {
+  SkeletonProfileHeader,
+  SkeletonBuildGrid,
+} from '@/components/Skeleton';
+import {
   getUserProfileWithWall,
   type Build,
   type UserProfile,
@@ -67,21 +71,14 @@ export default function UserProfilePage({
     notFound();
   }
 
-  /* SKELETON YÜKLENİYOR EKRANI */
   if (isLoading || isAuthLoading) {
     return (
       <main className="min-h-screen pb-20">
         <Navbar />
-        <div className="px-6 md:px-12 py-10 space-y-8 animate-pulse">
-          <div className="w-full h-48 md:h-64 bg-slate-200 rounded-3xl" />
-          <div className="flex items-end gap-4 -mt-16 px-4">
-            <div className="w-24 h-24 rounded-full bg-slate-300 ring-4 ring-white" />
-            <div className="h-12 bg-slate-200 rounded-2xl w-56" />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pt-6">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-64 bg-slate-200 rounded-2xl" />
-            ))}
+        <div className="px-6 md:px-12 py-10">
+          <SkeletonProfileHeader />
+          <div className="mt-8">
+            <SkeletonBuildGrid count={10} />
           </div>
         </div>
       </main>

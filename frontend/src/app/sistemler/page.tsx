@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Navbar from '@/components/Navbar';
 import BuildCard from '@/components/BuildCard';
 import { getFeed, type Build } from '@/lib/api';
+import { SkeletonBuildGrid } from '@/components/Skeleton';
 
 const PAGE_SIZE = 20;
 
@@ -126,19 +127,7 @@ export default function TumSistemlerPage() {
 
         <div className="pt-8">
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl border border-hairline bg-paper p-3 space-y-3 animate-pulse"
-                >
-                  <div className="aspect-[4/3] bg-surface rounded-xl" />
-                  <div className="h-4 bg-surface rounded-md w-3/4" />
-                  <div className="h-3 bg-surface rounded-md w-1/2" />
-                  <div className="h-8 bg-surface rounded-xl" />
-                </div>
-              ))}
-            </div>
+            <SkeletonBuildGrid count={10} />
           ) : error ? (
             <div className="text-center py-16 px-4 bg-paper border border-incompatible/30 rounded-3xl space-y-3 shadow-xs">
               <div className="w-12 h-12 rounded-2xl bg-incompatible/10 text-incompatible flex items-center justify-center mx-auto text-xl font-bold">

@@ -4,6 +4,8 @@ import { Space_Grotesk, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@/lib/toast-context';
 import { ConfirmProvider } from '@/lib/confirm-context';
+import Footer from '@/components/Footer';
+import CookieConsent from '@/components/CookieConsent';
 
 const spaceGrotesk = Space_Grotesk({
   variable: '--font-space-grotesk',
@@ -34,12 +36,16 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body
-        className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased`}
+        className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased flex flex-col min-h-screen`}
         suppressHydrationWarning
       >
         <AuthProvider>
           <ToastProvider>
-            <ConfirmProvider>{children}</ConfirmProvider>
+            <ConfirmProvider>
+              <div className="flex-1">{children}</div>
+              <Footer />
+              <CookieConsent />
+            </ConfirmProvider>
           </ToastProvider>
         </AuthProvider>
       </body>

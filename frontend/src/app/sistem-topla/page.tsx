@@ -6,15 +6,15 @@ import Navbar from '@/components/Navbar';
 import ComponentPicker from '@/components/ComponentPicker';
 import LiveSidebar from '@/components/LiveSidebar';
 import { isCompatible } from '@/lib/compatibility-client';
+import { useAuth } from '@/lib/auth-context';
+import { useToast } from '@/lib/toast-context';
+import { useConfirm } from '@/lib/confirm-context';
 import {
   saveDraft,
   loadDraft,
   clearDraft,
   hasDraftContent,
 } from '@/lib/build-draft';
-import { useToast } from '@/lib/toast-context';
-import { useConfirm } from '@/lib/confirm-context';
-import { useAuth } from '@/lib/auth-context';
 import {
   getComponents,
   createBuild,
@@ -63,7 +63,6 @@ export default function SistemToplaPage() {
   const router = useRouter();
   const { showToast } = useToast();
   const confirmDialog = useConfirm();
-  const [draftRestored, setDraftRestored] = useState(false);
 
   const [components, setComponents] = useState<Component[]>([]);
   const [isLoadingComponents, setIsLoadingComponents] = useState(true);
@@ -84,6 +83,7 @@ export default function SistemToplaPage() {
   const [issues, setIssues] = useState<CompatibilityIssue[]>([]);
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
 
   const [activeCategory, setActiveCategory] = useState<StepKey | null>('cpuId');
 
@@ -115,6 +115,7 @@ export default function SistemToplaPage() {
       });
       setRamIds(draft.ramIds);
       setStorageIds(draft.storageIds);
+      showToast('Kaldığın yerden devam ediyorsun.', 'info');
     }
     setDraftRestored(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -122,7 +123,7 @@ export default function SistemToplaPage() {
 
   // Herhangi bir seçim değiştiğinde taslağı otomatik kaydet
   useEffect(() => {
-    if (!draftRestored) return; // ilk yükleme bitmeden kaydetmeyelim, üzerine yazmayalım
+    if (!draftRestored) return;
 
     const draft = {
       name,
@@ -291,6 +292,38 @@ export default function SistemToplaPage() {
     ramIds.length > 0 &&
     storageIds.length > 0;
 
+  const hasAnySelection =
+    Boolean(name) ||
+    Object.values(selection).some(Boolean) ||
+    ramIds.length > 0 ||
+    storageIds.length > 0;
+
+  async function handleReset() {
+    const ok = await confirmDialog({
+      title: 'Yeni Başlangıç',
+      description: 'Şu ana kadar seçtiğin tüm parçalar silinecek.',
+      confirmLabel: 'Sıfırla',
+      danger: true,
+    });
+    if (!ok) return;
+
+    setName('');
+    setIsPublic(true);
+    setSelection({
+      cpuId: null,
+      motherboardId: null,
+      gpuId: null,
+      psuId: null,
+      caseId: null,
+    });
+    setRamIds([]);
+    setStorageIds([]);
+    setImages([]);
+    clearDraft();
+    setActiveCategory('cpuId');
+    showToast('Taslak temizlendi.', 'success');
+  }
+
   async function handleSubmit() {
     if (!token || !isComplete) return;
 
@@ -368,11 +401,7 @@ export default function SistemToplaPage() {
           type="button"
           onClick={() => setActiveCategory(isOpen ? null : cat.key)}
           className={`w-full flex items-center justify-between p-4 text-left transition-all duration-200 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
-            isOpen
-              ? 'bg-trace/5'
-              : selectedComponent
-                ? 'bg-paper hover:bg-surface/80'
-                : 'bg-paper hover:bg-surface/50'
+            isOpen ? 'bg-trace/5' : 'bg-paper hover:bg-surface/60'
           }`}
         >
           <div className="min-w-0 pr-2">
@@ -381,7 +410,7 @@ export default function SistemToplaPage() {
                 {cat.label}
               </span>
               {selectedComponent && (
-                <span className="w-2 h-2 rounded-full bg-[#4e49f6]" />
+                <span className="w-2 h-2 rounded-full bg-trace" />
               )}
             </div>
 
@@ -443,13 +472,11 @@ export default function SistemToplaPage() {
   }) {
     const hasSelection = opts.selectedComponents.length > 0;
 
-    // 2 veya daha fazla eleman seçilince ismin uzamasını engelleyen format
     const formatSelectedNames = () => {
       if (opts.selectedComponents.length === 0) return '';
       if (opts.selectedComponents.length === 1) {
         return `${opts.selectedComponents[0].brand} ${opts.selectedComponents[0].name}`;
       }
-      // İlk parçayı gösterip yanına ek parça sayısını ekliyoruz
       const first = `${opts.selectedComponents[0].brand} ${opts.selectedComponents[0].name}`;
       const extraCount = opts.selectedComponents.length - 1;
       return `${first} (+${extraCount} parça daha)`;
@@ -460,12 +487,8 @@ export default function SistemToplaPage() {
         <button
           type="button"
           onClick={opts.onToggleOpen}
-          className={`w-full flex items-center justify-between p-4 text-left transition-all duration-200 cursor-pointer ${
-            opts.isOpen
-              ? 'bg-[#4e49f6]/5'
-              : hasSelection
-                ? 'bg-white hover:bg-slate-50/80'
-                : 'bg-white hover:bg-slate-50/50'
+          className={`w-full flex items-center justify-between p-4 text-left transition-all duration-200 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
+            opts.isOpen ? 'bg-trace/5' : 'bg-paper hover:bg-surface/60'
           }`}
         >
           <div className="min-w-0 pr-2">
@@ -474,7 +497,7 @@ export default function SistemToplaPage() {
                 {opts.label}
               </span>
               {hasSelection && (
-                <span className="w-2 h-2 rounded-full bg-[#4e49f6]" />
+                <span className="w-2 h-2 rounded-full bg-trace" />
               )}
             </div>
 
@@ -527,12 +550,12 @@ export default function SistemToplaPage() {
       </div>
     );
   }
+
   return (
     <main className="min-h-screen pb-36 text-ink relative">
       <Navbar />
 
       <div className="px-4 md:px-8 py-8 md:py-10 max-w-7xl mx-auto grid lg:grid-cols-[1fr_320px] gap-8 relative z-10">
-        {/* SOL TARAF: FORM & BİLEŞEN SEÇİM ALANI */}
         <div>
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
@@ -549,37 +572,9 @@ export default function SistemToplaPage() {
               </p>
             </div>
 
-            {(name ||
-              Object.values(selection).some(Boolean) ||
-              ramIds.length > 0 ||
-              storageIds.length > 0) && (
+            {hasAnySelection && (
               <button
-                onClick={async () => {
-                  const ok = await confirmDialog({
-                    title: 'Yeni Başlangıç',
-                    description:
-                      'Şu ana kadar seçtiğin tüm parçalar silinecek.',
-                    confirmLabel: 'Sıfırla',
-                    danger: true,
-                  });
-                  if (!ok) return;
-
-                  setName('');
-                  setIsPublic(true);
-                  setSelection({
-                    cpuId: null,
-                    motherboardId: null,
-                    gpuId: null,
-                    psuId: null,
-                    caseId: null,
-                  });
-                  setRamIds([]);
-                  setStorageIds([]);
-                  setImages([]);
-                  clearDraft();
-                  setActiveCategory('cpuId');
-                  showToast('Taslak temizlendi.', 'success');
-                }}
+                onClick={handleReset}
                 className="shrink-0 text-sm text-ink-muted hover:text-incompatible transition-colors rounded-lg px-3 py-1.5 border border-hairline hover:border-incompatible focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-incompatible"
               >
                 Yeni Başlangıç
@@ -588,7 +583,7 @@ export default function SistemToplaPage() {
           </div>
 
           {/* SİSTEM BİLGİLERİ FORM KARTI */}
-          <div className="mt-8 p-6 bg-white border border-hairline rounded-3xl space-y-5 shadow-xs">
+          <div className="mt-8 p-6 bg-paper border border-hairline rounded-3xl space-y-5 shadow-xs">
             <div>
               <label
                 htmlFor="build-name"
@@ -602,21 +597,21 @@ export default function SistemToplaPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Örn: Bütçe Dostu Oyun Bilgisayarı"
-                className="w-full max-w-md rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-[#4e49f6] focus:ring-2 focus:ring-[#4e49f6]/15 transition-all bg-slate-50/50 font-medium placeholder:text-ink-muted"
+                className="w-full max-w-md rounded-xl border border-hairline px-4 py-2.5 text-sm outline-none focus:border-trace focus:ring-2 focus:ring-trace/15 transition-all bg-surface/40 font-medium placeholder:text-ink-muted"
               />
             </div>
 
-            <label className="flex items-center gap-3 text-sm cursor-pointer w-fit text-slate-700 font-semibold select-none">
+            <label className="flex items-center gap-3 text-sm cursor-pointer w-fit text-ink font-semibold select-none">
               <input
                 type="checkbox"
                 checked={isPublic}
                 onChange={(e) => setIsPublic(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 accent-[#4e49f6] cursor-pointer"
+                className="w-4 h-4 rounded border-hairline accent-trace cursor-pointer"
               />
               Herkese açık olsun (topluluk akışında görünsün)
             </label>
 
-            <div className="pt-2 border-t border-slate-100">
+            <div className="pt-2 border-t border-hairline">
               <label className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-2 font-[family-name:var(--font-mono)]">
                 Sistem Görselleri (En fazla 5 adet)
               </label>
@@ -626,7 +621,7 @@ export default function SistemToplaPage() {
                 multiple
                 disabled={images.length >= 5}
                 onChange={handleImageChange}
-                className="block text-xs text-slate-500 file:mr-4 file:rounded-xl file:border file:border-slate-200 file:bg-slate-50 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-slate-700 hover:file:bg-slate-100 file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="block text-xs text-ink-muted file:mr-4 file:rounded-xl file:border file:border-hairline file:bg-surface file:px-4 file:py-2 file:text-xs file:font-semibold file:text-ink hover:file:bg-hairline file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               />
 
               {images.length > 0 && (
@@ -641,7 +636,7 @@ export default function SistemToplaPage() {
                       return (
                         <div
                           key={index}
-                          className="relative group w-20 h-20 rounded-2xl border border-slate-200 overflow-hidden bg-slate-100 shadow-2xs"
+                          className="relative group w-20 h-20 rounded-2xl border border-hairline overflow-hidden bg-surface shadow-2xs"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
@@ -653,7 +648,7 @@ export default function SistemToplaPage() {
                           <button
                             type="button"
                             onClick={() => removeImage(index)}
-                            className="absolute inset-0 bg-slate-900/60 flex items-center justify-center text-white font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer"
+                            className="absolute inset-0 bg-ink/60 flex items-center justify-center text-paper font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer"
                           >
                             Kaldır
                           </button>
@@ -668,17 +663,16 @@ export default function SistemToplaPage() {
 
           {/* ACCORDION BİLEŞEN SEÇİM LİSTESİ */}
           {isLoadingComponents ? (
-            <div className="mt-8 p-8 bg-white border border-hairline rounded-3xl text-center">
+            <div className="mt-8 p-8 bg-paper border border-hairline rounded-3xl text-center">
               <p className="text-ink-muted text-sm font-medium animate-pulse">
                 Bileşenler ve uyumluluk verileri yükleniyor...
               </p>
             </div>
           ) : (
-            <div className="mt-8 bg-white border border-hairline rounded-3xl divide-y divide-slate-100 overflow-hidden shadow-xs">
+            <div className="mt-8 bg-paper border border-hairline rounded-3xl divide-y divide-hairline overflow-hidden shadow-xs">
               {renderCategoryRow(CATEGORIES[0])}
               {renderCategoryRow(CATEGORIES[1])}
 
-              {/* RAM — ANAKART'TAN SONRA, ÇOKLU SEÇİM */}
               {renderMultiRow({
                 label: `RAM (birden fazla seçilebilir${
                   motherboard?.ramSlots
@@ -697,7 +691,6 @@ export default function SistemToplaPage() {
               {renderCategoryRow(CATEGORIES[2])}
               {renderCategoryRow(CATEGORIES[3])}
 
-              {/* DEPOLAMA — PSU'DAN SONRA, ÇOKLU SEÇİM */}
               {renderMultiRow({
                 label: 'Depolama (SATA / M.2, birden fazla seçilebilir)',
                 isOpen: isStorageOpen,
@@ -713,20 +706,19 @@ export default function SistemToplaPage() {
             </div>
           )}
 
-          {/* HATA BİLDİRİMLERİ */}
           {generalError && (
-            <p className="mt-6 text-sm text-red-600 font-semibold bg-red-50 p-4 rounded-2xl border border-red-200/80 shadow-2xs">
+            <p className="mt-6 text-sm text-incompatible font-semibold bg-incompatible/10 p-4 rounded-2xl border border-incompatible/30 shadow-2xs">
               {generalError}
             </p>
           )}
 
           {issues.length > 0 && (
-            <div className="mt-6 rounded-2xl border border-red-200/80 bg-red-50/90 p-5 space-y-2 shadow-2xs">
-              <p className="font-bold text-sm text-red-700 flex items-center gap-1.5">
+            <div className="mt-6 rounded-2xl border border-incompatible/30 bg-incompatible/10 p-5 space-y-2 shadow-2xs">
+              <p className="font-bold text-sm text-incompatible flex items-center gap-1.5">
                 <span>⚠️</span> Seçilen parçalar arasında uyumsuzluk tespit
                 edildi:
               </p>
-              <ul className="space-y-1.5 pl-5 list-disc text-sm text-red-600 font-medium">
+              <ul className="space-y-1.5 pl-5 list-disc text-sm text-incompatible font-medium">
                 {issues.map((issue, i) => (
                   <li key={i}>{issue.message}</li>
                 ))}
@@ -735,14 +727,12 @@ export default function SistemToplaPage() {
           )}
         </div>
 
-        {/* SAĞ TARAF: CANLI SİSTEM ÖZETİ (SIDEBAR) */}
         <aside className="hidden lg:block lg:sticky lg:top-24 h-fit">
           <LiveSidebar selectedComponents={selectedComponents} />
         </aside>
       </div>
 
-      {/* ALT YAPİŞKAN MALİYET BAR (FIXED BOTTOM BAR) */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200/90 px-4 md:px-8 py-4 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.05)] z-40">
+      <div className="fixed bottom-0 left-0 right-0 bg-paper/90 backdrop-blur-md border-t border-hairline px-4 md:px-8 py-4 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.08)] z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div>
             <p className="text-[10px] text-ink-muted font-bold uppercase tracking-wider font-[family-name:var(--font-mono)]">
@@ -756,7 +746,7 @@ export default function SistemToplaPage() {
           <button
             onClick={handleSubmit}
             disabled={!isComplete || isSubmitting}
-            className="rounded-xl bg-[#4e49f6] hover:bg-[#3d39c4] text-white text-sm font-bold px-8 py-3.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-[#4e49f6]/25 active:scale-95 cursor-pointer"
+            className="rounded-xl bg-trace hover:bg-trace-dark text-paper text-sm font-bold px-8 py-3.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_8px_16px_-4px_rgba(var(--color-trace-rgb),0.25)] active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
           >
             {isSubmitting
               ? 'Uyumluluk Kontrol Ediliyor...'

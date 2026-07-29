@@ -5,6 +5,7 @@ import './globals.css';
 import { ToastProvider } from '@/lib/toast-context';
 import { ConfirmProvider } from '@/lib/confirm-context';
 import Footer from '@/components/Footer';
+import { ThemeProvider } from '@/lib/theme-context';
 import CookieConsent from '@/components/CookieConsent';
 
 const spaceGrotesk = Space_Grotesk({
@@ -34,20 +35,37 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="tr">
+    <html lang="tr" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('sistemgaraj_theme');
+                  var isDark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                  if (isDark) document.documentElement.classList.add('dark');
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased flex flex-col min-h-screen`}
         suppressHydrationWarning
       >
-        <AuthProvider>
-          <ToastProvider>
-            <ConfirmProvider>
-              <div className="flex-1">{children}</div>
-              <Footer />
-              <CookieConsent />
-            </ConfirmProvider>
-          </ToastProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <ConfirmProvider>
+                <div className="flex-1">{children}</div>
+                <Footer />
+                <CookieConsent />
+              </ConfirmProvider>
+            </ToastProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

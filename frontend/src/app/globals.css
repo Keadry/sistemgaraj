@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@custom-variant dark (&:where(.dark, .dark *));
 
 @keyframes slideInRight {
   from {
@@ -44,6 +45,19 @@
    renk aramana gerek kalmaz. */
 :root {
   --color-trace-rgb: 78, 73, 246;
+}
+
+.dark {
+  --color-paper: #14181f;
+  --color-surface: #1c222c;
+  --color-ink: #f2f4f7;
+  --color-ink-muted: #9aa4b2;
+  --color-trace: #7b76ff;
+  --color-trace-dark: #6560e6;
+  --color-compatible: #34c98c;
+  --color-incompatible: #f0665a;
+  --color-hairline: #2c3340;
+  --color-trace-rgb: 123, 118, 255;
 }
 
 body {

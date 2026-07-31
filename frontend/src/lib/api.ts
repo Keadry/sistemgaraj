@@ -115,7 +115,6 @@ export async function getBuildsCount(): Promise<number> {
   }
 }
 
-
 export async function getBuild(
   id: string,
   token?: string | null,
@@ -1111,4 +1110,141 @@ export async function unlikeComment(
     },
   );
   if (!res.ok) throw new Error('İşlem başarısız.');
+}
+
+export type AccountInfo = {
+  id: string;
+  email: string;
+  username: string;
+  avatarUrl: string | null;
+  coverUrl: string | null;
+  bio: string | null;
+  twitterUrl: string | null;
+  githubUrl: string | null;
+  steamUrl: string | null;
+  discordUrl: string | null;
+  websiteUrl: string | null;
+  language: string;
+  emailNewsletterOptIn: boolean;
+  emailNotifyOnActivity: boolean;
+  notifyOnBuildComment: boolean;
+  notifyOnBuildLike: boolean;
+};
+
+export async function getMyAccount(token: string): Promise<AccountInfo> {
+  const res = await fetch(`${API_URL}/api/users/me/account`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error('Hesap bilgileri yüklenemedi.');
+  const data = await res.json();
+  return data.user;
+}
+
+export async function updateMyProfile(
+  fields: {
+    bio?: string;
+    twitterUrl?: string;
+    githubUrl?: string;
+    steamUrl?: string;
+    discordUrl?: string;
+    websiteUrl?: string;
+  },
+  token: string,
+) {
+  const res = await fetch(`${API_URL}/api/users/me/profile`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Güncellenemedi.');
+  return data.user;
+}
+
+export async function updateMyUsername(username: string, token: string) {
+  const res = await fetch(`${API_URL}/api/users/me/username`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ username }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Kullanıcı adı değiştirilemedi.');
+  return data.username as string;
+}
+
+export async function updateMyEmail(
+  newEmail: string,
+  currentPassword: string,
+  token: string,
+) {
+  const res = await fetch(`${API_URL}/api/users/me/email`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ newEmail, currentPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'E-posta değiştirilemedi.');
+}
+
+export async function updateMyPassword(
+  currentPassword: string,
+  newPassword: string,
+  token: string,
+) {
+  const res = await fetch(`${API_URL}/api/users/me/password`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Şifre değiştirilemedi.');
+}
+
+export async function deleteMyAccount(currentPassword: string, token: string) {
+  const res = await fetch(`${API_URL}/api/users/me`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ currentPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Hesap silinemedi.');
+}
+
+export async function updateMyPreferences(
+  fields: {
+    language?: string;
+    emailNewsletterOptIn?: boolean;
+    emailNotifyOnActivity?: boolean;
+    notifyOnBuildComment?: boolean;
+    notifyOnBuildLike?: boolean;
+  },
+  token: string,
+) {
+  const res = await fetch(`${API_URL}/api/users/me/preferences`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Tercihler güncellenemedi.');
+  return data.preferences;
 }

@@ -41,6 +41,17 @@ model User {
   username  String   @unique
   avatarUrl String?
   coverUrl  String?
+  bio         String?
+  twitterUrl  String?
+  githubUrl   String?
+  steamUrl    String?
+  discordUrl  String?
+  websiteUrl  String?
+  language              String  @default("tr")
+  emailNewsletterOptIn  Boolean @default(false)
+  emailNotifyOnActivity Boolean @default(true)
+  notifyOnBuildComment  Boolean @default(true)
+  notifyOnBuildLike     Boolean @default(true)
   password  String
   role      Role     @default(USER)
 

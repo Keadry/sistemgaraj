@@ -91,6 +91,13 @@ export default function Navbar() {
                   >
                     {user.username}
                   </Link>
+                  <Link
+                    href="/ayarlar"
+                    className="text-sm font-medium text-ink-muted hover:text-trace transition-colors px-2 rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+                    title="Ayarlar"
+                  >
+                    ⚙
+                  </Link>
                   <button
                     onClick={logout}
                     className="text-sm font-medium text-ink-muted hover:text-incompatible transition-colors px-2 py-1 rounded-lg cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-incompatible"

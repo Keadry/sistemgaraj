@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth-context';
 import { updateMyPrivacy } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
 import { useConfirm } from '@/lib/confirm-context';
+import { getBlockedUsers, unblockUser, type BlockedUser } from '@/lib/api';
 import {
   getMyAccount,
   updateMyProfile,
@@ -76,10 +77,12 @@ export default function AyarlarPage() {
           {tab === 'parola' && <ParolaTab token={token} />}
           {tab === 'tercihler' && <TercihlerTab token={token} />}
           {tab === 'gizlilik' && <GizlilikTab token={token} />}
+          {tab === 'engellenenler' && <EngellenenlerTab token={token} />}
           {tab !== 'hesap' &&
             tab !== 'parola' &&
             tab !== 'tercihler' &&
-            tab !== 'gizlilik' && <YakindaTab />}
+            tab !== 'gizlilik' &&
+            tab !== 'engellenenler' && <YakindaTab />}
         </div>
       </div>
     </main>
@@ -767,6 +770,81 @@ function GizlilikTab({ token }: { token: string }) {
           </label>
         </div>
       </section>
+    </div>
+  );
+}
+
+// ==============================
+// ENGELLENENLER
+// ==============================
+function EngellenenlerTab({ token }: { token: string }) {
+  const { showToast } = useToast();
+  const confirmDialog = useConfirm();
+  const [blocked, setBlocked] = useState<BlockedUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [actionId, setActionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    getBlockedUsers(token)
+      .then(setBlocked)
+      .finally(() => setIsLoading(false));
+  }, [token]);
+
+  async function handleUnblock(user: BlockedUser) {
+    const ok = await confirmDialog({
+      title: 'Engeli kaldır',
+      description: `@${user.username} artık sana yorum/mesaj yazabilir.`,
+      confirmLabel: 'Engeli Kaldır',
+    });
+    if (!ok) return;
+
+    setActionId(user.id);
+    try {
+      await unblockUser(user.username, token);
+      setBlocked((prev) => prev.filter((u) => u.id !== user.id));
+      showToast('Engel kaldırıldı.', 'success');
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
+    } finally {
+      setActionId(null);
+    }
+  }
+
+  if (isLoading) return <p className="text-ink-muted">Yükleniyor...</p>;
+
+  return (
+    <div>
+      <p className="text-sm text-ink-muted mb-4">
+        Engellediğin kullanıcılar sistemlerine ve profiline yorum yapamaz.
+      </p>
+
+      {blocked.length === 0 ? (
+        <p className="text-ink-muted text-sm">
+          Henüz kimseyi engellemedin. Bir kullanıcının profilinden
+          engelleyebilirsin.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {blocked.map((user) => (
+            <div
+              key={user.id}
+              className="flex items-center justify-between rounded-xl border border-hairline px-4 py-3"
+            >
+              <span className="font-medium text-sm">@{user.username}</span>
+              <button
+                onClick={() => handleUnblock(user)}
+                disabled={actionId === user.id}
+                className="text-xs rounded-full border border-hairline px-3 py-1.5 hover:border-trace transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+              >
+                Engeli Kaldır
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

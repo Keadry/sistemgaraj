@@ -1283,3 +1283,37 @@ export async function updateMyPrivacy(
   if (!res.ok) throw new Error(data.error || 'Güncellenemedi.');
   return data.privacy;
 }
+
+export type BlockedUser = {
+  id: string;
+  username: string;
+  avatarUrl: string | null;
+};
+
+export async function getBlockedUsers(token: string): Promise<BlockedUser[]> {
+  const res = await fetch(`${API_URL}/api/users/me/blocked`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error('Engellenenler yüklenemedi.');
+  const data = await res.json();
+  return data.blocked;
+}
+
+export async function blockUser(username: string, token: string) {
+  const res = await fetch(`${API_URL}/api/users/${username}/block`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Engellenemedi.');
+}
+
+export async function unblockUser(username: string, token: string) {
+  const res = await fetch(`${API_URL}/api/users/${username}/block`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Engel kaldırılamadı.');
+}

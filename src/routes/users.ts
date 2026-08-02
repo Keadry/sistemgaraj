@@ -183,6 +183,22 @@ router.post('/:username/wall', requireAuth, async (req: AuthRequest, res) => {
       return;
     }
 
+    const isBlocked = await prisma.userBlock.findUnique({
+      where: {
+        blockerId_blockedId: {
+          blockerId: profileUser.id,
+          blockedId: req.userId!,
+        },
+      },
+    });
+
+    if (isBlocked) {
+      res.status(403).json({
+        error: 'Bu kullanıcı seni engellemiş, profiline yorum yapamazsın.',
+      });
+      return;
+    }
+
     // Cevap veriliyorsa, üst yorumun gerçekten bu profile ait olduğunu doğrula
     if (parentId) {
       const parent = await prisma.profileComment.findUnique({
@@ -580,6 +596,104 @@ router.patch('/me/privacy', requireAuth, async (req: AuthRequest, res) => {
         showLastActive: user.showLastActive,
       },
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
+
+// ==============================
+// KULLANICIYI ENGELLE
+// ==============================
+router.post('/:username/block', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const username = req.params.username as string;
+
+    const target = await prisma.user.findFirst({
+      where: { username: { equals: username, mode: 'insensitive' } },
+    });
+
+    if (!target) {
+      res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
+      return;
+    }
+
+    if (target.id === req.userId) {
+      res.status(400).json({ error: 'Kendini engelleyemezsin.' });
+      return;
+    }
+
+    const existing = await prisma.userBlock.findUnique({
+      where: {
+        blockerId_blockedId: { blockerId: req.userId!, blockedId: target.id },
+      },
+    });
+
+    if (existing) {
+      res.status(409).json({ error: 'Bu kullanıcıyı zaten engellemişsin.' });
+      return;
+    }
+
+    await prisma.userBlock.create({
+      data: { blockerId: req.userId!, blockedId: target.id },
+    });
+
+    res.status(201).json({ message: 'Kullanıcı engellendi.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
+
+// ==============================
+// ENGELİ KALDIR
+// ==============================
+router.delete(
+  '/:username/block',
+  requireAuth,
+  async (req: AuthRequest, res) => {
+    try {
+      const username = req.params.username as string;
+
+      const target = await prisma.user.findFirst({
+        where: { username: { equals: username, mode: 'insensitive' } },
+      });
+
+      if (!target) {
+        res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
+        return;
+      }
+
+      await prisma.userBlock.delete({
+        where: {
+          blockerId_blockedId: { blockerId: req.userId!, blockedId: target.id },
+        },
+      });
+
+      res.json({ message: 'Engel kaldırıldı.' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
+    }
+  },
+);
+
+// ==============================
+// ENGELLENEN KULLANICILARI LİSTELE
+// ==============================
+router.get('/me/blocked', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const blocks = await prisma.userBlock.findMany({
+      where: { blockerId: req.userId! },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        blocked: {
+          select: { id: true, username: true, avatarUrl: true },
+        },
+      },
+    });
+
+    res.json({ blocked: blocks.map((b) => b.blocked) });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Sunucu hatası.' });

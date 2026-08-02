@@ -72,6 +72,9 @@ model User {
   comments Comment[]
   buildCommentLikes CommentLike[]
 
+  blockedUsers UserBlock[] @relation("Blocker")
+  blockedByUsers UserBlock[] @relation("Blocked")
+
   profileCommentsAuthored ProfileComment[] @relation("ProfileCommentAuthor")
   profileCommentsReceived ProfileComment[] @relation("ProfileCommentTarget")
 }
@@ -284,4 +287,16 @@ model ProfileComment {
   replies  ProfileComment[] @relation("ProfileCommentReplies")
 }
 
+model UserBlock {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  blocker   User   @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockerId String
+
+  blocked   User   @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  blockedId String
+
+  @@unique([blockerId, blockedId])
+}
 

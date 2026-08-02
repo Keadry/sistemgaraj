@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { deleteBuild } from '@/lib/api';
 import Navbar from '@/components/Navbar';
 import BuildCard from '@/components/BuildCard';
+import { blockUser } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
 import { useConfirm } from '@/lib/confirm-context';
 import ProfileAvatar from '@/components/ProfileAvatar';
@@ -52,7 +53,7 @@ export default function UserProfilePage({
   params: Promise<{ username: string }>;
 }) {
   const { username } = use(params);
-  const { token, isLoading: isAuthLoading } = useAuth();
+  const { user: currentUser, token, isLoading: isAuthLoading } = useAuth();
   const { showToast } = useToast();
   const confirmDialog = useConfirm();
 
@@ -238,6 +239,37 @@ export default function UserProfilePage({
                       Website
                     </a>
                   )}
+                </div>
+              )}
+              {!isOwner && currentUser && (
+                <div className="mt-4 px-2">
+                  <button
+                    onClick={async () => {
+                      if (!token) return;
+                      const ok = await confirmDialog({
+                        title: 'Kullanıcıyı engelle',
+                        description: `@${profile.username} artık sana yorum/mesaj yazamayacak.`,
+                        confirmLabel: 'Engelle',
+                        danger: true,
+                      });
+                      if (!ok) return;
+
+                      try {
+                        await blockUser(profile.username, token);
+                        showToast('Kullanıcı engellendi.', 'success');
+                      } catch (err) {
+                        showToast(
+                          err instanceof Error
+                            ? err.message
+                            : 'Bir hata oluştu.',
+                          'error',
+                        );
+                      }
+                    }}
+                    className="text-xs text-ink-muted hover:text-incompatible transition-colors rounded-lg px-3 py-1.5 border border-hairline hover:border-incompatible focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-incompatible"
+                  >
+                    Engelle
+                  </button>
                 </div>
               )}
             </div>

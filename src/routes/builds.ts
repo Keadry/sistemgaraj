@@ -418,6 +418,28 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
       return;
     }
 
+    const build = await prisma.build.findUnique({ where: { id: buildId } });
+    if (!build) {
+      res.status(404).json({ error: 'Sistem bulunamadı.' });
+      return;
+    }
+
+    const isBlocked = await prisma.userBlock.findUnique({
+      where: {
+        blockerId_blockedId: {
+          blockerId: build.userId,
+          blockedId: req.userId!,
+        },
+      },
+    });
+
+    if (isBlocked) {
+      res.status(403).json({
+        error: 'Bu sistemin sahibi seni engellemiş, yorum yapamazsın.',
+      });
+      return;
+    }
+
     const lastComment = await prisma.comment.findFirst({
       where: { userId: req.userId! },
       orderBy: { createdAt: 'desc' },

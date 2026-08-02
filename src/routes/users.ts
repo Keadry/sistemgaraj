@@ -20,7 +20,18 @@ router.get('/:username', optionalAuth, async (req: AuthRequest, res) => {
         username: true,
         avatarUrl: true,
         coverUrl: true,
+        bio: true,
+        twitterUrl: true,
+        githubUrl: true,
+        steamUrl: true,
+        discordUrl: true,
+        websiteUrl: true,
         createdAt: true,
+        showOnlineStatus: true,
+        showLastActive: true,
+        lastActiveAt: true,
+        birthDate: true,
+        showBirthDate: true,
       },
     });
 
@@ -60,7 +71,30 @@ router.get('/:username', optionalAuth, async (req: AuthRequest, res) => {
       },
     });
 
-    res.json({ user, builds, isOwner, wallComments });
+    const ONLINE_THRESHOLD_MINUTES = 5;
+    const isOnline =
+      user.lastActiveAt &&
+      Date.now() - user.lastActiveAt.getTime() <
+        ONLINE_THRESHOLD_MINUTES * 60 * 1000;
+
+    const publicUser = {
+      id: user.id,
+      username: user.username,
+      avatarUrl: user.avatarUrl,
+      coverUrl: user.coverUrl,
+      bio: user.bio,
+      twitterUrl: user.twitterUrl,
+      githubUrl: user.githubUrl,
+      steamUrl: user.steamUrl,
+      discordUrl: user.discordUrl,
+      websiteUrl: user.websiteUrl,
+      createdAt: user.createdAt,
+      isOnline: user.showOnlineStatus ? Boolean(isOnline) : null,
+      lastActiveAt: user.showLastActive ? user.lastActiveAt : null,
+      birthDate: user.showBirthDate || isOwner ? user.birthDate : null,
+    };
+
+    res.json({ user: publicUser, builds, isOwner, wallComments });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Sunucu hatası.' });
@@ -251,6 +285,10 @@ router.get('/me/account', requireAuth, async (req: AuthRequest, res) => {
         emailNotifyOnActivity: true,
         notifyOnBuildComment: true,
         notifyOnBuildLike: true,
+        birthDate: true,
+        showBirthDate: true,
+        showOnlineStatus: true,
+        showLastActive: true,
       },
     });
 
@@ -505,6 +543,41 @@ router.patch('/me/preferences', requireAuth, async (req: AuthRequest, res) => {
         emailNotifyOnActivity: user.emailNotifyOnActivity,
         notifyOnBuildComment: user.notifyOnBuildComment,
         notifyOnBuildLike: user.notifyOnBuildLike,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
+
+// ==============================
+// GİZLİLİK AYARLARINI GÜNCELLE
+// ==============================
+router.patch('/me/privacy', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { birthDate, showBirthDate, showOnlineStatus, showLastActive } =
+      req.body;
+
+    const user = await prisma.user.update({
+      where: { id: req.userId! },
+      data: {
+        ...(birthDate !== undefined
+          ? { birthDate: birthDate ? new Date(birthDate) : null }
+          : {}),
+        ...(showBirthDate !== undefined ? { showBirthDate } : {}),
+        ...(showOnlineStatus !== undefined ? { showOnlineStatus } : {}),
+        ...(showLastActive !== undefined ? { showLastActive } : {}),
+      },
+    });
+
+    res.json({
+      message: 'Gizlilik ayarları güncellendi.',
+      privacy: {
+        birthDate: user.birthDate,
+        showBirthDate: user.showBirthDate,
+        showOnlineStatus: user.showOnlineStatus,
+        showLastActive: user.showLastActive,
       },
     });
   } catch (error) {

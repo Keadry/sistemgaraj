@@ -52,6 +52,11 @@ model User {
   emailNotifyOnActivity Boolean @default(true)
   notifyOnBuildComment  Boolean @default(true)
   notifyOnBuildLike     Boolean @default(true)
+  birthDate            DateTime?
+  showBirthDate        Boolean   @default(false)
+  showOnlineStatus     Boolean   @default(true)
+  showLastActive       Boolean   @default(true)
+  lastActiveAt         DateTime?
   password  String
   role      Role     @default(USER)
 

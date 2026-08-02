@@ -609,7 +609,16 @@ export type UserProfile = {
   username: string;
   avatarUrl: string | null;
   coverUrl: string | null;
+  bio: string | null;
+  twitterUrl: string | null;
+  githubUrl: string | null;
+  steamUrl: string | null;
+  discordUrl: string | null;
+  websiteUrl: string | null;
   createdAt: string;
+  isOnline: boolean | null;
+  lastActiveAt: string | null;
+  birthDate: string | null;
 };
 
 export async function getUserProfile(
@@ -1129,6 +1138,10 @@ export type AccountInfo = {
   emailNotifyOnActivity: boolean;
   notifyOnBuildComment: boolean;
   notifyOnBuildLike: boolean;
+  birthDate: string | null;
+  showBirthDate: boolean;
+  showOnlineStatus: boolean;
+  showLastActive: boolean;
 };
 
 export async function getMyAccount(token: string): Promise<AccountInfo> {
@@ -1247,4 +1260,26 @@ export async function updateMyPreferences(
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Tercihler güncellenemedi.');
   return data.preferences;
+}
+
+export async function updateMyPrivacy(
+  fields: {
+    birthDate?: string | null;
+    showBirthDate?: boolean;
+    showOnlineStatus?: boolean;
+    showLastActive?: boolean;
+  },
+  token: string,
+) {
+  const res = await fetch(`${API_URL}/api/users/me/privacy`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(fields),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Güncellenemedi.');
+  return data.privacy;
 }

@@ -48,6 +48,14 @@ export async function requireAuth(
     }
 
     req.userId = decoded.userId;
+
+    prisma.user
+      .update({
+        where: { id: decoded.userId },
+        data: { lastActiveAt: new Date() },
+      })
+      .catch(() => {});
+
     next();
   } catch (error) {
     return res

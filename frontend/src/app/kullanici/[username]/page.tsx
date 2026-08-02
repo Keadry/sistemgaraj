@@ -30,6 +30,22 @@ function formatDate(dateString: string): string {
   }).format(new Date(dateString));
 }
 
+function formatRelativeTime(dateString: string): string {
+  const diffMs = Date.now() - new Date(dateString).getTime();
+  const diffMinutes = Math.floor(diffMs / 60000);
+
+  if (diffMinutes < 1) return 'az önce';
+  if (diffMinutes < 60) return `${diffMinutes} dakika önce`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours} saat önce`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 30) return `${diffDays} gün önce`;
+
+  return formatDate(dateString);
+}
+
 export default function UserProfilePage({
   params,
 }: {
@@ -117,25 +133,113 @@ export default function UserProfilePage({
             />
 
             {/* KULLANICI BİLGİ BARI */}
-            <div className="sm:pb-2 bg-slate-900/80 backdrop-blur-md rounded-2xl px-5 py-3 border border-white/10 text-white w-fit shadow-xl flex items-center gap-4">
-              <div>
-                <h1 className="font-[family-name:var(--font-display)] text-2xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+            <div className="sm:pb-2 bg-ink/70 backdrop-blur-sm rounded-xl px-4 py-2.5 border border-paper/10 w-fit">
+              <div className="flex items-center gap-2">
+                <h1
+                  className="font-[family-name:var(--font-display)] text-2xl md:text-3xl font-semibold tracking-tight text-paper"
+                  style={{
+                    textShadow:
+                      '0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3)',
+                  }}
+                >
                   {profile.username}
                 </h1>
-                <p className="text-xs text-slate-300 font-medium mt-0.5">
-                  {formatDate(profile.createdAt)} tarihinde katıldı
+                {profile.isOnline === true && (
+                  <span
+                    className="w-2.5 h-2.5 rounded-full bg-compatible shrink-0"
+                    title="Çevrimiçi"
+                  />
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2 mt-1.5 text-sm text-paper/70">
+                <span className="font-[family-name:var(--font-mono)]">
+                  {builds.length} sistem
+                </span>
+                <span className="text-paper/30">·</span>
+                <span>{formatDate(profile.createdAt)} tarihinde katıldı</span>
+                {profile.isOnline === false && profile.lastActiveAt && (
+                  <>
+                    <span className="text-paper/30">·</span>
+                    <span>
+                      {formatRelativeTime(profile.lastActiveAt)} aktifti
+                    </span>
+                  </>
+                )}
+              </div>
+              {profile.bio && (
+                <p className="text-sm text-paper/90 mt-2 max-w-md leading-relaxed">
+                  {profile.bio}
                 </p>
-              </div>
-
-              <div className="h-9 w-px bg-white/15" />
-              <div className="text-center px-1">
-                <span className="font-[family-name:var(--font-mono)] text-xl font-extrabold text-[#C084FC] block leading-none">
-                  {builds.length}
-                </span>
-                <span className="text-[10px] text-slate-300 font-medium uppercase tracking-wider">
-                  Sistem
-                </span>
-              </div>
+              )}
+              {(profile.twitterUrl ||
+                profile.githubUrl ||
+                profile.steamUrl ||
+                profile.discordUrl ||
+                profile.websiteUrl) && (
+                <div className="flex items-center gap-3 mt-2">
+                  {profile.twitterUrl && (
+                    <a
+                      href={
+                        profile.twitterUrl.startsWith('http')
+                          ? profile.twitterUrl
+                          : `https://${profile.twitterUrl}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-paper/70 hover:text-paper transition-colors"
+                    >
+                      X
+                    </a>
+                  )}
+                  {profile.githubUrl && (
+                    <a
+                      href={
+                        profile.githubUrl.startsWith('http')
+                          ? profile.githubUrl
+                          : `https://${profile.githubUrl}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-paper/70 hover:text-paper transition-colors"
+                    >
+                      GitHub
+                    </a>
+                  )}
+                  {profile.steamUrl && (
+                    <a
+                      href={
+                        profile.steamUrl.startsWith('http')
+                          ? profile.steamUrl
+                          : `https://${profile.steamUrl}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-paper/70 hover:text-paper transition-colors"
+                    >
+                      Steam
+                    </a>
+                  )}
+                  {profile.discordUrl && (
+                    <span className="text-xs text-paper/70">
+                      Discord: {profile.discordUrl}
+                    </span>
+                  )}
+                  {profile.websiteUrl && (
+                    <a
+                      href={
+                        profile.websiteUrl.startsWith('http')
+                          ? profile.websiteUrl
+                          : `https://${profile.websiteUrl}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-paper/70 hover:text-paper transition-colors"
+                    >
+                      Website
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

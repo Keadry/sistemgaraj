@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { updateMyPreferences } from '@/lib/api';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/lib/auth-context';
+import { updateMyPrivacy } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
 import { useConfirm } from '@/lib/confirm-context';
 import {
@@ -74,9 +75,11 @@ export default function AyarlarPage() {
           {tab === 'hesap' && <HesapTab token={token} />}
           {tab === 'parola' && <ParolaTab token={token} />}
           {tab === 'tercihler' && <TercihlerTab token={token} />}
-          {tab !== 'hesap' && tab !== 'parola' && tab !== 'tercihler' && (
-            <YakindaTab />
-          )}
+          {tab === 'gizlilik' && <GizlilikTab token={token} />}
+          {tab !== 'hesap' &&
+            tab !== 'parola' &&
+            tab !== 'tercihler' &&
+            tab !== 'gizlilik' && <YakindaTab />}
         </div>
       </div>
     </main>
@@ -605,6 +608,160 @@ function TercihlerTab({ token }: { token: string }) {
               <p className="text-sm font-medium">Beğeni bildirimleri</p>
               <p className="text-xs text-ink-muted">
                 Sistemin beğenildiğinde bildirim al.
+              </p>
+            </div>
+          </label>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// ==============================
+// GİZLİLİK
+// ==============================
+function GizlilikTab({ token }: { token: string }) {
+  const { showToast } = useToast();
+  const [account, setAccount] = useState<AccountInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [birthDateInput, setBirthDateInput] = useState('');
+
+  useEffect(() => {
+    getMyAccount(token)
+      .then((data) => {
+        setAccount(data);
+        if (data.birthDate) {
+          setBirthDateInput(data.birthDate.slice(0, 10));
+        }
+      })
+      .finally(() => setIsLoading(false));
+  }, [token]);
+
+  async function handleToggle(
+    field: 'showBirthDate' | 'showOnlineStatus' | 'showLastActive',
+    value: boolean,
+  ) {
+    if (!account) return;
+    setIsSaving(true);
+    const previous = account[field];
+    setAccount({ ...account, [field]: value });
+    try {
+      await updateMyPrivacy({ [field]: value }, token);
+      showToast('Gizlilik ayarı güncellendi.', 'success');
+    } catch (err) {
+      setAccount({ ...account, [field]: previous });
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleBirthDateSave() {
+    setIsSaving(true);
+    try {
+      await updateMyPrivacy({ birthDate: birthDateInput || null }, token);
+      showToast('Doğum tarihi güncellendi.', 'success');
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  if (isLoading || !account) {
+    return <p className="text-ink-muted">Yükleniyor...</p>;
+  }
+
+  return (
+    <div className="space-y-8">
+      <section className="rounded-2xl border border-hairline p-5">
+        <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold mb-3">
+          Doğum Tarihi
+        </h2>
+        <p className="text-xs text-ink-muted mb-3">
+          Opsiyoneldir. Varsayılan olarak sadece sen görebilirsin.
+        </p>
+        <div className="flex gap-2 max-w-md">
+          <input
+            type="date"
+            value={birthDateInput}
+            onChange={(e) => setBirthDateInput(e.target.value)}
+            className="flex-1 rounded-xl border border-hairline px-4 py-2.5 text-sm outline-none focus:border-trace transition-colors bg-paper"
+          />
+          <button
+            onClick={handleBirthDateSave}
+            disabled={isSaving}
+            className="rounded-xl bg-ink text-paper text-sm font-medium px-5 hover:bg-trace transition-colors disabled:opacity-50"
+          >
+            Kaydet
+          </button>
+        </div>
+
+        <label className="flex items-start gap-3 cursor-pointer mt-4">
+          <input
+            type="checkbox"
+            checked={account.showBirthDate}
+            disabled={isSaving}
+            onChange={(e) => handleToggle('showBirthDate', e.target.checked)}
+            className="w-4 h-4 mt-0.5 accent-trace cursor-pointer"
+          />
+          <div>
+            <p className="text-sm font-medium">
+              Doğum tarihimi profilimde göster
+            </p>
+            <p className="text-xs text-ink-muted">
+              Kapalıyken doğum tarihin sadece sana görünür.
+            </p>
+          </div>
+        </label>
+      </section>
+
+      <section className="rounded-2xl border border-hairline p-5">
+        <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold mb-4">
+          Etkinlik Görünürlüğü
+        </h2>
+
+        <div className="space-y-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={account.showOnlineStatus}
+              disabled={isSaving}
+              onChange={(e) =>
+                handleToggle('showOnlineStatus', e.target.checked)
+              }
+              className="w-4 h-4 mt-0.5 accent-trace cursor-pointer"
+            />
+            <div>
+              <p className="text-sm font-medium">Çevrimiçi durumumu göster</p>
+              <p className="text-xs text-ink-muted">
+                Diğer kullanıcılar şu an aktif olup olmadığını görebilsin.
+              </p>
+            </div>
+          </label>
+
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={account.showLastActive}
+              disabled={isSaving}
+              onChange={(e) => handleToggle('showLastActive', e.target.checked)}
+              className="w-4 h-4 mt-0.5 accent-trace cursor-pointer"
+            />
+            <div>
+              <p className="text-sm font-medium">
+                Son aktiflik zamanımı göster
+              </p>
+              <p className="text-xs text-ink-muted">
+                Profilinde &quot;3 saat önce aktifti&quot; gibi bir bilgi
+                görünsün.
               </p>
             </div>
           </label>

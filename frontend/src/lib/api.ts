@@ -1345,3 +1345,23 @@ export async function getMyBookmarks(token: string): Promise<Build[]> {
   const data = await res.json();
   return data.builds;
 }
+
+export type Reaction = {
+  type: 'build_like' | 'comment_like';
+  id: string;
+  createdAt: string;
+  user: { id: string; username: string; avatarUrl: string | null };
+  buildId: string;
+  buildName: string | null;
+  commentContent: string | null;
+};
+
+export async function getMyReactions(token: string): Promise<Reaction[]> {
+  const res = await fetch(`${API_URL}/api/users/me/reactions`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error('Reaksiyonlar yüklenemedi.');
+  const data = await res.json();
+  return data.reactions;
+}

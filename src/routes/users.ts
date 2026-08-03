@@ -701,3 +701,58 @@ router.get('/me/blocked', requireAuth, async (req: AuthRequest, res) => {
 });
 
 export default router;
+
+// ==============================
+// REAKSİYONLAR: Sistemlerime ve yorumlarıma gelen beğeniler
+// ==============================
+router.get('/me/reactions', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const buildLikes = await prisma.like.findMany({
+      where: { build: { userId: req.userId! } },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+      include: {
+        user: { select: { id: true, username: true, avatarUrl: true } },
+        build: { select: { id: true, name: true } },
+      },
+    });
+
+    const commentLikes = await prisma.commentLike.findMany({
+      where: { comment: { userId: req.userId! } },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+      include: {
+        user: { select: { id: true, username: true, avatarUrl: true } },
+        comment: { select: { id: true, content: true, buildId: true } },
+      },
+    });
+
+    const combined = [
+      ...buildLikes.map((l) => ({
+        type: 'build_like' as const,
+        id: l.id,
+        createdAt: l.createdAt,
+        user: l.user,
+        buildId: l.build.id,
+        buildName: l.build.name,
+        commentContent: null as string | null,
+      })),
+      ...commentLikes.map((l) => ({
+        type: 'comment_like' as const,
+        id: l.id,
+        createdAt: l.createdAt,
+        user: l.user,
+        buildId: l.comment.buildId,
+        buildName: null as string | null,
+        commentContent: l.comment.content,
+      })),
+    ]
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .slice(0, 30);
+
+    res.json({ reactions: combined });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});

@@ -10,6 +10,7 @@ import { useToast } from '@/lib/toast-context';
 import { useConfirm } from '@/lib/confirm-context';
 import { getMyBookmarks, type Build } from '@/lib/api';
 import BuildCard from '@/components/BuildCard';
+import { getMyReactions, type Reaction } from '@/lib/api';
 import { getBlockedUsers, unblockUser, type BlockedUser } from '@/lib/api';
 import {
   getMyAccount,
@@ -81,12 +82,7 @@ export default function AyarlarPage() {
           {tab === 'gizlilik' && <GizlilikTab token={token} />}
           {tab === 'engellenenler' && <EngellenenlerTab token={token} />}
           {tab === 'isaretler' && <IsaretlerTab token={token} />}
-          {tab !== 'hesap' &&
-            tab !== 'parola' &&
-            tab !== 'tercihler' &&
-            tab !== 'gizlilik' &&
-            tab !== 'engellenenler' &&
-            tab !== 'isaretler' && <YakindaTab />}
+          {tab === 'reaksiyonlar' && <ReaksiyonlarTab token={token} />}
         </div>
       </div>
     </main>
@@ -881,6 +877,74 @@ function IsaretlerTab({ token }: { token: string }) {
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
       {builds.map((build) => (
         <BuildCard key={build.id} build={build} />
+      ))}
+    </div>
+  );
+}
+
+// ==============================
+// REAKSİYONLAR
+// ==============================
+function ReaksiyonlarTab({ token }: { token: string }) {
+  const [reactions, setReactions] = useState<Reaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    getMyReactions(token)
+      .then(setReactions)
+      .finally(() => setIsLoading(false));
+  }, [token]);
+
+  function formatRelative(dateString: string): string {
+    const diffMs = Date.now() - new Date(dateString).getTime();
+    const diffMinutes = Math.floor(diffMs / 60000);
+    if (diffMinutes < 1) return 'az önce';
+    if (diffMinutes < 60) return `${diffMinutes} dakika önce`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours} saat önce`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} gün önce`;
+  }
+
+  if (isLoading) return <p className="text-ink-muted">Yükleniyor...</p>;
+
+  if (reactions.length === 0) {
+    return (
+      <p className="text-ink-muted text-sm">
+        Henüz sistemlerine veya yorumlarına gelen bir beğeni yok.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {reactions.map((r) => (
+        <a
+          key={`${r.type}-${r.id}`}
+          href={`/sistemler/${r.buildId}`}
+          className="flex items-center justify-between rounded-xl border border-hairline px-4 py-3 hover:border-trace transition-colors"
+        >
+          <p className="text-sm">
+            <span className="font-medium">@{r.user.username}</span>{' '}
+            {r.type === 'build_like' ? (
+              <>
+                <span className="text-ink-muted">sistemini beğendi:</span>{' '}
+                <span className="font-medium">{r.buildName}</span>
+              </>
+            ) : (
+              <>
+                <span className="text-ink-muted">yorumunu beğendi:</span>{' '}
+                <span className="text-ink-muted italic">
+                  &quot;{r.commentContent?.slice(0, 40)}
+                  {(r.commentContent?.length ?? 0) > 40 ? '...' : ''}&quot;
+                </span>
+              </>
+            )}
+          </p>
+          <span className="text-xs text-ink-muted shrink-0 ml-3">
+            {formatRelative(r.createdAt)}
+          </span>
+        </a>
       ))}
     </div>
   );

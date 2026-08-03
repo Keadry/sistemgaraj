@@ -8,6 +8,8 @@ import { useAuth } from '@/lib/auth-context';
 import { updateMyPrivacy } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
 import { useConfirm } from '@/lib/confirm-context';
+import { getMyBookmarks, type Build } from '@/lib/api';
+import BuildCard from '@/components/BuildCard';
 import { getBlockedUsers, unblockUser, type BlockedUser } from '@/lib/api';
 import {
   getMyAccount,
@@ -78,11 +80,13 @@ export default function AyarlarPage() {
           {tab === 'tercihler' && <TercihlerTab token={token} />}
           {tab === 'gizlilik' && <GizlilikTab token={token} />}
           {tab === 'engellenenler' && <EngellenenlerTab token={token} />}
+          {tab === 'isaretler' && <IsaretlerTab token={token} />}
           {tab !== 'hesap' &&
             tab !== 'parola' &&
             tab !== 'tercihler' &&
             tab !== 'gizlilik' &&
-            tab !== 'engellenenler' && <YakindaTab />}
+            tab !== 'engellenenler' &&
+            tab !== 'isaretler' && <YakindaTab />}
         </div>
       </div>
     </main>
@@ -845,6 +849,39 @@ function EngellenenlerTab({ token }: { token: string }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ==============================
+// SAYFA İŞARETLERİ
+// ==============================
+function IsaretlerTab({ token }: { token: string }) {
+  const [builds, setBuilds] = useState<Build[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    getMyBookmarks(token)
+      .then(setBuilds)
+      .finally(() => setIsLoading(false));
+  }, [token]);
+
+  if (isLoading) return <p className="text-ink-muted">Yükleniyor...</p>;
+
+  if (builds.length === 0) {
+    return (
+      <p className="text-ink-muted text-sm">
+        Henüz işaretlediğin bir sistem yok. Bir sistemin sayfasındaki
+        &quot;İşaretle&quot; butonuyla ekleyebilirsin.
+      </p>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      {builds.map((build) => (
+        <BuildCard key={build.id} build={build} />
+      ))}
     </div>
   );
 }

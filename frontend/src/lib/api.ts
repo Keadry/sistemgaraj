@@ -118,7 +118,7 @@ export async function getBuildsCount(): Promise<number> {
 export async function getBuild(
   id: string,
   token?: string | null,
-): Promise<{ build: Build; isOwner: boolean }> {
+): Promise<{ build: Build; isOwner: boolean; isBookmarked: boolean }> {
   const res = await fetch(`${API_URL}/api/builds/${id}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     cache: 'no-store',
@@ -1316,4 +1316,32 @@ export async function unblockUser(username: string, token: string) {
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Engel kaldırılamadı.');
+}
+
+export async function bookmarkBuild(buildId: string, token: string) {
+  const res = await fetch(`${API_URL}/api/builds/${buildId}/bookmark`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'İşaretlenemedi.');
+}
+
+export async function unbookmarkBuild(buildId: string, token: string) {
+  const res = await fetch(`${API_URL}/api/builds/${buildId}/bookmark`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'İşaret kaldırılamadı.');
+}
+
+export async function getMyBookmarks(token: string): Promise<Build[]> {
+  const res = await fetch(`${API_URL}/api/builds/me/bookmarks`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error('İşaretlenenler yüklenemedi.');
+  const data = await res.json();
+  return data.builds;
 }

@@ -198,6 +198,77 @@ router.get('/me/all', requireAuth, async (req: AuthRequest, res) => {
 });
 
 // ==============================
+// SİSTEMİ İŞARETLE (KAYDET)
+// ==============================
+router.post('/:id/bookmark', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const buildId = req.params.id as string;
+
+    const existing = await prisma.buildBookmark.findUnique({
+      where: { userId_buildId: { userId: req.userId!, buildId } },
+    });
+
+    if (existing) {
+      res.status(409).json({ error: 'Bu sistemi zaten işaretledin.' });
+      return;
+    }
+
+    await prisma.buildBookmark.create({
+      data: { userId: req.userId!, buildId },
+    });
+
+    res.status(201).json({ message: 'Sistem işaretlendi.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
+
+// ==============================
+// İŞARETİ KALDIR
+// ==============================
+router.delete('/:id/bookmark', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const buildId = req.params.id as string;
+
+    await prisma.buildBookmark.delete({
+      where: { userId_buildId: { userId: req.userId!, buildId } },
+    });
+
+    res.json({ message: 'İşaret kaldırıldı.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
+
+// ==============================
+// İŞARETLENEN SİSTEMLERİ LİSTELE
+// ==============================
+router.get('/me/bookmarks', requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const bookmarks = await prisma.buildBookmark.findMany({
+      where: { userId: req.userId! },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        build: {
+          include: buildIncludes,
+        },
+      },
+    });
+
+    const builds = bookmarks
+      .map((b) => b.build)
+      .filter((b) => b.reviewStatus === 'APPROVED');
+
+    res.json({ builds });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
+
+// ==============================
 // FEED
 // ==============================
 router.get('/', async (req, res) => {
@@ -308,6 +379,14 @@ router.get('/:id', optionalAuth, async (req: AuthRequest, res) => {
 
     const isOwner = req.userId === build.userId;
 
+    let isBookmarked = false;
+    if (req.userId) {
+      const bookmark = await prisma.buildBookmark.findUnique({
+        where: { userId_buildId: { userId: req.userId, buildId } },
+      });
+      isBookmarked = Boolean(bookmark);
+    }
+
     if (build.reviewStatus !== 'APPROVED' && !isOwner) {
       res.status(404).json({ error: 'Sistem bulunamadı.' });
       return;
@@ -317,7 +396,11 @@ router.get('/:id', optionalAuth, async (req: AuthRequest, res) => {
       ? build.images
       : build.images.filter((img) => img.status === 'APPROVED');
 
-    res.json({ build: { ...build, images: visibleImages }, isOwner });
+    res.json({
+      build: { ...build, images: visibleImages },
+      isOwner,
+      isBookmarked,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Sunucu hatası.' });

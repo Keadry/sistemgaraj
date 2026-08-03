@@ -11,6 +11,9 @@ import BuildInteractions from '@/components/BuildInteractions';
 import EditPanel from '@/components/EditPanel';
 import { useAuth } from '@/lib/auth-context';
 import { getBuild, type Build } from '@/lib/api';
+import { bookmarkBuild, unbookmarkBuild } from '@/lib/api';
+import { useToast } from '@/lib/toast-context';
+import router, { useRouter } from 'next/router';
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', {
@@ -35,6 +38,9 @@ export default function BuildDetailPage({
 }) {
   const { id } = use(params);
   const { token, isLoading: isAuthLoading } = useAuth();
+  const { showToast } = useToast();
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
 
   const [build, setBuild] = useState<Build | null>(null);
   const [isOwner, setIsOwner] = useState(false);
@@ -48,9 +54,36 @@ export default function BuildDetailPage({
       .then((data) => {
         setBuild(data.build);
         setIsOwner(data.isOwner);
+        setIsBookmarked(data.isBookmarked);
       })
       .catch(() => setNotFoundError(true))
       .finally(() => setIsLoading(false));
+  }
+
+  async function handleBookmarkToggle() {
+    if (!token) {
+      router.push('/giris');
+      return;
+    }
+    setIsBookmarking(true);
+    try {
+      if (isBookmarked) {
+        await unbookmarkBuild(id, token);
+        setIsBookmarked(false);
+        showToast('İşaret kaldırıldı.', 'success');
+      } else {
+        await bookmarkBuild(id, token);
+        setIsBookmarked(true);
+        showToast('Sistem işaretlendi.', 'success');
+      }
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : 'Bir hata oluştu.',
+        'error',
+      );
+    } finally {
+      setIsBookmarking(false);
+    }
   }
 
   useEffect(() => {
@@ -134,7 +167,17 @@ export default function BuildDetailPage({
         {build.description && (
           <p className="mt-6 text-ink leading-relaxed">{build.description}</p>
         )}
-
+        <button
+          onClick={handleBookmarkToggle}
+          disabled={isBookmarking}
+          className={`mt-6 mr-3 rounded-lg border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
+            isBookmarked
+              ? 'border-trace bg-trace/10 text-trace'
+              : 'border-hairline hover:border-trace'
+          }`}
+        >
+          {isBookmarked ? '★ İşaretlendi' : '☆ İşaretle'}
+        </button>
         {isOwner && (
           <button
             onClick={() => setIsEditing((v) => !v)}

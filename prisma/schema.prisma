@@ -72,6 +72,8 @@ model User {
   comments Comment[]
   buildCommentLikes CommentLike[]
 
+  bookmarks BuildBookmark[]
+
   blockedUsers UserBlock[] @relation("Blocker")
   blockedByUsers UserBlock[] @relation("Blocked")
 
@@ -141,6 +143,8 @@ model Build {
   comments     Comment[]
   images       BuildImage[]
   editRequests BuildEditRequest[]
+
+  bookmarks  BuildBookmark[]
 }
 
 // ==============================
@@ -300,3 +304,15 @@ model UserBlock {
   @@unique([blockerId, blockedId])
 }
 
+model BuildBookmark {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  build   Build  @relation(fields: [buildId], references: [id], onDelete: Cascade)
+  buildId String
+
+  @@unique([userId, buildId])
+}

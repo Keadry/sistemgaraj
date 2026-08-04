@@ -10,7 +10,6 @@ import MuteDialog from '@/components/MuteDialog';
 import UsernameDialog from '@/components/UsernameDialog';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
-import { getMyReactions, type Reaction } from '@/lib/api';
 import { useConfirm } from '@/lib/confirm-context';
 import UserDetailPanel from '@/components/UserDetailPanel';
 import {
@@ -126,16 +125,6 @@ export default function AdminPage() {
     </main>
   );
 }
-
-// ==============================
-// SEKME 1: KULLANICILAR
-// ==============================
-// ==============================
-// SEKME 1: KULLANICILAR
-// ==============================
-// ==============================
-// SEKME 1: KULLANICILAR
-// ==============================
 // ==============================
 // SEKME 1: KULLANICILAR
 // ==============================

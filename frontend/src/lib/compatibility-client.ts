@@ -1,4 +1,4 @@
-import type { Component } from './api';
+import type { Component } from '@/lib/api';
 
 export const FORM_FACTOR_SIZE: Record<string, number> = {
   'Mini-ITX': 1,

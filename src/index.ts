@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import authRoutes from './routes/auth.js';
-import buildRoutes from './routes/builds.js';
+import buildRoutes from './routes/builds/index.js';
 import cors from 'cors';
 import componentRoutes from './routes/components.js';
 import adminRoutes from './routes/admin.js';

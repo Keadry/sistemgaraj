@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/lib/auth-context';
-import UsersTab from '@/components/admin/UsersTab';
-import BuildsTab from '@/components/admin/BuildsTab';
-import CommentsTab from '@/components/admin/CommentsTab';
-import NewBuildsTab from '@/components/admin/NewBuildsTab';
-import EditRequestsTab from '@/components/admin/EditRequestsTab';
+import UsersTab from './UsersTab';
+import BuildsTab from './BuildsTab';
+import CommentsTab from './CommentsTab';
+import NewBuildsTab from './NewBuildsTab';
+import EditRequestsTab from './EditRequestsTab';
 
 type Tab = 'users' | 'builds' | 'comments' | 'newBuilds' | 'editRequests';
 

@@ -45,7 +45,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ showToast }}>
       {children}
 
-      <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 max-w-sm w-full">
+      {/* Mobilde iki yandan boşluk bırakıp genişliği ekrana bırakıyoruz.
+          `w-full` + `right-6` dar ekranda viewport'tan taşıp yatay kaydırma
+          yaratıyordu. sm ve üstünde eski sağ-alt sabit genişlik davranışı. */}
+      <div className="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 z-[100] flex flex-col gap-2 sm:w-full sm:max-w-sm">
         {toasts.map((toast) => (
           <div
             key={toast.id}

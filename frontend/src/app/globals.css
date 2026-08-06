@@ -23,6 +23,29 @@
   }
 }
 
+/* Mobil menü açıkken arka planın kaymasını engeller.
+   Kilit bilerek md eşiğine (768px) bağlandı: panel zaten md:hidden ile
+   gizleniyor, dolayısıyla masaüstü genişliğinde menü state'i açık kalsa bile
+   kilit kendiliğinden devre dışı olur. Kilidi yalnızca JS ile açıp kapasaydık,
+   kaçırılan tek bir resize olayı sayfayı kaydırılamaz halde bırakabilirdi. */
+@media (max-width: 767px) {
+  body[data-menu-open='true'] {
+    overflow: hidden;
+  }
+}
+
+/* Mobil menü paneli navbar'ın altından açılır. */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Hatalı form gönderiminde hata kutusunu sallar — giris/kayit sayfaları
    `animate-shake` ile kullanır. */
 @keyframes shake {
@@ -107,7 +130,15 @@ body {
   overflow-x: hidden;
 }
 
-/* GLOBAL MOR ARKA PLAN ISILTILARI (GLOWS) — tek kaynak, sayfalarda tekrar etmez */
+/* GLOBAL MOR ARKA PLAN ISILTILARI (GLOWS) — tek kaynak, sayfalarda tekrar etmez
+
+   Genişlikler bilerek `min(..., 100%)` ile sınırlı. Sabit px verilirse dar
+   ekranda ışıltı viewport'u aşıyor ve dokümanı genişletiyor: 375px'lik bir
+   ekranda 1000px'lik ortalanmış bir kutu -312…687 aralığını kaplıyor, sağda
+   koca bir boşluk bırakıyordu. body'deki `overflow-x: hidden` bunu kırpmıyor
+   çünkü html görünür olduğunda body'nin overflow değeri viewport'a devrediliyor
+   ve body kendi taşan çocuklarını kırpma görevini kaybediyor. html'e
+   `overflow-x: hidden` vermek de sticky navbar'ı bozardı. */
 
 body::before {
   content: '';
@@ -115,7 +146,7 @@ body::before {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 1000px;
+  width: min(1000px, 100%);
   height: 380px;
   background: radial-gradient(
     circle at top,
@@ -128,15 +159,18 @@ body::before {
   z-index: 0;
 }
 
+/* Kutu artık ekran dışına taşmıyor (`right: -100px` kaldırıldı); ışıltının
+   merkezini sağ kenara yaklaştırma işini gradyanın odak noktası yapıyor —
+   `at 70%` ile merkez eskisiyle aynı yere, sağ kenarın 150px içine düşüyor. */
 body::after {
   content: '';
   position: absolute;
   top: 240px;
-  right: -100px;
-  width: 500px;
+  right: 0;
+  width: min(500px, 100%);
   height: 500px;
   background: radial-gradient(
-    circle,
+    circle at 70% 50%,
     rgba(var(--color-trace-rgb), 0.07) 0%,
     transparent 70%
   );

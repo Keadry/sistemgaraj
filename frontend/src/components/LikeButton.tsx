@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { likeBuild, unlikeBuild, type Like } from '@/lib/api';
+import { useToast } from '@/lib/toast-context';
 
 export default function LikeButton({
   buildId,
@@ -14,7 +15,7 @@ export default function LikeButton({
 }) {
   const { user, token } = useAuth();
   const router = useRouter();
-
+  const { showToast } = useToast();
   const [likes, setLikes] = useState(initialLikes);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -36,8 +37,8 @@ export default function LikeButton({
         await likeBuild(buildId, token);
         setLikes((prev) => [...prev, { id: 'temp', userId: user.id }]);
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
+      showToast('Bir hata oluştu.', 'error');
     } finally {
       setIsSubmitting(false);
     }

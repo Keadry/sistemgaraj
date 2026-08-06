@@ -78,6 +78,29 @@ export default function SistemToplaPage() {
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const summaryButtonRef = useRef<HTMLButtonElement>(null);
 
+  // Sayfanın altındaki sabit bar toast'ların üstüne biniyordu. Barın gerçek
+  // yüksekliğini ölçüp `--toast-offset`'e yazıyoruz; toast konteyneri bu kadar
+  // yukarı kayıyor. Sabit bir sayı yazmak yerine ölçmek, barın yüksekliği
+  // ekran genişliğine ve buton metnine göre değiştiği için gerekli.
+  const bottomBarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const bar = bottomBarRef.current;
+    if (!bar) return;
+
+    const observer = new ResizeObserver(() => {
+      document.body.style.setProperty('--toast-offset', `${bar.offsetHeight}px`);
+    });
+    observer.observe(bar);
+
+    return () => {
+      observer.disconnect();
+      document.body.style.removeProperty('--toast-offset');
+    };
+    // Bar, kullanıcı yüklenene kadar render edilmiyor (aşağıdaki erken return);
+    // ref'in dolduğu render'da efektin tekrar çalışması için user bağımlılıkta.
+  }, [isAuthLoading, user]);
+
   useEffect(() => {
     if (!isSummaryOpen) return;
 
@@ -781,7 +804,10 @@ export default function SistemToplaPage() {
         </aside>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-paper/90 backdrop-blur-md border-t border-hairline px-4 md:px-8 py-4 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.08)] z-40">
+      <div
+        ref={bottomBarRef}
+        className="fixed bottom-0 left-0 right-0 bg-paper/90 backdrop-blur-md border-t border-hairline px-4 md:px-8 py-4 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.08)] z-40"
+      >
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           {/* lg altında fiyat bloğu aynı zamanda özeti açan butondur — dar
               ekranda ayrı bir butona yer yok, fiyat zaten oraya bakılan yer. */}

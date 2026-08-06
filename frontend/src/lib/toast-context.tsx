@@ -47,8 +47,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
       {/* Mobilde iki yandan boşluk bırakıp genişliği ekrana bırakıyoruz.
           `w-full` + `right-6` dar ekranda viewport'tan taşıp yatay kaydırma
-          yaratıyordu. sm ve üstünde eski sağ-alt sabit genişlik davranışı. */}
-      <div className="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 z-[100] flex flex-col gap-2 sm:w-full sm:max-w-sm">
+          yaratıyordu. sm ve üstünde eski sağ-alt sabit genişlik davranışı.
+
+          Alt kenar boşluğuna `--toast-offset` ekleniyor. Sayfanın altında sabit
+          bir çubuk varsa (Sistem Topla'daki gönder barı gibi) o sayfa bu
+          değişkeni kendi yüksekliğine ayarlıyor ve toast'lar çubuğun üstüne
+          çıkıyor. Değişken tanımlı değilse 0px, yani varsayılan davranış. */}
+      <div className="fixed bottom-[calc(1.5rem+var(--toast-offset,0px))] left-4 right-4 sm:left-auto sm:right-6 z-[100] flex flex-col gap-2 sm:w-full sm:max-w-sm">
         {toasts.map((toast) => (
           <div
             key={toast.id}

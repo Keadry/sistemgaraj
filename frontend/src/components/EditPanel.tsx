@@ -9,6 +9,7 @@ import {
   isCompatible,
 } from '@/lib/compatibility-client';
 import ComponentPicker from './ComponentPicker';
+import ImageDropzone from './ImageDropzone';
 import {
   getComponents,
   submitEditRequest,
@@ -343,66 +344,16 @@ export default function EditPanel({
       )}
 
       <div className="mt-5">
-        <label className="block text-sm font-medium mb-1.5">
-          Yeni Görsel Ekle (opsiyonel, en fazla 5)
-        </label>
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          multiple
-          disabled={images.length + build.images.length >= 5}
-          onChange={(e) => {
-            const selectedFiles = Array.from(e.target.files ?? []);
-            if (selectedFiles.length === 0) return;
-
-            const remainingSlots = Math.max(
-              0,
-              5 - build.images.length - images.length,
-            );
-            const filesToAdd = selectedFiles.slice(0, remainingSlots);
-
-            setImages((prev) => [...prev, ...filesToAdd]);
-            e.target.value = '';
-          }}
-          className="block text-sm text-ink-muted file:mr-4 file:rounded-lg file:border-0 file:bg-paper file:px-4 file:py-2 file:text-sm file:font-medium file:text-ink hover:file:bg-hairline file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        <ImageDropzone
+          files={images}
+          onChange={setImages}
+          maxFiles={5}
+          reservedSlots={build.images.length}
         />
-
         {images.length > 0 && (
-          <div className="mt-3 space-y-2">
-            <p className="text-xs text-trace">
-              {images.length} yeni görsel seçildi (
-              {build.images.length + images.length}/5 toplam). Görsel eklersen
-              bu düzenleme admin onayına düşer.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {images.map((file, index) => {
-                const previewUrl = URL.createObjectURL(file);
-                return (
-                  <div
-                    key={index}
-                    className="relative group w-16 h-16 rounded-lg overflow-hidden border border-hairline bg-surface"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={previewUrl}
-                      alt="Önizleme"
-                      className="w-full h-full object-cover"
-                      onLoad={() => URL.revokeObjectURL(previewUrl)}
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setImages((prev) => prev.filter((_, i) => i !== index))
-                      }
-                      className="absolute inset-0 bg-ink/50 flex items-center justify-center text-paper font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      Kaldır
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <p className="text-xs text-trace mt-2">
+            Görsel eklediğin için bu düzenleme admin onayına düşecek.
+          </p>
         )}
       </div>
 

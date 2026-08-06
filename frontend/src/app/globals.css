@@ -53,6 +53,25 @@
   }
 }
 
+/* Görsel sürüklenirken bırakma alanının hafifçe titremesi — "buraya bırak"
+   davetini hareketle veriyor. Hata sallanmasından bilerek çok daha küçük ve
+   yumuşak: o bir "hayır" darbesi, bu bekleyen bir titreşim. */
+@keyframes tremble {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  25% {
+    transform: translate3d(-1.5px, 0.5px, 0);
+  }
+  50% {
+    transform: translate3d(1.5px, -0.5px, 0);
+  }
+  75% {
+    transform: translate3d(-1px, -0.5px, 0);
+  }
+}
+
 /* Mobil menü paneli navbar'ın altından açılır. */
 @keyframes slideDown {
   from {
@@ -103,6 +122,7 @@
 
 @theme {
   --animate-shake: shake 560ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  --animate-tremble: tremble 600ms ease-in-out infinite;
 
   --color-paper: #ffffff;
   --color-surface: #f4f6f8;
@@ -196,4 +216,19 @@ body::after {
   filter: blur(50px);
   pointer-events: none;
   z-index: 0;
+}
+
+/* Sürüklerken titreyen bırakma alanı sonsuz döngüde çalışıyor — hareket
+   hassasiyeti olanlar için en rahatsız edici animasyon türü. Kutunun renk ve
+   kenarlık vurgusu duruyor, sadece hareket kalkıyor.
+
+   Utility'yi doğrudan hedefliyoruz: `--animate-tremble`'ı burada `none` yapmayı
+   denedim, Tailwind `@theme` dışında yeniden tanımlanan tema değişkenlerini
+   eleyip bloğu tamamen düşürdü. Bu kural katmansız olduğu için Tailwind'in
+   katmanlı utility'sini kazanır.
+   (Tüm animasyonları kapsayan genel kural ayrı bir adımda gelecek.) */
+@media (prefers-reduced-motion: reduce) {
+  .animate-tremble {
+    animation: none;
+  }
 }

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import ComponentPicker from '@/components/ComponentPicker';
+import ImageDropzone from '@/components/ImageDropzone';
 import LiveSidebar from '@/components/LiveSidebar';
 import {
   getIncompatibilityReason,
@@ -275,24 +276,6 @@ export default function SistemToplaPage() {
     } else {
       setActiveCategory(null);
     }
-  }
-
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const selectedFiles = Array.from(e.target.files ?? []);
-    if (selectedFiles.length === 0) return;
-
-    setImages((prevImages) => {
-      const combined = [...prevImages, ...selectedFiles];
-      return combined.slice(0, 5);
-    });
-
-    e.target.value = '';
-  }
-
-  function removeImage(indexToRemove: number) {
-    setImages((prevImages) =>
-      prevImages.filter((_, index) => index !== indexToRemove),
-    );
   }
 
   function handleSelect(key: keyof Selection, id: string) {
@@ -684,52 +667,7 @@ export default function SistemToplaPage() {
             </label>
 
             <div className="pt-2 border-t border-hairline">
-              <label className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-2 font-[family-name:var(--font-mono)]">
-                Sistem Görselleri (En fazla 5 adet)
-              </label>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                multiple
-                disabled={images.length >= 5}
-                onChange={handleImageChange}
-                className="block text-xs text-ink-muted file:mr-4 file:rounded-xl file:border file:border-hairline file:bg-surface file:px-4 file:py-2 file:text-xs file:font-semibold file:text-ink hover:file:bg-hairline file:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-
-              {images.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-xs text-trace font-semibold">
-                    ✓ {images.length}/5 görsel seçildi. Görseller admin
-                    onayından sonra yayınlanır.
-                  </p>
-                  <div className="flex flex-wrap gap-3 pt-1">
-                    {images.map((file, index) => {
-                      const previewUrl = URL.createObjectURL(file);
-                      return (
-                        <div
-                          key={index}
-                          className="relative group w-20 h-20 rounded-2xl border border-hairline overflow-hidden bg-surface shadow-2xs"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={previewUrl}
-                            alt="Önizleme"
-                            className="w-full h-full object-cover"
-                            onLoad={() => URL.revokeObjectURL(previewUrl)}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="absolute inset-0 bg-ink/60 flex items-center justify-center text-paper font-bold text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-150 cursor-pointer"
-                          >
-                            Kaldır
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+              <ImageDropzone files={images} onChange={setImages} maxFiles={5} />
             </div>
           </div>
 

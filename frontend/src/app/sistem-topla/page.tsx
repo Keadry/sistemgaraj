@@ -135,7 +135,11 @@ export default function SistemToplaPage() {
       .finally(() => setIsLoadingComponents(false));
   }, []);
 
-  // Sayfa ilk açıldığında, varsa kaydedilmiş taslağı geri yükle
+  // Sayfa ilk açıldığında, varsa kaydedilmiş taslağı geri yükle.
+  // Bilerek sessiz: geri yüklenen seçimler zaten ekranda görünüyor, açıklama
+  // metni otomatik kaydedildiğini söylüyor ve seçim varken "Yeni Başlangıç"
+  // butonu çıkıyor. Ayrıca bu efekt mount'ta çalıştığı için buradan atılan bir
+  // toast StrictMode'da iki kez görünüyordu.
   useEffect(() => {
     const draft = loadDraft();
     if (draft && hasDraftContent(draft)) {
@@ -150,10 +154,8 @@ export default function SistemToplaPage() {
       });
       setRamIds(draft.ramIds);
       setStorageIds(draft.storageIds);
-      showToast('Kaldığın yerden devam ediyorsun.', 'info');
     }
     setDraftRestored(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Herhangi bir seçim değiştiğinde taslağı otomatik kaydet

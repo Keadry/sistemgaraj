@@ -34,6 +34,25 @@
   }
 }
 
+/* Sistem Topla'daki özet sayfası (bottom sheet) açıkken.
+   Kilit lg eşiğine bağlı — sheet zaten lg:hidden ile gizleniyor, ikisinin
+   ayrışması mümkün olmasın. Gerekçesi yukarıdaki menü kilidiyle aynı. */
+@media (max-width: 1023px) {
+  body[data-sheet-open='true'] {
+    overflow: hidden;
+  }
+}
+
+/* Alttan açılan özet sayfası. */
+@keyframes slideUpSheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
 /* Mobil menü paneli navbar'ın altından açılır. */
 @keyframes slideDown {
   from {

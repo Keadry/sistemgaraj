@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import ComponentPicker from '@/components/ComponentPicker';
@@ -69,6 +69,38 @@ export default function SistemToplaPage() {
   const [name, setName] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [images, setImages] = useState<File[]>([]);
+
+  // lg altında sağdaki özet sütunu gizleniyor; onun içeriğini alttan açılan
+  // bir sayfada gösteriyoruz.
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const summaryButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isSummaryOpen) return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== 'Escape') return;
+      setIsSummaryOpen(false);
+      summaryButtonRef.current?.focus();
+    }
+
+    // Masaüstü genişliğine geçilirse özet zaten sağ sütunda görünür olur,
+    // sheet'i açık tutmanın anlamı kalmaz.
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    function onBreakpointChange(e: MediaQueryListEvent) {
+      if (e.matches) setIsSummaryOpen(false);
+    }
+
+    document.body.dataset.sheetOpen = 'true';
+    document.addEventListener('keydown', onKeyDown);
+    desktop.addEventListener('change', onBreakpointChange);
+
+    return () => {
+      delete document.body.dataset.sheetOpen;
+      document.removeEventListener('keydown', onKeyDown);
+      desktop.removeEventListener('change', onBreakpointChange);
+    };
+  }, [isSummaryOpen]);
 
   const [selection, setSelection] = useState<Selection>({
     cpuId: null,
@@ -286,6 +318,8 @@ export default function SistemToplaPage() {
       .map((id) => components.find((c) => c.id === id))
       .filter((c): c is Component => c !== undefined),
   ];
+
+  const totalPrice = selectedComponents.reduce((sum, c) => sum + c.price, 0);
 
   const isComplete =
     CATEGORIES.every((cat) => selection[cat.key] !== null) &&
@@ -733,20 +767,51 @@ export default function SistemToplaPage() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-paper/90 backdrop-blur-md border-t border-hairline px-4 md:px-8 py-4 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.08)] z-40">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div>
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+          {/* lg altında fiyat bloğu aynı zamanda özeti açan butondur — dar
+              ekranda ayrı bir butona yer yok, fiyat zaten oraya bakılan yer. */}
+          <button
+            ref={summaryButtonRef}
+            type="button"
+            onClick={() => setIsSummaryOpen(true)}
+            aria-expanded={isSummaryOpen}
+            aria-controls="ozet-sheet"
+            className="lg:hidden -mx-2 px-2 py-1 rounded-xl text-left hover:bg-surface transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+          >
+            <span className="text-[10px] text-ink-muted font-bold uppercase tracking-wider font-[family-name:var(--font-mono)] flex items-center gap-1">
+              {selectedComponents.length} parça · Özeti gör
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m18 15-6-6-6 6" />
+              </svg>
+            </span>
+            <span className="block font-[family-name:var(--font-mono)] text-xl font-extrabold text-trace tracking-tight">
+              {formatPrice(totalPrice)}
+            </span>
+          </button>
+
+          <div className="hidden lg:block">
             <p className="text-[10px] text-ink-muted font-bold uppercase tracking-wider font-[family-name:var(--font-mono)]">
               Toplam Konfigürasyon Tutarı
             </p>
-            <p className="font-[family-name:var(--font-mono)] text-xl md:text-2xl font-extrabold text-trace tracking-tight">
-              {formatPrice(selectedComponents.reduce((s, c) => s + c.price, 0))}
+            <p className="font-[family-name:var(--font-mono)] text-2xl font-extrabold text-trace tracking-tight">
+              {formatPrice(totalPrice)}
             </p>
           </div>
 
           <button
             onClick={handleSubmit}
             disabled={!isComplete || isSubmitting}
-            className="rounded-xl bg-trace hover:bg-trace-dark text-paper text-sm font-bold px-8 py-3.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_8px_16px_-4px_rgba(var(--color-trace-rgb),0.25)] active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+            className="rounded-xl bg-trace hover:bg-trace-dark text-paper text-sm font-bold px-5 md:px-8 py-3.5 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_8px_16px_-4px_rgba(var(--color-trace-rgb),0.25)] active:scale-95 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
           >
             {isSubmitting
               ? 'Uyumluluk Kontrol Ediliyor...'
@@ -756,6 +821,58 @@ export default function SistemToplaPage() {
           </button>
         </div>
       </div>
+
+      {/* MOBİL ÖZET SAYFASI — sağdaki sütunun lg altındaki karşılığı */}
+      {isSummaryOpen && (
+        <div className="lg:hidden">
+          <div
+            className="fixed inset-0 z-[60] bg-ink/50 backdrop-blur-xs"
+            onClick={() => setIsSummaryOpen(false)}
+            aria-hidden="true"
+          />
+
+          <div
+            id="ozet-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Sistem özeti"
+            className="fixed inset-x-0 bottom-0 z-[61] max-h-[85vh] overflow-y-auto rounded-t-3xl bg-paper border-t border-hairline shadow-[0_-20px_40px_-12px_rgba(0,0,0,0.25)] animate-[slideUpSheet_220ms_ease-out]"
+          >
+            <div className="sticky top-0 bg-paper/95 backdrop-blur-md flex items-center justify-between px-5 pt-4 pb-3 border-b border-hairline">
+              <h2 className="font-[family-name:var(--font-display)] text-base font-bold text-ink">
+                Sistem Özeti
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSummaryOpen(false);
+                  summaryButtonRef.current?.focus();
+                }}
+                aria-label="Özeti kapat"
+                className="w-9 h-9 rounded-lg flex items-center justify-center text-ink-muted hover:text-ink hover:bg-surface transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <LiveSidebar
+              selectedComponents={selectedComponents}
+              className="p-5 pb-8"
+            />
+          </div>
+        </div>
+      )}
     </main>
   );
 }

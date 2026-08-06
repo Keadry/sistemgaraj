@@ -20,10 +20,17 @@ const LABELS: Record<string, string> = {
   CASE: 'Kasa',
 };
 
+// Kapsayıcının görünümünü çağıran belirler: masaüstünde sağ sütunda duran bir
+// kart, mobilde alttan açılan sayfanın içi. Konumlandırma (sticky vb.) da
+// çağıranın işi — burada tutulursa iki kullanım birbirini eziyor.
+const DEFAULT_SHELL = 'rounded-2xl border border-hairline bg-paper p-5 shadow-sm';
+
 export default function LiveSidebar({
   selectedComponents,
+  className = DEFAULT_SHELL,
 }: {
   selectedComponents: Component[];
+  className?: string;
 }) {
   const totalPrice = selectedComponents.reduce((sum, c) => sum + c.price, 0);
 
@@ -51,7 +58,7 @@ export default function LiveSidebar({
   }
 
   return (
-    <div className="sticky top-24 rounded-2xl border border-hairline bg-paper p-5 shadow-sm">
+    <div className={className}>
       <div className="flex items-center justify-between mb-5">
         <h3 className="font-[family-name:var(--font-display)] text-sm font-bold tracking-tight text-ink">
           Mevcut Seçimlerin

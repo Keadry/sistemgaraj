@@ -7,6 +7,48 @@ export interface AuthRequest extends Request {
   userId?: string;
 }
 
+// Aktiflik damgasını her istekte yazmak gereksiz yük — sitede tek sayfa
+// gezinmek birkaç istek demek. Online eşiği 5 dakika olduğu için dakikada bir
+// yazmak yeterli hassasiyeti veriyor.
+const TOUCH_INTERVAL_MS = 60 * 1000;
+const lastTouchedAt = new Map<string, number>();
+
+/**
+ * Kullanıcının `lastActiveAt` damgasını tazeler.
+ *
+ * Hem `requireAuth` hem `optionalAuth` çağırır: profil ve sistem detayı gibi
+ * çoğu gezinme rotası `optionalAuth` kullanıyor, dolayısıyla damga sadece
+ * `requireAuth`'ta güncellenseydi -eskiden olduğu gibi- sitede saatlerce
+ * gezen biri "en son X saat önce aktifti" görünürdü; damga ancak beğeni,
+ * yorum gibi bir yazma işlemi yapınca ilerlerdi.
+ *
+ * Yazma ateşle-unut: aktiflik damgası isteğin başarısını etkilememeli.
+ */
+function touchLastActive(userId: string) {
+  const now = Date.now();
+  const previous = lastTouchedAt.get(userId);
+  if (previous !== undefined && now - previous < TOUCH_INTERVAL_MS) return;
+
+  lastTouchedAt.set(userId, now);
+
+  // Süresi geçmiş kayıtlar işe yaramıyor; harita şişerse temizle.
+  if (lastTouchedAt.size > 10_000) {
+    for (const [id, at] of lastTouchedAt) {
+      if (now - at >= TOUCH_INTERVAL_MS) lastTouchedAt.delete(id);
+    }
+  }
+
+  prisma.user
+    .update({
+      where: { id: userId },
+      data: { lastActiveAt: new Date() },
+    })
+    .catch(() => {
+      // Yazma başarısızsa damgayı geri al, sonraki istek tekrar denesin.
+      lastTouchedAt.delete(userId);
+    });
+}
+
 export async function requireAuth(
   req: AuthRequest,
   res: Response,
@@ -48,13 +90,7 @@ export async function requireAuth(
     }
 
     req.userId = decoded.userId;
-
-    prisma.user
-      .update({
-        where: { id: decoded.userId },
-        data: { lastActiveAt: new Date() },
-      })
-      .catch(() => {});
+    touchLastActive(decoded.userId);
 
     next();
   } catch (error) {
@@ -127,6 +163,7 @@ export async function optionalAuth(
       userId: string;
     };
     req.userId = decoded.userId;
+    touchLastActive(decoded.userId);
   } catch {
     // Token geçersizse sessizce yok say
   }

@@ -2,8 +2,7 @@
 
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import ProfileAvatar from '@/components/ProfileAvatar';
+import { notFound, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import BuildGallery from '@/components/BuildGallery';
 import { SkeletonBuildDetail } from '@/components/Skeleton';
@@ -13,7 +12,6 @@ import { useAuth } from '@/lib/auth-context';
 import { getBuild, type Build } from '@/lib/api';
 import { bookmarkBuild, unbookmarkBuild } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
-import router, { useRouter } from 'next/router';
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', {
@@ -37,6 +35,7 @@ export default function BuildDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const { token, isLoading: isAuthLoading } = useAuth();
   const { showToast } = useToast();
   const [isBookmarked, setIsBookmarked] = useState(false);
@@ -113,7 +112,7 @@ export default function BuildDetailPage({
 
       <div className="px-6 md:px-12 py-10 max-w-3xl mx-auto">
         <Link
-          href="/"
+          href="/sistemler"
           className="text-sm text-ink-muted hover:text-trace transition-colors"
         >
           ← Tüm sistemler

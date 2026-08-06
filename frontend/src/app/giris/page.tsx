@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
+import { useDelayedLoading } from '@/lib/use-delayed-loading';
 import Logo from '@/components/Logo';
 
 export default function GirisPage() {
@@ -13,11 +14,19 @@ export default function GirisPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // Her başarısız denemede artar. Hata kutusuna key olarak verilir; aynı hata
+  // mesajı tekrarlansa bile kutu yeniden mount olup sallanma animasyonunu
+  // baştan oynatır.
+  const [errorAttempt, setErrorAttempt] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Hızlı isteklerde "Giriş yapılıyor..." yazısının bir göz kırpması kadar
+  // görünüp kaybolmaması için gecikmeli gösterge.
+  const showLoading = useDelayedLoading(isSubmitting);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    // Hatayı burada temizlemiyoruz — istek sürerken kutu ekranda kalsın,
+    // yoksa her denemede kaybolup geri geliyormuş gibi titriyor.
     setIsSubmitting(true);
 
     try {
@@ -25,6 +34,7 @@ export default function GirisPage() {
       router.push('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Bir hata oluştu.');
+      setErrorAttempt((n) => n + 1);
     } finally {
       setIsSubmitting(false);
     }
@@ -42,7 +52,7 @@ export default function GirisPage() {
         </Link>
 
         {/* AUTH CARD */}
-        <div className="bg-paper/80 backdrop-blur-md border border-hairline/80 rounded-3xl p-8 shadow-xl shadow-[#4e49f6]/5">
+        <div className="bg-paper/80 backdrop-blur-md border border-hairline/80 rounded-3xl p-8 shadow-xl shadow-trace/5">
           <div className="text-center space-y-1 mb-8">
             <h1 className="font-[family-name:var(--font-display)] text-2xl font-bold tracking-tight text-ink">
               Tekrar Hoş Geldin
@@ -67,7 +77,7 @@ export default function GirisPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="ornek@domain.com"
                 required
-                className="w-full rounded-xl border border-hairline px-4 py-2.5 text-sm outline-none focus:border-[#4e49f6] focus:ring-2 focus:ring-[#4e49f6]/15 transition-all bg-surface/30 font-medium placeholder:text-ink-muted/50"
+                className="w-full rounded-xl border border-hairline px-4 py-2.5 text-sm text-ink outline-none focus:border-trace focus:ring-2 focus:ring-trace/15 transition-all bg-surface/30 font-medium placeholder:text-ink-muted/50"
               />
             </div>
 
@@ -87,12 +97,16 @@ export default function GirisPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="w-full rounded-xl border border-hairline px-4 py-2.5 text-sm outline-none focus:border-[#4e49f6] focus:ring-2 focus:ring-[#4e49f6]/15 transition-all bg-surface/30 font-medium placeholder:text-ink-muted/50"
+                className="w-full rounded-xl border border-hairline px-4 py-2.5 text-sm text-ink outline-none focus:border-trace focus:ring-2 focus:ring-trace/15 transition-all bg-surface/30 font-medium placeholder:text-ink-muted/50"
               />
             </div>
 
             {error && (
-              <div className="p-3.5 rounded-xl bg-incompatible/10 border border-incompatible/20 text-incompatible text-xs font-semibold animate-shake">
+              <div
+                key={errorAttempt}
+                role="alert"
+                className="p-3.5 rounded-xl bg-incompatible/10 border border-incompatible/20 text-incompatible text-xs font-semibold animate-shake"
+              >
                 ⚠️ {error}
               </div>
             )}
@@ -100,9 +114,11 @@ export default function GirisPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full mt-2 rounded-xl bg-[#4e49f6] hover:bg-[#3d39c4] text-paper text-sm font-bold px-6 py-3 transition-all shadow-md shadow-[#4e49f6]/25 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer active:scale-95"
+              className={`w-full mt-2 rounded-xl bg-trace hover:bg-trace-dark text-paper text-sm font-bold px-6 py-3 transition-all shadow-md shadow-trace/25 cursor-pointer active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace ${
+                showLoading ? 'opacity-60 cursor-not-allowed' : ''
+              }`}
             >
-              {isSubmitting ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+              {showLoading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
             </button>
           </form>
 
@@ -111,7 +127,7 @@ export default function GirisPage() {
               Hesabın yok mu?{' '}
               <Link
                 href="/kayit"
-                className="text-[#4e49f6] font-bold hover:underline"
+                className="text-trace font-bold hover:underline rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
               >
                 Hesap oluştur
               </Link>

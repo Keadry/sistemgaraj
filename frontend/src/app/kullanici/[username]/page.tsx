@@ -278,7 +278,7 @@ export default function UserProfilePage({
 
         {/* PROFiL SAHİBİ BİLGİLENDİRME */}
         {isOwner && (
-          <div className="bg-[#4e49f6]/10 border border-[#4e49f6]/20 rounded-2xl p-3.5 text-xs font-semibold text-[#4e49f6] flex items-center gap-2">
+          <div className="bg-trace/10 border border-trace/20 rounded-2xl p-3.5 text-xs font-semibold text-trace flex items-center gap-2">
             <span>🔒</span>
             <span>
               Özel sistemlerin de listede gösteriliyor — bunu sadece sen
@@ -289,11 +289,11 @@ export default function UserProfilePage({
 
         {/* SİSTEM KARTLARI VEYA BOŞ DURUM */}
         {builds.length === 0 ? (
-          <div className="text-center py-20 border-2 border-dashed border-slate-200 rounded-3xl mt-8 bg-white/50 space-y-3">
-            <div className="w-12 h-12 rounded-2xl bg-[#4e49f6]/10 border border-[#4e49f6]/20 text-[#4e49f6] flex items-center justify-center mx-auto text-xl shadow-xs">
+          <div className="text-center py-20 border-2 border-dashed border-hairline rounded-3xl mt-8 bg-surface/50 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-trace/10 border border-trace/20 text-trace flex items-center justify-center mx-auto text-xl shadow-xs">
               🖥️
             </div>
-            <p className="text-slate-800 font-bold text-base">
+            <p className="text-ink font-bold text-base">
               {isOwner
                 ? 'Henüz bir sistem oluşturmadın. Hemen ilk sistemini topla!'
                 : 'Bu kullanıcı henüz bir sistem paylaşmamış.'}
@@ -301,7 +301,7 @@ export default function UserProfilePage({
           </div>
         ) : (
           <div>
-            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold text-slate-900 mb-4">
+            <h2 className="font-[family-name:var(--font-display)] text-xl font-bold text-ink mb-4">
               Paylaşılan Sistemler
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -309,7 +309,7 @@ export default function UserProfilePage({
                 <div key={build.id} className="relative group/card">
                   {/* ÖZEL ETİKETİ (SOL ÜST) */}
                   {isOwner && !build.isPublic && (
-                    <span className="absolute top-3 left-3 z-10 text-[10px] bg-slate-900/80 backdrop-blur-md text-white font-bold rounded-lg px-2 py-0.5 border border-white/20 shadow-sm">
+                    <span className="absolute top-3 left-3 z-10 text-[10px] bg-ink/80 backdrop-blur-md text-paper font-bold rounded-lg px-2 py-0.5 border border-paper/20 shadow-sm">
                       Özel
                     </span>
                   )}
@@ -343,7 +343,7 @@ export default function UserProfilePage({
                           );
                         }
                       }}
-                      className="absolute top-3 right-3 z-20 opacity-0 group-hover/card:opacity-100 transition-all duration-200 bg-slate-900/80 hover:bg-red-600 backdrop-blur-md text-white/90 hover:text-white p-2 rounded-xl border border-white/20 hover:border-red-500/50 shadow-md cursor-pointer active:scale-95"
+                      className="absolute top-3 right-3 z-20 opacity-0 group-hover/card:opacity-100 focus-visible:opacity-100 transition-all duration-200 bg-ink/80 hover:bg-incompatible backdrop-blur-md text-paper/90 hover:text-paper p-2 rounded-xl border border-paper/20 hover:border-incompatible shadow-md cursor-pointer active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-incompatible"
                       title="Sistemi Sil"
                     >
                       <svg

@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
 import { useConfirm } from '@/lib/confirm-context';
-import { isCompatible } from '@/lib/compatibility-client';
+import {
+  getIncompatibilityReason,
+  isCompatible,
+} from '@/lib/compatibility-client';
 import ComponentPicker from './ComponentPicker';
 import {
   getComponents,
@@ -124,12 +127,19 @@ export default function EditPanel({
     components,
   ]);
 
-  function getIncompatibleIds(type: string): Set<string> {
-    const ofType = components.filter((c) => c.type === type);
-    const incompatible = ofType.filter(
-      (c) => !isCompatible(c, selection, ramTypeSelected, components),
-    );
-    return new Set(incompatible.map((c) => c.id));
+  function getIncompatibleReasons(type: string): Map<string, string> {
+    const reasons = new Map<string, string>();
+    for (const c of components) {
+      if (c.type !== type) continue;
+      const reason = getIncompatibilityReason(
+        c,
+        selection,
+        ramTypeSelected,
+        components,
+      );
+      if (reason) reasons.set(c.id, reason);
+    }
+    return reasons;
   }
 
   const motherboard = components.find((c) => c.id === selection.motherboardId);
@@ -406,7 +416,7 @@ export default function EditPanel({
               label="İşlemci (CPU)"
               components={components.filter((c) => c.type === 'CPU')}
               selectedId={selection.cpuId ?? null}
-              incompatibleIds={getIncompatibleIds('CPU')}
+              incompatibleReasons={getIncompatibleReasons('CPU')}
               onSelect={(id) =>
                 setSelection((prev) => ({ ...prev, cpuId: id }))
               }
@@ -430,7 +440,7 @@ export default function EditPanel({
               label="Anakart"
               components={components.filter((c) => c.type === 'MOTHERBOARD')}
               selectedId={selection.motherboardId ?? null}
-              incompatibleIds={getIncompatibleIds('MOTHERBOARD')}
+              incompatibleReasons={getIncompatibleReasons('MOTHERBOARD')}
               onSelect={(id) =>
                 setSelection((prev) => ({ ...prev, motherboardId: id }))
               }
@@ -489,7 +499,7 @@ export default function EditPanel({
               label="Ekran Kartı"
               components={components.filter((c) => c.type === 'GPU')}
               selectedId={selection.gpuId ?? null}
-              incompatibleIds={getIncompatibleIds('GPU')}
+              incompatibleReasons={getIncompatibleReasons('GPU')}
               onSelect={(id) =>
                 setSelection((prev) => ({ ...prev, gpuId: id }))
               }
@@ -513,7 +523,7 @@ export default function EditPanel({
               label="Güç Kaynağı"
               components={components.filter((c) => c.type === 'PSU')}
               selectedId={selection.psuId ?? null}
-              incompatibleIds={getIncompatibleIds('PSU')}
+              incompatibleReasons={getIncompatibleReasons('PSU')}
               onSelect={(id) =>
                 setSelection((prev) => ({ ...prev, psuId: id }))
               }
@@ -565,7 +575,7 @@ export default function EditPanel({
               label="Kasa"
               components={components.filter((c) => c.type === 'CASE')}
               selectedId={selection.caseId ?? null}
-              incompatibleIds={getIncompatibleIds('CASE')}
+              incompatibleReasons={getIncompatibleReasons('CASE')}
               onSelect={(id) =>
                 setSelection((prev) => ({ ...prev, caseId: id }))
               }

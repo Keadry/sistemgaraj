@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import ComponentPicker from '@/components/ComponentPicker';
 import LiveSidebar from '@/components/LiveSidebar';
-import { isCompatible } from '@/lib/compatibility-client';
+import {
+  getIncompatibilityReason,
+  isCompatible,
+} from '@/lib/compatibility-client';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/lib/toast-context';
 import { useConfirm } from '@/lib/confirm-context';
@@ -421,9 +424,18 @@ export default function SistemToplaPage() {
 
   function renderCategoryRow(cat: (typeof CATEGORIES)[number]) {
     const ofType = components.filter((c) => c.type === cat.type);
-    const compatibleList = ofType.filter((c) =>
-      isCompatible(c, selection, ramTypeSelected, components),
-    );
+    // Uyumsuzları listeden çıkarmıyoruz; sebepleriyle birlikte kilitli
+    // gösteriyoruz ki kullanıcı bir parçanın neden seçilemediğini görsün.
+    const incompatibleReasons = new Map<string, string>();
+    for (const c of ofType) {
+      const reason = getIncompatibilityReason(
+        c,
+        selection,
+        ramTypeSelected,
+        components,
+      );
+      if (reason) incompatibleReasons.set(c.id, reason);
+    }
     const selectedComponent = components.find(
       (c) => c.id === selection[cat.key],
     );
@@ -485,7 +497,8 @@ export default function SistemToplaPage() {
           <div className="overflow-hidden">
             <ComponentPicker
               label=""
-              components={compatibleList}
+              components={ofType}
+              incompatibleReasons={incompatibleReasons}
               selectedId={selection[cat.key]}
               onSelect={(id) => handleSelect(cat.key, id)}
             />

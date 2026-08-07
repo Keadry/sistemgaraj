@@ -11,7 +11,18 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+
+  // Uygulamanın kullandığı bağlantı. Sunucusuz ortamda her istek yeni bir
+  // fonksiyon örneği açabildiği için doğrudan bağlantı kullanılırsa
+  // veritabanının bağlantı limiti hızla tükenir; bu yüzden havuzlanmış
+  // (pooler) adres verilir.
+  url = env("DATABASE_URL")
+
+  // Migration ve introspection için doğrudan bağlantı. Havuzlayıcı
+  // (pgBouncer) hazırlanmış ifadeleri ve bazı DDL işlemlerini desteklemediği
+  // için şema değişiklikleri havuz üzerinden çalıştırılamaz.
+  // Yerel geliştirmede havuzlayıcı yok — ikisine de aynı adresi verebilirsin.
+  directUrl = env("DIRECT_URL")
 }
 
 // ==============================

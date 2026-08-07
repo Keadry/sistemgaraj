@@ -1,5 +1,6 @@
 import app, { allowedOrigins } from './app.js';
 import { isRemoteStorage } from './storage.js';
+import { isSharedRateLimitStore } from './middleware/rate-limit-store.js';
 
 /**
  * Yerel geliştirme girişi. Sunucusuz dağıtımda bu dosya hiç çalıştırılmaz;
@@ -12,5 +13,8 @@ app.listen(PORT, () => {
   console.log(`   İzinli origin'ler: ${allowedOrigins.join(', ')}`);
   console.log(
     `   Görsel depolama: ${isRemoteStorage ? 'Supabase Storage' : 'yerel uploads/ klasörü'}`,
+  );
+  console.log(
+    `   Hız sınırı deposu: ${isSharedRateLimitStore ? 'Upstash Redis (paylaşımlı)' : 'bellek (tek süreç)'}`,
   );
 });

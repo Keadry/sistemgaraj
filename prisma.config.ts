@@ -12,5 +12,7 @@ export default defineConfig({
   engine: "classic",
   datasource: {
     url: env("DATABASE_URL"),
+    // Migration'lar havuzlayıcıdan geçemez; doğrudan bağlantı gerekiyor.
+    directUrl: env("DIRECT_URL"),
   },
 });

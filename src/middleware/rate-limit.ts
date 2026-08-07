@@ -1,14 +1,17 @@
 import rateLimit from 'express-rate-limit';
+import { createRateLimitStore } from './rate-limit-store.js';
 
 /**
- * DİKKAT — serverless'a taşındığında bu yetmez.
+ * Sayaçlar Upstash Redis'te tutuluyor — ortam değişkenleri tanımlıysa.
+ * Tanımlı değilse `store` undefined kalıyor ve kütüphane kendi MemoryStore'unu
+ * kullanıyor; yerel geliştirme hiçbir bulut hesabı istemeden çalışsın diye.
  *
- * express-rate-limit varsayılan olarak sayaçları süreç belleğinde tutar. Tek
- * bir uzun ömürlü sunucuda bu doğru çalışır. Vercel'de her fonksiyon örneği
- * kendi belleğiyle açılır ve trafik birden çok örneğe dağılır; sayaçlar
- * bölünür, soğuk başlangıçta sıfırlanır. O aşamada Upstash Redis / Vercel KV
- * gibi paylaşımlı bir store bağlanmalı — limitler ve mesajlar aynı kalır,
- * sadece `store` alanı eklenir.
+ * Paylaşımlı depo sunucusuzda şart: her fonksiyon örneği kendi belleğiyle
+ * açıldığı için MemoryStore'la 10'luk bir sınır fiilen "örnek sayısı × 10"
+ * oluyor.
+ *
+ * İki limiter ayrı önek kullanıyor; aksi halde aynı IP'nin genel API sayacı
+ * ile giriş denemesi sayacı tek anahtarda toplanırdı.
  */
 
 /**
@@ -27,6 +30,7 @@ export const apiLimiter = rateLimit({
   limit: 600,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  store: createRateLimitStore('rl:api:'),
   message: {
     error: 'Çok fazla istek gönderdin. Biraz bekleyip tekrar dene.',
   },
@@ -45,6 +49,7 @@ export const authLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   skipSuccessfulRequests: true,
+  store: createRateLimitStore('rl:auth:'),
   message: {
     error:
       'Çok fazla başarısız deneme yapıldı. 15 dakika sonra tekrar dene.',

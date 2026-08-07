@@ -1,5 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+
+  "//": "Fonksiyonlar veritabanının yanında çalışmalı. Prisma bir isteği birkaç sorguya bölüyor (ilişki başına bir tur); fonksiyon ile veritabanı arasındaki gecikme her turda ödendiği için uzak bir bölge süreyi katlıyor. fra1 (Frankfurt) Türkiye'deki kullanıcılara da en yakın seçenek.",
+  "regions": ["fra1"],
+
   "rewrites": [
     {
       "source": "/(.*)",

@@ -1,0 +1,9 @@
+Bu klasör bilerek boş.
+
+Vercel, bir build komutu çalıştırdıktan sonra statik çıktı klasörü arıyor ve
+bulamazsa deploy'u başarısız sayıyor. Bu proje yalnızca API — istekleri
+`vercel.json` içindeki rewrite kuralı `api/index.ts` fonksiyonuna yönlendiriyor,
+buradan hiçbir dosya servis edilmiyor.
+
+Klasörü silersen deploy "No Output Directory named public found" hatasıyla
+düşer.

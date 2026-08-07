@@ -15,5 +15,10 @@
  * saniyelere çıkarıyor (Mumbai'ye 285ms turla ölçüldüğünde feed 5 saniye
  * sürüyordu). Veritabanı bölgesi değişirse burası da değişmeli.
  * JSON yorum satırı desteklemediği için not burada duruyor.
+ *
+ * `outputDirectory: "public"` ise bir formalite: Vercel build komutundan sonra
+ * statik çıktı klasörü arıyor, bulamazsa deploy'u başarısız sayıyor. Bu proje
+ * statik dosya üretmediği için klasör boş duruyor — build komutunu
+ * kaldıramayız, `prisma generate` orada çalışıyor.
  */
 export { default } from '../src/app.js';

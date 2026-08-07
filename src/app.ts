@@ -42,7 +42,11 @@ export const allowedOrigins = (
   process.env.CORS_ORIGINS ?? 'http://localhost:3000'
 )
   .split(',')
-  .map((origin) => origin.trim())
+  // Tarayıcı `Origin` başlığını şema + host olarak, sonunda eğik çizgi
+  // olmadan gönderiyor. Ortam değişkenine adres yapıştırılırken sonuna
+  // çizgi gelmesi çok yaygın; karşılaştırma tam eşleşme olduğu için bu
+  // sessizce her isteği reddettiriyordu. Normalleştirip o tuzağı kapatıyoruz.
+  .map((origin) => origin.trim().replace(/\/+$/, ''))
   .filter(Boolean);
 
 const app = express();

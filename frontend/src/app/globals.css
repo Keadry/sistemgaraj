@@ -136,6 +136,14 @@
   --color-incompatible: #e1483d;
   --color-hairline: #d8dee6;
 
+  /* Fotoğraf üzerine binen cam kutular için. Bilerek `.dark` içinde
+     ezilmiyor: altlarındaki görsel her iki temada da aynı, dolayısıyla
+     okunabilirlik için gereken zıtlık da aynı. `ink`/`paper` kullanılırsa
+     bu kutular karanlık temada tersine dönüp fotoğrafın üstünde parlak
+     beyaz lekelere dönüşüyor. */
+  --color-scrim: #0d1117;
+  --color-on-scrim: #f2f4f7;
+
   --font-display: var(--font-space-grotesk);
   --font-body: var(--font-inter);
   --font-mono: var(--font-jetbrains-mono);

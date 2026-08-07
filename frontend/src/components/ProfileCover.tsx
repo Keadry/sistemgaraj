@@ -35,8 +35,7 @@ export default function ProfileCover({
   }
 
   return (
-    <div className="relative w-full h-56 md:h-72 rounded-2xl overflow-hidden bg-surface group">
-      {' '}
+    <div className="relative w-full h-56 md:h-72 rounded-2xl overflow-hidden bg-surface border border-hairline group">
       {coverUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -46,8 +45,8 @@ export default function ProfileCover({
         />
       )}
       {isOwner && (
-        <label className="absolute inset-0 flex items-center justify-center bg-ink/0 group-hover:bg-ink/40 transition-colors cursor-pointer opacity-0 group-hover:opacity-100">
-          <span className="text-paper text-xs font-medium rounded-full border border-paper px-3 py-1.5">
+        <label className="absolute inset-0 flex items-center justify-center bg-scrim/0 group-hover:bg-scrim/50 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 focus-within:opacity-100 focus-within:bg-scrim/50">
+          <span className="text-on-scrim text-xs font-medium rounded-full border border-on-scrim px-3 py-1.5">
             {isUploading ? 'Yükleniyor...' : 'Kapak Fotoğrafını Değiştir'}
           </span>
           <input

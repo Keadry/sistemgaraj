@@ -1,0 +1,16 @@
+import app, { allowedOrigins } from './app.js';
+import { isRemoteStorage } from './storage.js';
+
+/**
+ * Yerel geliştirme girişi. Sunucusuz dağıtımda bu dosya hiç çalıştırılmaz;
+ * orada uygulamayı `api/index.ts` her istekte doğrudan çağırıyor.
+ */
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`✅ Sunucu http://localhost:${PORT} adresinde çalışıyor`);
+  console.log(`   İzinli origin'ler: ${allowedOrigins.join(', ')}`);
+  console.log(
+    `   Görsel depolama: ${isRemoteStorage ? 'Supabase Storage' : 'yerel uploads/ klasörü'}`,
+  );
+});

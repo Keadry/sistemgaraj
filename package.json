@@ -6,9 +6,9 @@
   "main": "index.js",
   "scripts": {
     "seed": "pnpm tsx src/seed.ts",
-    "dev": "pnpm tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "pnpm tsx src/index.ts"
+    "dev": "pnpm tsx watch src/server.ts",
+    "build": "prisma generate && tsc",
+    "start": "pnpm tsx src/server.ts"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "@supabase/supabase-js": "^2.112.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "express": "^5.2.1",

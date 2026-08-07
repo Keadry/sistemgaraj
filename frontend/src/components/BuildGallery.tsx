@@ -71,7 +71,7 @@ export default function BuildGallery({ images }: { images: BuildImageType[] }) {
             >
               →
             </button>
-            <span className="absolute bottom-3 right-3 text-xs bg-ink/70 text-paper rounded-full px-2.5 py-1">
+            <span className="absolute bottom-3 right-3 text-xs bg-scrim/70 text-on-scrim rounded-full px-2.5 py-1">
               {index + 1} / {approved.length}
             </span>
           </>

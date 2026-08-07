@@ -314,16 +314,16 @@ export default function EditPanel({
                     </span>
                   )}
                   {img.isMain && (
-                    <span className="absolute top-1 right-1 text-[10px] bg-ink text-paper rounded px-1.5 py-0.5">
+                    <span className="absolute top-1 right-1 text-[10px] bg-scrim text-on-scrim rounded px-1.5 py-0.5">
                       Ana
                     </span>
                   )}
-                  <div className="absolute inset-x-0 bottom-0 flex bg-ink/60">
+                  <div className="absolute inset-x-0 bottom-0 flex bg-scrim/60">
                     {!img.isMain && img.status === 'APPROVED' && (
                       <button
                         disabled={isBusy}
                         onClick={() => handleSetMain(img.id)}
-                        className="flex-1 text-[10px] text-paper py-1 hover:bg-ink/80 disabled:opacity-50"
+                        className="flex-1 text-[10px] text-on-scrim py-1 hover:bg-scrim/80 disabled:opacity-50 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-on-scrim"
                       >
                         Ana Yap
                       </button>
@@ -331,7 +331,7 @@ export default function EditPanel({
                     <button
                       disabled={isBusy}
                       onClick={() => handleDeleteImage(img.id)}
-                      className="flex-1 text-[10px] text-paper py-1 hover:bg-incompatible/80 disabled:opacity-50"
+                      className="flex-1 text-[10px] text-on-scrim py-1 hover:bg-incompatible/80 disabled:opacity-50 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-incompatible"
                     >
                       Sil
                     </button>

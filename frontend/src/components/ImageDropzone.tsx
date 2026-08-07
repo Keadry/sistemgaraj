@@ -183,7 +183,7 @@ export default function ImageDropzone({
           disabled || isFull
             ? 'border-hairline bg-surface/30 cursor-not-allowed'
             : isDragging
-              ? 'border-trace bg-trace/10 cursor-copy animate-tremble'
+              ? 'border-trace bg-trace/10 cursor-copy animate-drop-glow'
               : 'border-hairline bg-surface/40 hover:border-trace/50 hover:bg-surface/60 cursor-pointer'
         } focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-trace`}
       >

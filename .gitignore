@@ -1,7 +1,9 @@
 # Bağımlılıklar
 node_modules/
 frontend/node_modules/
-pnpm-lock.yaml
+# Kilit dosyaları bilerek listelenmiyor: deploy ortamı bağımlılıkları onlardan
+# kuruyor. Yoksa her build sürümleri yeniden çözer ve yerelde çalışan bir şey
+# sunucuda sessizce farklı sürümle derlenebilir.
 
 # Ortam değişkenleri (gizli bilgiler)
 .env

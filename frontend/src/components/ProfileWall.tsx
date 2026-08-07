@@ -10,7 +10,7 @@ import {
   type WallComment,
 } from '@/lib/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { imageUrl } from '@/lib/image-url';
 
 function formatDate(dateString: string): string {
   return new Intl.DateTimeFormat('tr-TR', {
@@ -34,7 +34,7 @@ function Avatar({
       {avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={`${API_URL}${avatarUrl}`}
+          src={imageUrl(avatarUrl)}
           alt={username}
           className="w-full h-full object-cover"
         />

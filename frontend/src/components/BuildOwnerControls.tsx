@@ -12,7 +12,7 @@ import {
   type BuildImageType,
 } from '@/lib/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { imageUrl } from '@/lib/image-url';
 
 export function ImageManager({
   buildId,
@@ -96,7 +96,7 @@ export function ImageManager({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`${API_URL}${img.url}`}
+                src={imageUrl(img.url)}
                 alt=""
                 className="w-full h-full object-cover"
               />

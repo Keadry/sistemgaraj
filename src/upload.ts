@@ -1,22 +1,14 @@
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 
-const uploadDir = path.join(process.cwd(), 'uploads');
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
+/**
+ * Dosyalar diske değil belleğe alınıyor; nereye yazılacağına `src/storage.ts`
+ * karar veriyor. Bu ayrım, sunucusuz ortamlarda dosya sisteminin salt-okunur
+ * olmasından geliyor — multer'ın diskStorage'ı orada çalışmıyor.
+ *
+ * Bellekte tutmanın bedeli: eşzamanlı yüklemeler RAM'de birikiyor. Sınırlar
+ * bunu tutuyor — dosya başına 5 MB, istek başına en fazla 5 dosya.
+ */
+const storage = multer.memoryStorage();
 
 function fileFilter(
   req: Express.Request,
@@ -33,6 +25,6 @@ function fileFilter(
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 5 * 1024 * 1024, files: 5 },
   fileFilter,
 });

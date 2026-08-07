@@ -11,8 +11,7 @@ import {
   checkStorageSlotCompatibility,
 } from '../../services/compatibility.js';
 import { upload } from '../../upload.js';
-import fs from 'fs';
-import path from 'path';
+import { saveImages, deleteImages } from '../../storage.js';
 import type { Component } from '../../generated/prisma/client.js';
 import { buildIncludes, getArray } from './shared.js';
 
@@ -111,6 +110,10 @@ router.post(
       const files = (req.files as Express.Multer.File[] | undefined) ?? [];
       const hasImages = files.length > 0;
 
+      // Görselleri sistem kaydından önce yüklüyoruz: depolama başarısız
+      // olursa ortada görselsiz bir sistem kalmasın.
+      const imageUrls = await saveImages(files);
+
       const build = await prisma.build.create({
         data: {
           name: name || 'Adsız Sistem',
@@ -123,8 +126,8 @@ router.post(
           },
           images: hasImages
             ? {
-                create: files.map((file, i) => ({
-                  url: `/uploads/${file.filename}`,
+                create: imageUrls.map((url, i) => ({
+                  url,
                   order: i,
                   isMain: i === 0,
                   status: 'PENDING',
@@ -336,10 +339,7 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res) => {
       return;
     }
 
-    for (const img of build.images) {
-      const relativePath = img.url.startsWith('/') ? img.url.slice(1) : img.url;
-      fs.unlink(path.join(process.cwd(), relativePath), () => {});
-    }
+    await deleteImages(build.images.map((img) => img.url));
 
     await prisma.build.delete({ where: { id: buildId } });
 

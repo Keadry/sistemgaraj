@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { imageUrl as resolveImageUrl } from '@/lib/image-url';
 
 export default function BuildImage({
   imageUrl,
@@ -11,7 +11,7 @@ export default function BuildImage({
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={`${API_URL}${imageUrl}`}
+        src={resolveImageUrl(imageUrl)}
         alt="Sistem görseli"
         className={`w-full h-full object-cover ${className}`}
       />

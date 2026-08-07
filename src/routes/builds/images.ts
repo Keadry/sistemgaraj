@@ -1,8 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../../db.js';
 import { requireAuth, type AuthRequest } from '../../middleware/auth.js';
-import fs from 'fs';
-import path from 'path';
+import { deleteImage } from '../../storage.js';
 
 const router = Router();
 
@@ -63,10 +62,7 @@ router.delete(
       });
 
       if (image) {
-        const relativePath = image.url.startsWith('/')
-          ? image.url.slice(1)
-          : image.url;
-        fs.unlink(path.join(process.cwd(), relativePath), () => {});
+        await deleteImage(image.url);
       }
 
       await prisma.buildImage.delete({ where: { id: imageId } });

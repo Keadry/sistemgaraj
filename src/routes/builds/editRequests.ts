@@ -12,6 +12,7 @@ import {
 } from '../../services/moderation.js';
 import { applyEditRequestChanges } from '../../services/buildEdits.js';
 import { upload } from '../../upload.js';
+import { saveImages } from '../../storage.js';
 import { getArray } from './shared.js';
 
 const router = Router();
@@ -175,6 +176,10 @@ router.post(
 
       const requiresReview = hasImages || hasBannedContent;
 
+      // Görselleri kayıt oluşturmadan önce yüklüyoruz: depolama başarısız
+      // olursa ortada görselsiz bir düzenleme talebi kalmasın.
+      const imageUrls = await saveImages(files);
+
       const editRequest = await prisma.buildEditRequest.create({
         data: {
           buildId,
@@ -190,8 +195,8 @@ router.post(
           ramIds,
           storageId: storageIds,
           images: {
-            create: files.map((file, i) => ({
-              url: `/uploads/${file.filename}`,
+            create: imageUrls.map((url, i) => ({
+              url,
               order: i,
             })),
           },

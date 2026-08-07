@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { uploadCover } from '@/lib/api';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { imageUrl } from '@/lib/image-url';
 
 export default function ProfileCover({
   coverUrl,
@@ -39,7 +38,7 @@ export default function ProfileCover({
       {coverUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={`${API_URL}${coverUrl}`}
+          src={imageUrl(coverUrl)}
           alt=""
           className="w-full h-full object-cover"
         />

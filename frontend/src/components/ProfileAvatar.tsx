@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { uploadAvatar } from '@/lib/api';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { imageUrl } from '@/lib/image-url';
 
 export default function ProfileAvatar({
   username,
@@ -50,7 +49,7 @@ export default function ProfileAvatar({
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={`${API_URL}${avatarUrl}`}
+            src={imageUrl(avatarUrl)}
             alt={username}
             className="w-full h-full object-cover"
           />

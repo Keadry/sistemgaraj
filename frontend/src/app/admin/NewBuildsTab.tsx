@@ -11,7 +11,7 @@ import {
   type NewBuildForReview,
 } from '@/lib/api';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { imageUrl } from '@/lib/image-url';
 
 export default function NewBuildsTab({ token }: { token: string }) {
   const [builds, setBuilds] = useState<NewBuildForReview[]>([]);
@@ -103,7 +103,7 @@ export default function NewBuildsTab({ token }: { token: string }) {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   key={img.id}
-                  src={`${API_URL}${img.url}`}
+                  src={imageUrl(img.url)}
                   alt=""
                   className="w-24 h-20 object-cover rounded-xl shrink-0"
                 />

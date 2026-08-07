@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import BuildImage from './BuildImage';
 import type { BuildImageType } from '@/lib/api';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { imageUrl } from '@/lib/image-url';
 
 export default function BuildGallery({ images }: { images: BuildImageType[] }) {
   const approved = images.filter((img) => img.status === 'APPROVED');
@@ -49,7 +48,7 @@ export default function BuildGallery({ images }: { images: BuildImageType[] }) {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`${API_URL}${current.url}`}
+            src={imageUrl(current.url)}
             alt="Sistem görseli"
             className="w-full h-full object-cover"
           />
@@ -90,7 +89,7 @@ export default function BuildGallery({ images }: { images: BuildImageType[] }) {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`${API_URL}${img.url}`}
+                src={imageUrl(img.url)}
                 alt=""
                 className="w-full h-full object-cover"
               />

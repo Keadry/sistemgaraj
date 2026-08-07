@@ -1,7 +1,6 @@
 import { Router } from 'express';
-import fs from 'fs';
-import path from 'path';
 import { prisma } from '../db.js';
+import { deleteImages } from '../storage.js';
 import {
   requireAuth,
   requireModerator,
@@ -11,11 +10,6 @@ import { applyEditRequestChanges } from '../services/buildEdits.js';
 
 const router = Router();
 
-function deleteUploadedFile(url: string) {
-  const relativePath = url.startsWith('/') ? url.slice(1) : url;
-  const filePath = path.join(process.cwd(), relativePath);
-  fs.unlink(filePath, () => {});
-}
 
 // ==============================
 // KULLANICI LİSTESİ (moderatör+)
@@ -483,9 +477,7 @@ router.post(
       const buildId = req.params.id as string;
 
       const images = await prisma.buildImage.findMany({ where: { buildId } });
-      for (const img of images) {
-        deleteUploadedFile(img.url);
-      }
+      await deleteImages(images.map((img) => img.url));
 
       await prisma.$transaction([
         prisma.buildImage.deleteMany({ where: { buildId } }),
@@ -593,9 +585,7 @@ router.post(
         return;
       }
 
-      for (const img of editRequest.images) {
-        deleteUploadedFile(img.url);
-      }
+      await deleteImages(editRequest.images.map((img) => img.url));
 
       await prisma.buildEditRequest.update({
         where: { id: requestId },

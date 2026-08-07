@@ -10,6 +10,7 @@ import {
 } from '@/lib/compatibility-client';
 import ComponentPicker from './ComponentPicker';
 import ImageDropzone from './ImageDropzone';
+import { imageUrl } from '@/lib/image-url';
 import {
   getComponents,
   submitEditRequest,
@@ -290,7 +291,6 @@ export default function EditPanel({
           </label>
           <div className="flex flex-wrap gap-3">
             {build.images.map((img) => {
-              const API_URL = process.env.NEXT_PUBLIC_API_URL;
               const isBusy = imageActionId === img.id;
               return (
                 <div
@@ -299,7 +299,7 @@ export default function EditPanel({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`${API_URL}${img.url}`}
+                    src={imageUrl(img.url)}
                     alt=""
                     className="w-full h-full object-cover"
                   />

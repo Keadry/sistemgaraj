@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../db.js';
 import bcrypt from 'bcryptjs';
 import { upload } from '../upload.js';
+import { saveImage } from '../storage.js';
 import {
   requireAuth,
   optionalAuth,
@@ -115,9 +116,11 @@ router.post(
         return;
       }
 
+      const avatarUrl = await saveImage(req.file);
+
       const user = await prisma.user.update({
         where: { id: req.userId! },
-        data: { avatarUrl: `/uploads/${req.file.filename}` },
+        data: { avatarUrl },
       });
 
       res.json({
@@ -145,9 +148,11 @@ router.post(
         return;
       }
 
+      const coverUrl = await saveImage(req.file);
+
       const user = await prisma.user.update({
         where: { id: req.userId! },
-        data: { coverUrl: `/uploads/${req.file.filename}` },
+        data: { coverUrl },
       });
 
       res.json({

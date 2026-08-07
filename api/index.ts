@@ -20,5 +20,10 @@
  * statik çıktı klasörü arıyor, bulamazsa deploy'u başarısız sayıyor. Bu proje
  * statik dosya üretmediği için klasör boş duruyor — build komutunu
  * kaldıramayız, `prisma generate` orada çalışıyor.
+ *
+ * DİKKAT: kökteki `vercel.json` yalnızca bu API projesine ait olsa da aynı
+ * depoyu kullanan frontend projesi de onu görüyor. Bu yüzden `frontend/`
+ * altında ayrı bir `vercel.json` var — olmasaydı `outputDirectory: "public"`
+ * oraya da uygulanır ve Next.js'in `.next` çıktısı bulunamazdı.
  */
 export { default } from '../src/app.js';

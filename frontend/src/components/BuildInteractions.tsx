@@ -19,6 +19,12 @@ import {
 
 import { imageUrl } from '@/lib/image-url';
 
+/* Yorum altındaki metin butonları (beğen / yanıtla / düzenle / sil) aynı
+   davranışı paylaşıyor. Tek sabitte toplandı çünkü beşinde de focus
+   göstergesi yoktu — klavyeyle gezerken hiçbiri görünmüyordu. */
+const ACTION_BUTTON =
+  'text-xs rounded px-0.5 transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace';
+
 function formatDate(dateString: string): string {
   return new Intl.DateTimeFormat('tr-TR', {
     day: 'numeric',
@@ -241,13 +247,24 @@ function CommentItem({
     if (!token || !replyText.trim()) return;
     setIsReplySubmitting(true);
     try {
-      const { comment: reply } = await addComment(
+      const { comment: reply, message } = await addComment(
         buildId,
         replyText,
         token,
         comment.id,
       );
-      onReplyAdded(comment.id, reply);
+
+      // Moderasyona düşen yanıt yayınlanmış sayılmamalı. Eskiden durum
+      // kontrol edilmeden listeye ekleniyordu: kullanıcı yanıtını ekranda
+      // görüyor, sayfayı yenileyince kayboluyordu — çünkü sunucu yalnızca
+      // APPROVED yanıtları döndürüyor. Üst seviye yorum formu bu ayrımı
+      // zaten yapıyordu, yanıt akışı atlamış.
+      if (reply.status === 'APPROVED') {
+        onReplyAdded(comment.id, reply);
+      } else {
+        showToast(message, 'info');
+      }
+
       setReplyText('');
       setIsReplying(false);
     } catch (err) {
@@ -288,8 +305,25 @@ function CommentItem({
   }
 
   return (
-    <div className={depth > 0 ? 'pl-4 border-l-2 border-hairline' : ''}>
-      <div className="rounded-xl bg-surface p-4">
+    /* Yanıtlar mor bir izle bağlanıyor: çizgi yorumu kendi yanıtlarıyla
+       birlikte kapsıyor, yani zincirin nereye ait olduğu görünüyor.
+       Derinlik arttıkça kutu hafifliyor — üst seviye dolgulu, yanıtlar
+       yalnızca kenarlıklı. Hepsi dolgulu olsaydı iç içe bloklar üst üste
+       yığılıp okunmaz hale geliyordu. */
+    <div className={depth > 0 ? 'relative pl-5' : ''}>
+      {depth > 0 && (
+        <span
+          aria-hidden="true"
+          className="absolute left-0 top-0 bottom-0 border-l border-trace/30"
+        />
+      )}
+      <div
+        className={
+          depth === 0
+            ? 'rounded-xl bg-surface p-4'
+            : 'rounded-xl border border-hairline bg-paper p-3.5'
+        }
+      >
         <div className="flex items-start gap-3">
           <Avatar
             username={comment.user.username}
@@ -320,7 +354,7 @@ function CommentItem({
                   <button
                     onClick={handleSave}
                     disabled={isSubmitting}
-                    className="text-xs rounded-lg bg-ink text-paper px-3 py-1.5 disabled:opacity-50"
+                    className="text-xs rounded-lg bg-ink text-paper px-3 py-1.5 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
                   >
                     Kaydet
                   </button>
@@ -331,7 +365,7 @@ function CommentItem({
                       setInfo(null);
                       setError(null);
                     }}
-                    className="text-xs rounded-lg border border-hairline px-3 py-1.5"
+                    className="text-xs rounded-lg border border-hairline px-3 py-1.5 hover:border-trace transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
                   >
                     Vazgeç
                   </button>
@@ -352,9 +386,10 @@ function CommentItem({
                 <button
                   onClick={handleLikeToggle}
                   disabled={!user || isLiking}
-                  className={`flex items-center gap-1 text-xs transition-colors ${
+                  aria-pressed={hasLiked}
+                  className={`${ACTION_BUTTON} flex items-center gap-1 ${
                     hasLiked ? 'text-trace' : 'text-ink-muted hover:text-trace'
-                  } disabled:opacity-50`}
+                  }`}
                 >
                   <svg
                     width="13"
@@ -372,7 +407,8 @@ function CommentItem({
                 {user && depth < 2 && (
                   <button
                     onClick={() => setIsReplying((v) => !v)}
-                    className="text-xs text-ink-muted hover:text-trace transition-colors"
+                    aria-expanded={isReplying}
+                    className={`${ACTION_BUTTON} text-ink-muted hover:text-trace`}
                   >
                     Yanıtla
                   </button>
@@ -380,7 +416,7 @@ function CommentItem({
                 {canEdit && (
                   <button
                     onClick={() => setIsEditing(true)}
-                    className="text-xs text-ink-muted hover:text-trace transition-colors"
+                    className={`${ACTION_BUTTON} text-ink-muted hover:text-trace`}
                   >
                     Düzenle
                   </button>
@@ -388,7 +424,7 @@ function CommentItem({
                 {canEdit && (
                   <button
                     onClick={handleDelete}
-                    className="text-xs text-ink-muted hover:text-incompatible transition-colors"
+                    className={`${ACTION_BUTTON} text-ink-muted hover:text-incompatible focus-visible:outline-incompatible`}
                   >
                     Sil
                   </button>
@@ -407,9 +443,9 @@ function CommentItem({
                 <button
                   onClick={handleReply}
                   disabled={isReplySubmitting || !replyText.trim()}
-                  className="text-xs rounded-lg bg-ink text-paper px-3 py-1.5 disabled:opacity-50"
+                  className="text-xs rounded-lg bg-ink text-paper px-3 py-1.5 disabled:opacity-50 shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
                 >
-                  Gönder
+                  {isReplySubmitting ? 'Gönderiliyor...' : 'Gönder'}
                 </button>
               </div>
             )}

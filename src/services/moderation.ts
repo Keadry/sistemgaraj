@@ -698,9 +698,44 @@ const BANNED_WORDS = [
   'zviyetini',
 ];
 
+/** Harf/rakam dışındaki her şey kelime ayracı sayılıyor. */
+const SEPARATOR = /[^\p{L}\p{N}]+/u;
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Metinde yasaklı kelime geçiyor mu?
+ *
+ * Eşleştirme KELİME SINIRINDA yapılıyor, alt dize olarak değil. Eskiden
+ * `normalized.includes(word)` kullanılıyordu ve listedeki iki-üç harflik
+ * girdiler ("am", "ana", "sik", "mal", "ag") sıradan Türkçeyi biçiyordu:
+ * "tamamen", "anakart", "klasik", "normal", "ağır" hepsi yasaklı sayılıyordu.
+ * Bir PC sitesinde "anakart" yazan her yorumun incelemeye düşmesi demekti bu,
+ * üstelik kullanıcıya hiçbir şey söylemeden.
+ *
+ * Türkçe eklemeli bir dil, yani ek almış hâlleri kaçırma riski var; ancak
+ * liste zaten çekimli biçimleri tek tek sayıyor (siktir/siktirir/siktiririm…),
+ * dolayısıyla bu değiş tokuş kabul edilebilir. Alternatifi — önek eşleştirmesi
+ * — "ana" yüzünden "anakart"ı yeniden yakalardı.
+ */
 export function containsBannedWord(text: string): boolean {
   const normalized = text.toLocaleLowerCase('tr-TR');
-  return BANNED_WORDS.some((word) => normalized.includes(word));
+  const tokens = new Set(normalized.split(SEPARATOR).filter(Boolean));
+
+  return BANNED_WORDS.some((word) => {
+    // Boşluk ya da nokta içeren kalıplar ("amına koyayım", "a.q") tek bir
+    // token'a düşmüyor; onları sınır kontrollü aramayla yakalıyoruz.
+    if (SEPARATOR.test(word)) {
+      const pattern = new RegExp(
+        `(?<![\\p{L}\\p{N}])${escapeRegExp(word)}(?![\\p{L}\\p{N}])`,
+        'u',
+      );
+      return pattern.test(normalized);
+    }
+    return tokens.has(word);
+  });
 }
 
 export function anyContainsBannedWord(

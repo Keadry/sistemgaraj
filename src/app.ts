@@ -7,6 +7,7 @@ import buildRoutes from './routes/builds/index.js';
 import componentRoutes from './routes/components.js';
 import adminRoutes from './routes/admin.js';
 import userRoutes from './routes/users.js';
+import notificationRoutes from './routes/notifications.js';
 import { apiLimiter } from './middleware/rate-limit.js';
 
 /**
@@ -81,6 +82,7 @@ app.use('/api/builds', buildRoutes);
 app.use('/api/components', componentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Koşulsuz bağlanıyor. Supabase açıkken yeni yüklemeler oraya gitse de
 // veritabanındaki eski satırlar hâlâ `/uploads/...` biçiminde ve bu yol

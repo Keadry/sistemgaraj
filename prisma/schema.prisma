@@ -90,6 +90,56 @@ model User {
 
   profileCommentsAuthored ProfileComment[] @relation("ProfileCommentAuthor")
   profileCommentsReceived ProfileComment[] @relation("ProfileCommentTarget")
+
+  notifications      Notification[] @relation("NotificationRecipient")
+  triggeredNotifications Notification[] @relation("NotificationActor")
+}
+
+// ==============================
+// BİLDİRİM
+// ==============================
+enum NotificationType {
+  BUILD_COMMENT // sistemine yorum geldi
+  COMMENT_REPLY // yorumuna yanıt geldi
+  BUILD_LIKE // sistemi beğenildi
+  COMMENT_LIKE // yorumu beğenildi
+  BUILD_APPROVED // sistemi yayına alındı
+  BUILD_REJECTED // sistemi reddedildi
+  EDIT_APPROVED // düzenleme talebi onaylandı
+  EDIT_REJECTED // düzenleme talebi reddedildi
+  ANNOUNCEMENT // yönetimden duyuru
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  /// Duyuru bildirimlerinde serbest metin taşır; diğerlerinde metin
+  /// istemcide türden üretiliyor ki dil değişince eski kayıtlar da güncellensin.
+  message String?
+
+  /// Bildirimi alan kişi.
+  user   User   @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  /// Eylemi yapan kişi. Moderasyon ve duyurularda boş — onları bir kullanıcı
+  /// değil sistem tetikliyor.
+  actor   User?   @relation("NotificationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  actorId String?
+
+  /// Nereye götüreceği. Kaynak silinince bildirim de gitsin diye cascade:
+  /// tıklandığında var olmayan bir sayfaya düşen bildirim, bildirim değil.
+  build   Build?  @relation(fields: [buildId], references: [id], onDelete: Cascade)
+  buildId String?
+
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String?
+
+  /// Çan her sayfa yüklemesinde okunmamış sayısını soruyor; sorgu tam olarak
+  /// bu üçlüyü kullanıyor.
+  @@index([userId, isRead, createdAt])
 }
 
 // ==============================
@@ -156,6 +206,8 @@ model Build {
   editRequests BuildEditRequest[]
 
   bookmarks  BuildBookmark[]
+
+  notifications Notification[]
 }
 
 // ==============================
@@ -229,6 +281,8 @@ model Comment {
   replies  Comment[] @relation("CommentReplies")
 
   likes CommentLike[]
+
+  notifications Notification[]
 }
 
 model CommentLike {

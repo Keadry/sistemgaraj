@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../../db.js';
 import { requireAuth, type AuthRequest } from '../../middleware/auth.js';
+import { createNotification } from '../../services/notifications.js';
 
 const router = Router();
 
@@ -23,6 +24,19 @@ router.post('/:id/like', requireAuth, async (req: AuthRequest, res) => {
     await prisma.like.create({
       data: { userId: req.userId!, buildId },
     });
+
+    const build = await prisma.build.findUnique({
+      where: { id: buildId },
+      select: { userId: true },
+    });
+    if (build) {
+      await createNotification({
+        userId: build.userId,
+        type: 'BUILD_LIKE',
+        actorId: req.userId!,
+        buildId,
+      });
+    }
 
     res.status(201).json({ message: 'Beğenildi.' });
   } catch (error) {

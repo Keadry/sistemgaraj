@@ -7,8 +7,27 @@ import {
   requireAdmin,
 } from '../middleware/auth.js';
 import { applyEditRequestChanges } from '../services/buildEdits.js';
+import { createNotification } from '../services/notifications.js';
+import type { NotificationType } from '../generated/prisma/client.js';
 
 const router = Router();
+
+/**
+ * Moderasyon sonucunu sistemin sahibine bildirir.
+ *
+ * `actorId` bilerek verilmiyor: kararı bir kullanıcı değil moderasyon
+ * veriyor. Hangi moderatörün baktığını sahibine göstermek, kişisel bir
+ * anlaşmazlığa dönüşmesine açık kapı bırakırdı.
+ */
+async function notifyBuildOwner(buildId: string, type: NotificationType) {
+  const build = await prisma.build.findUnique({
+    where: { id: buildId },
+    select: { userId: true },
+  });
+  if (!build) return;
+
+  await createNotification({ userId: build.userId, type, buildId });
+}
 
 
 // ==============================
@@ -457,6 +476,8 @@ router.post(
         }),
       ]);
 
+      await notifyBuildOwner(buildId, 'BUILD_APPROVED');
+
       res.json({ message: 'Sistem onaylandı ve yayınlandı.' });
     } catch (error) {
       console.error(error);
@@ -486,6 +507,8 @@ router.post(
           data: { reviewStatus: 'REJECTED' },
         }),
       ]);
+
+      await notifyBuildOwner(buildId, 'BUILD_REJECTED');
 
       res.json({ message: 'Sistem reddedildi, görseller silindi.' });
     } catch (error) {
@@ -556,6 +579,8 @@ router.post(
         });
       });
 
+      await notifyBuildOwner(editRequest.buildId, 'EDIT_APPROVED');
+
       res.json({ message: 'Düzenleme isteği onaylandı ve uygulandı.' });
     } catch (error) {
       console.error(error);
@@ -591,6 +616,8 @@ router.post(
         where: { id: requestId },
         data: { status: 'REJECTED', reviewedAt: new Date() },
       });
+
+      await notifyBuildOwner(editRequest.buildId, 'EDIT_REJECTED');
 
       res.json({ message: 'Düzenleme isteği reddedildi.' });
     } catch (error) {

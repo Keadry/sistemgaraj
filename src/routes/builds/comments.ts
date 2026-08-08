@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../../db.js';
 import { requireAuth, type AuthRequest } from '../../middleware/auth.js';
 import { containsBannedWord } from '../../services/moderation.js';
+import { createNotification } from '../../services/notifications.js';
 
 const router = Router();
 
@@ -91,6 +92,35 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
         likes: true,
       },
     });
+
+    /* Yalnızca yayına giren yorumlar bildiriliyor. İncelemedeki bir yorum
+       için sahibine haber vermek, tıklayınca göremeyeceği bir şeye
+       yönlendirmek olurdu. */
+    if (status === 'APPROVED') {
+      if (parentId) {
+        const parent = await prisma.comment.findUnique({
+          where: { id: parentId },
+          select: { userId: true },
+        });
+        if (parent) {
+          await createNotification({
+            userId: parent.userId,
+            type: 'COMMENT_REPLY',
+            actorId: req.userId!,
+            buildId,
+            commentId: comment.id,
+          });
+        }
+      } else {
+        await createNotification({
+          userId: build.userId,
+          type: 'BUILD_COMMENT',
+          actorId: req.userId!,
+          buildId,
+          commentId: comment.id,
+        });
+      }
+    }
 
     res.status(201).json({
       message:
@@ -238,6 +268,20 @@ router.post(
       await prisma.commentLike.create({
         data: { userId: req.userId!, commentId },
       });
+
+      const comment = await prisma.comment.findUnique({
+        where: { id: commentId },
+        select: { userId: true, buildId: true },
+      });
+      if (comment) {
+        await createNotification({
+          userId: comment.userId,
+          type: 'COMMENT_LIKE',
+          actorId: req.userId!,
+          buildId: comment.buildId,
+          commentId,
+        });
+      }
 
       res.status(201).json({ message: 'Beğenildi.' });
     } catch (error) {

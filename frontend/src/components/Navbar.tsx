@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import Logo from './Logo';
+import NotificationBell from './NotificationBell';
 import { useTheme } from '@/lib/theme-context';
 
 const NAV_LINKS = [
@@ -95,6 +96,10 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-2 md:gap-3 shrink-0">
+          {/* Çan hamburgerin dışında kalıyor: bildirim menüye gömülürse
+              okunmamış sayısı görünmez olur ve varlık sebebi kalmaz. */}
+          {!isLoading && user && <NotificationBell />}
+
           <button
             onClick={toggleTheme}
             aria-label={

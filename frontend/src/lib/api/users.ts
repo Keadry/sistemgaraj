@@ -13,6 +13,8 @@ export type UserProfile = {
   discordUrl: string | null;
   websiteUrl: string | null;
   createdAt: string;
+  /** Profili görüntüleyen kişi bu kullanıcıyı engellemiş mi. */
+  hasBlocked: boolean;
   isOnline: boolean | null;
   lastActiveAt: string | null;
   birthDate: string | null;

@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import { deleteBuild } from '@/lib/api';
 import Navbar from '@/components/Navbar';
 import BuildCard from '@/components/BuildCard';
-import { blockUser } from '@/lib/api';
+import { blockUser, unblockUser } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
 import { useConfirm } from '@/lib/confirm-context';
 import ProfileAvatar from '@/components/ProfileAvatar';
@@ -99,6 +99,45 @@ export default function UserProfilePage({
   const [isLoading, setIsLoading] = useState(true);
   const [notFoundError, setNotFoundError] = useState(false);
   const [wallComments, setWallComments] = useState<WallComment[]>([]);
+  const [isBlockPending, setIsBlockPending] = useState(false);
+
+  async function handleBlockToggle() {
+    if (!token || !profile) return;
+
+    const isBlocking = !profile.hasBlocked;
+
+    if (isBlocking) {
+      const ok = await confirmDialog({
+        title: 'Kullanıcıyı engelle',
+        description: `@${profile.username} artık sistemlerine ve profiline yorum yazamayacak.`,
+        confirmLabel: 'Engelle',
+        danger: true,
+      });
+      if (!ok) return;
+    }
+
+    setIsBlockPending(true);
+    try {
+      if (isBlocking) {
+        await blockUser(profile.username, token);
+      } else {
+        await unblockUser(profile.username, token);
+      }
+
+      /* Durumu yerelde güncelliyoruz. Eskiden istek gönderiliyor ama profil
+         hiç tazelenmiyordu, dolayısıyla buton "Engelle" olarak kalıyor ve
+         işlem olmamış gibi görünüyordu. */
+      setProfile((prev) => (prev ? { ...prev, hasBlocked: isBlocking } : prev));
+      showToast(
+        isBlocking ? 'Kullanıcı engellendi.' : 'Engel kaldırıldı.',
+        'success',
+      );
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Bir hata oluştu.', 'error');
+    } finally {
+      setIsBlockPending(false);
+    }
+  }
 
   useEffect(() => {
     if (isAuthLoading) return;
@@ -233,40 +272,42 @@ export default function UserProfilePage({
                   )}
                 </div>
               )}
-              {!isOwner && currentUser && (
-                <div className="mt-4 px-2">
-                  <button
-                    onClick={async () => {
-                      if (!token) return;
-                      const ok = await confirmDialog({
-                        title: 'Kullanıcıyı engelle',
-                        description: `@${profile.username} artık sana yorum/mesaj yazamayacak.`,
-                        confirmLabel: 'Engelle',
-                        danger: true,
-                      });
-                      if (!ok) return;
-
-                      try {
-                        await blockUser(profile.username, token);
-                        showToast('Kullanıcı engellendi.', 'success');
-                      } catch (err) {
-                        showToast(
-                          err instanceof Error
-                            ? err.message
-                            : 'Bir hata oluştu.',
-                          'error',
-                        );
-                      }
-                    }}
-                    className="text-xs font-medium text-on-scrim/70 hover:text-on-scrim transition-colors rounded-lg px-3 py-1.5 border border-on-scrim/25 hover:border-incompatible hover:bg-incompatible/20 cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-scrim"
-                  >
-                    Engelle
-                  </button>
-                </div>
-              )}
             </div>
+
+            {/* Engelleme kimlik bilgisinin parçası değil, bir eylem — cam
+                kutunun içinde dururken bio ve sosyal bağlantılarla aynı
+                seviyedeymiş gibi okunuyordu. Kutunun dışına, satırın sonuna
+                alındı. */}
+            {!isOwner && currentUser && (
+              <div className="sm:ml-auto sm:pb-2 shrink-0">
+                <button
+                  onClick={handleBlockToggle}
+                  disabled={isBlockPending}
+                  className={`text-xs font-medium rounded-lg px-3.5 py-2 border transition-colors duration-200 ease-trace cursor-pointer disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 ${
+                    profile.hasBlocked
+                      ? 'border-incompatible/40 bg-incompatible/10 text-incompatible hover:bg-incompatible/20 focus-visible:outline-incompatible'
+                      : 'border-hairline text-ink-muted hover:border-incompatible hover:text-incompatible focus-visible:outline-incompatible'
+                  }`}
+                >
+                  {profile.hasBlocked ? 'Engeli Kaldır' : 'Engelle'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Engellenen kullanıcının profilinde ne olduğunu açıkça söylemek
+            gerekiyor: eskiden engelle'ye basınca görünürde hiçbir şey
+            değişmiyordu, işlem gerçekleşmiş mi belli olmuyordu. */}
+        {profile.hasBlocked && (
+          <div className="bg-incompatible/10 border border-incompatible/20 rounded-2xl p-3.5 text-xs font-semibold text-incompatible flex items-center gap-2">
+            <span>🚫</span>
+            <span>
+              Bu kullanıcıyı engelledin — sistemlerine ve profiline yorum
+              yazamaz.
+            </span>
+          </div>
+        )}
 
         {/* PROFiL SAHİBİ BİLGİLENDİRME */}
         {isOwner && (

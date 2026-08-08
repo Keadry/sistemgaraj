@@ -78,8 +78,26 @@ router.get('/:username', optionalAuth, async (req: AuthRequest, res) => {
       Date.now() - user.lastActiveAt.getTime() <
         ONLINE_THRESHOLD_MINUTES * 60 * 1000;
 
+    /* Bakan kişi bu profili engellemiş mi? Arayüz butonu buna göre
+       "Engelle" ya da "Engeli Kaldır" gösteriyor; alan dönmediği için
+       buton her zaman "Engelle" kalıyor ve engelleme hiçbir şey yapmamış
+       gibi görünüyordu. */
+    const hasBlocked = req.userId
+      ? Boolean(
+          await prisma.userBlock.findUnique({
+            where: {
+              blockerId_blockedId: {
+                blockerId: req.userId,
+                blockedId: user.id,
+              },
+            },
+          }),
+        )
+      : false;
+
     const publicUser = {
       id: user.id,
+      hasBlocked,
       username: user.username,
       avatarUrl: user.avatarUrl,
       coverUrl: user.coverUrl,

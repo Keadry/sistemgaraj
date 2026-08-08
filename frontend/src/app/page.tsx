@@ -2,6 +2,7 @@ import { getFeed, getBuildsCount } from '@/lib/api';
 import BuildCard from '@/components/BuildCard';
 import Navbar from '@/components/Navbar';
 import FeaturedBuildCard from '@/components/FeaturedBuildCard';
+import SystemTrace from '@/components/SystemTrace';
 import Link from 'next/link';
 
 export default async function Home() {
@@ -23,9 +24,9 @@ export default async function Home() {
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 md:px-8 relative z-10">
         {/* HERO SECTION */}
-        <section className="pt-10 pb-8 md:pt-14 md:pb-12 border-b border-hairline/60">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-3">
+        <section className="pt-10 pb-10 md:pt-14 md:pb-14 border-b border-hairline/60">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-10">
+            <div className="space-y-5 max-w-xl">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-trace/10 border border-trace/20 text-trace text-xs font-semibold tracking-wide shadow-sm">
                 <span className="w-2 h-2 rounded-full bg-trace animate-pulse" />
                 SistemGaraj
@@ -36,30 +37,51 @@ export default async function Home() {
                   Keşfet & Topla
                 </span>
               </h1>
-              <p className="text-ink-muted text-sm md:text-base max-w-xl font-normal">
-                Geliştiriciler ve oyuncular için hazırlanmış performansı yüksek,
-                özenle seçilmiş ve topluluk onaylı PC sistemleri.
+              <p className="text-ink-muted text-sm md:text-base font-normal">
+                Parçaları seç, uyumluluğu anında gör, sistemini toplulukla
+                paylaş.
               </p>
+
+              {/* Buraya kadar sayfa ne yapılacağını söylüyordu ama yapılacak
+                  yeri göstermiyordu — hero'da hiç buton yoktu. */}
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <Link
+                  href="/sistem-topla"
+                  className="rounded-xl bg-trace hover:bg-trace-dark text-paper text-sm font-semibold px-5 py-3 shadow-[0_8px_16px_-4px_rgba(var(--color-trace-rgb),0.3)] transition-[background-color,transform] duration-200 ease-trace active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+                >
+                  Sistem Topla
+                </Link>
+                <Link
+                  href="/sistemler"
+                  className="rounded-xl border border-hairline hover:border-trace text-ink text-sm font-semibold px-5 py-3 transition-[border-color,color] duration-200 ease-trace hover:text-trace focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+                >
+                  Sistemleri Keşfet
+                </Link>
+              </div>
+
+              <div className="flex items-center gap-5 pt-2 font-[family-name:var(--font-mono)]">
+                <div>
+                  <span className="text-xl font-bold text-ink">
+                    {totalCount}
+                  </span>
+                  <span className="text-xs text-ink-muted ml-1.5">sistem</span>
+                </div>
+                <div className="h-4 w-px bg-hairline" />
+                <div>
+                  <span className="text-xl font-bold text-trace">
+                    {featuredBuilds.length}
+                  </span>
+                  <span className="text-xs text-ink-muted ml-1.5">
+                    editör seçimi
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center gap-6 bg-paper/70 backdrop-blur-md p-4 rounded-2xl border border-hairline shadow-sm shrink-0">
-              <div>
-                <div className="text-2xl font-bold text-ink font-mono tracking-tight">
-                  {totalCount}+
-                </div>
-                <div className="text-xs text-ink-muted font-medium">
-                  Paylaşılan Sistem
-                </div>
-              </div>
-              <div className="h-8 w-px bg-hairline" />
-              <div>
-                <div className="text-2xl font-bold text-trace font-mono tracking-tight">
-                  {featuredBuilds.length}
-                </div>
-                <div className="text-xs text-ink-muted font-medium">
-                  Editör Seçimi
-                </div>
-              </div>
+            {/* Dar ekranda gizli: 300px'lik diyagram orada metni sıkıştırıyor
+                ve kaydırmadan görülemiyor, yani hiçbir işe yaramıyor. */}
+            <div className="hidden sm:block shrink-0 lg:mr-8">
+              <SystemTrace />
             </div>
           </div>
         </section>

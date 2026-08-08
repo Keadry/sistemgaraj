@@ -369,4 +369,22 @@ body::after {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  /* Sayfa geçişleri ayrıca yazılmak zorunda: tarayıcı bunları belgenin
+     dışında, `::view-transition-*` sözde elemanlarında canlandırıyor ve
+     yukarıdaki `*` seçicisi oraya ulaşmıyor. Kapatılmazsa hareketi
+     kapatmış bir kullanıcı her gezinmede tam boy bir animasyon görürdü. */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* Sayfa geçişleri de aynı hareket dilini konuşsun. Tarayıcının varsayılanı
+   kendi süresi ve easing'iyle geliyor; bırakılsaydı gezinme, sitenin geri
+   kalanından farklı bir ritimde oynardı. */
+::view-transition-group(*) {
+  animation-duration: var(--motion-settle);
+  animation-timing-function: var(--ease-trace);
 }

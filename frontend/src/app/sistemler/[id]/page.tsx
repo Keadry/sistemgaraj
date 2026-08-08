@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import {
+  useEffect,
+  useState,
+  use,
+  startTransition,
+  ViewTransition,
+} from 'react';
 import Link from 'next/link';
 import { notFound, useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
@@ -52,9 +58,15 @@ export default function BuildDetailPage({
     setIsLoading(true);
     getBuild(id, token)
       .then((data) => {
-        setBuild(data.build);
-        setIsOwner(data.isOwner);
-        setIsBookmarked(data.isBookmarked);
+        /* startTransition içinde: <ViewTransition> animasyonları yalnızca
+           transition, Suspense veya useDeferredValue ile tetikleniyor —
+           düz setState onları çalıştırmıyor. Bu sarmalama olmadan iskelet
+           gerçek içeriğe animasyonsuz, sert biçimde geçiyordu. */
+        startTransition(() => {
+          setBuild(data.build);
+          setIsOwner(data.isOwner);
+          setIsBookmarked(data.isBookmarked);
+        });
       })
       .catch(() => setNotFoundError(true))
       .finally(() => setIsLoading(false));
@@ -101,7 +113,13 @@ export default function BuildDetailPage({
       <main className="min-h-screen pb-20">
         <Navbar />
         <div className="px-6 md:px-12 py-10 max-w-3xl mx-auto">
-          <SkeletonBuildDetail />
+          {/* İskelet de kartla aynı `name`i taşıyor: veri gelene kadar
+              morph edecek bir hedef bulunmasa geçiş hiç oynamaz, kart
+              görseli boşluğa karışırdı. İkisi aynı anda ekranda olmadığı
+              için isim çakışması olmuyor. */}
+          <ViewTransition name={`build-image-${id}`}>
+            <SkeletonBuildDetail />
+          </ViewTransition>
         </div>
       </main>
     );
@@ -210,9 +228,14 @@ export default function BuildDetailPage({
           />
         )}
 
-        <div className="mt-6">
-          <BuildGallery images={build.images} />
-        </div>
+        {/* Zincirin son halkası: kart görseli önce iskelete, iskelet de
+            buraya dönüşüyor. Tıklanan görselin açılan görsel olduğu
+            kesintisiz görülüyor. */}
+        <ViewTransition name={`build-image-${id}`}>
+          <div className="mt-6">
+            <BuildGallery images={build.images} />
+          </div>
+        </ViewTransition>
 
         {/* PARÇA LİSTESİ */}
         <section className="mt-8">

@@ -1,3 +1,4 @@
+import { ViewTransition } from 'react';
 import Link from 'next/link';
 import type { Build } from '@/lib/api';
 import BuildImage from './BuildImage';
@@ -35,14 +36,20 @@ export default function BuildCard({ build }: { build: Build }) {
       href={`/sistemler/${build.id}`}
       className="trace-edge group relative block rounded-2xl border border-hairline bg-paper overflow-hidden hover:border-trace/40 hover:shadow-lg hover:shadow-trace/5 hover:-translate-y-px transition-[transform,border-color,box-shadow] duration-200 ease-trace focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
     >
-      <div className="aspect-[4/3] bg-surface relative overflow-hidden">
-        {build.isFeatured && (
-          <span className="absolute top-3 left-3 bg-trace text-paper rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-sm z-10 flex items-center gap-1">
-            ★ Öne Çıkan
-          </span>
-        )}
-        <BuildImage imageUrl={mainImage?.url ?? null} />
-      </div>
+      {/* Kartın görseli detay sayfasındaki görselle aynı `name`i taşıyor;
+          tarayıcı ikisi arasında geçişi kendisi çiziyor. Amaç süs değil
+          süreklilik: tıklanan şeyin açılan şey olduğu, sayfayı taramadan
+          anlaşılıyor. */}
+      <ViewTransition name={`build-image-${build.id}`}>
+        <div className="aspect-[4/3] bg-surface relative overflow-hidden">
+          {build.isFeatured && (
+            <span className="absolute top-3 left-3 bg-trace text-paper rounded-full px-2.5 py-0.5 text-xs font-semibold shadow-sm z-10 flex items-center gap-1">
+              ★ Öne Çıkan
+            </span>
+          )}
+          <BuildImage imageUrl={mainImage?.url ?? null} />
+        </div>
+      </ViewTransition>
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">

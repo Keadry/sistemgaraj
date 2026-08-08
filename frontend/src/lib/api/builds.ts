@@ -25,6 +25,7 @@ export type BuildComponent = {
 export type BuildUser = {
   id: string;
   username: string;
+  avatarUrl: string | null;
 };
 
 export type Like = {

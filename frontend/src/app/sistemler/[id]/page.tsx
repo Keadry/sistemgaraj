@@ -12,6 +12,7 @@ import { useAuth } from '@/lib/auth-context';
 import { getBuild, type Build } from '@/lib/api';
 import { bookmarkBuild, unbookmarkBuild } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
+import { imageUrl } from '@/lib/image-url';
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('tr-TR', {
@@ -141,19 +142,31 @@ export default function BuildDetailPage({
             <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight">
               {build.name}
             </h1>
-            <div className="flex items-center gap-2 mt-2">
-              <div className="relative w-6 h-6 rounded-full bg-trace/10 text-trace font-bold flex items-center justify-center text-xs overflow-hidden shrink-0 border border-trace/20">
-                <span className="select-none">
-                  {build.user.username.slice(0, 2).toUpperCase()}
-                </span>
+            <div className="flex items-center gap-2.5 mt-2">
+              {/* Baş harfler yalnızca avatar yokken. Eskiden her zaman baş
+                  harfler görünüyordu çünkü API bu uç noktada `avatarUrl`
+                  seçmiyordu — tasarım tercihi değil, eksik alandı. */}
+              <div className="relative w-7 h-7 rounded-full overflow-hidden shrink-0 border border-hairline bg-trace/10">
+                {build.user.avatarUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={imageUrl(build.user.avatarUrl)}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="w-full h-full flex items-center justify-center text-trace font-bold text-[11px] select-none">
+                    {build.user.username.slice(0, 2).toUpperCase()}
+                  </span>
+                )}
               </div>
               <p className="text-ink-muted text-sm">
-                <a
+                <Link
                   href={`/kullanici/${build.user.username}`}
-                  className="text-trace hover:underline font-medium"
+                  className="text-trace hover:underline font-medium rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
                 >
                   @{build.user.username}
-                </a>{' '}
+                </Link>{' '}
                 tarafından {formatDate(build.createdAt)} tarihinde paylaşıldı
               </p>
             </div>

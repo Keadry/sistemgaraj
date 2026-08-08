@@ -247,7 +247,7 @@ router.get('/:id', optionalAuth, async (req: AuthRequest, res) => {
     const build = await prisma.build.findUnique({
       where: { id: buildId },
       include: {
-        user: { select: { id: true, username: true } },
+        user: { select: { id: true, username: true, avatarUrl: true } },
         components: { include: { component: true } },
         likes: true,
         comments: {

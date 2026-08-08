@@ -1,5 +1,8 @@
 export const buildIncludes = {
-  user: { select: { id: true, username: true } },
+  /* avatarUrl her yerde seçiliyor ki `BuildUser` tipi her yanıtta doğru olsun.
+     Yalnızca detay uç noktasına eklemek, tipin var dediği alanın listelerde
+     tanımsız gelmesi demekti. */
+  user: { select: { id: true, username: true, avatarUrl: true } },
   components: { include: { component: true } },
   likes: true,
   comments: { where: { status: 'APPROVED' as const } },

@@ -30,7 +30,14 @@ const NODE_H = 40;
 const NODES: Node[] = [
   { id: 'cpu', label: 'İŞLEMCİ', spec: '9800X3D', x: 8, y: 12, delay: 0 },
   { id: 'mb', label: 'ANAKART', spec: 'B850 M', x: 8, y: 92, delay: 0.5 },
-  { id: 'gpu', label: 'EKRAN KARTI', spec: '5070 Ti', x: 168, y: 62, delay: 1.0 },
+  {
+    id: 'gpu',
+    label: 'EKRAN KARTI',
+    spec: '5070 Ti',
+    x: 168,
+    y: 62,
+    delay: 1.0,
+  },
   { id: 'psu', label: 'GÜÇ KAYNAĞI', spec: '850W', x: 168, y: 142, delay: 1.5 },
 ];
 
@@ -133,7 +140,7 @@ export default function SystemTrace() {
         }}
       >
         <text
-          x="168"
+          x="180"
           y="199"
           fill="var(--color-trace)"
           fontSize="10"
@@ -141,7 +148,7 @@ export default function SystemTrace() {
           letterSpacing="0.04em"
           style={{ fontFamily: 'var(--font-mono)' }}
         >
-          HAYALİMDEKİ SİSTEM
+          ARADIĞIN SİSTEM
         </text>
       </g>
     </svg>

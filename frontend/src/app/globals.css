@@ -126,6 +126,19 @@
   --animate-shake: shake 560ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
   --animate-drop-glow: dropGlow 1200ms ease-out infinite;
 
+  /* HAREKET DİLİ
+     Tek bir easing ailesi kullanıyoruz ki farklı yerlerdeki hareketler aynı
+     "el"den çıkmış gibi dursun. Karışık easing'ler arayüzü derme çatma
+     gösteriyor — fark edilmiyor ama hissediliyor.
+
+     `trace`: hızlı çıkıp yavaş oturan hareket. Arayüzün varsayılanı; kullanıcı
+        beklemesin ama sonu sert kesilmesin.
+     `snap`:  parçanın yerine oturması. Sonunda hafif bir duruş var.
+     Süreler `--motion-*` olarak aşağıda; Tailwind'in duration namespace'i
+     olmadığı için tema değişkeni değil, düz custom property. */
+  --ease-trace: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-snap: cubic-bezier(0.34, 1.35, 0.64, 1);
+
   --color-paper: #ffffff;
   --color-surface: #f4f6f8;
   --color-ink: #14181f;
@@ -155,6 +168,25 @@
    renk aramana gerek kalmaz. */
 :root {
   --color-trace-rgb: 78, 73, 246;
+
+  /* Süre ölçeği. Dört basamak bilerek: daha fazlası kimsenin hatırlamadığı
+     ve tutarsız kullanılan bir liste oluyor.
+       instant → renk/opaklık, göz fark etmeden
+       quick   → hover, küçük yer değişimi
+       settle  → panel/sheet açılışı
+       draw    → izin çizilmesi, imza hareket */
+  --motion-instant: 120ms;
+  --motion-quick: 200ms;
+  --motion-settle: 320ms;
+  --motion-draw: 620ms;
+
+  /* Tezgah ızgarası. Çok soluk olmalı — okunmamalı, sezilmeli. */
+  --color-grid: rgba(20, 24, 31, 0.055);
+}
+
+.dark {
+  /* Karanlık zeminde aynı opaklık daha baskın görünüyor, bu yüzden düşük. */
+  --color-grid: rgba(242, 244, 247, 0.038);
 }
 
 .dark {
@@ -177,6 +209,39 @@ body {
   position: relative;
   min-height: 100vh;
   overflow-x: hidden;
+
+  /* TEZGAH IZGARASI — teknik çizim kâğıdı hissi.
+     İki çizgi ailesi 64px'lik bir kare üretiyor. Ölçü keyfi değil: kartların
+     ve bölüm boşluklarının kullandığı 4px'lik Tailwind ölçeğinin katı, bu
+     yüzden içerik ızgarayla çakışmak yerine hizalanıyor.
+
+     Üstteki katman ızgarayı kâğıda eritiyor. Her yerde aynı yoğunlukta bir
+     ızgara tasarım gibi değil duvar kâğıdı gibi duruyor — düz bir doku,
+     derinliği yok. Izgarayı yalnızca sayfanın başında tutmak ona kasıt
+     kazandırıyor: girişte tezgah, aşağısı sade kâğıt.
+
+     Erime noktaları yüzde değil PİKSEL. Arka plan `body`ye, yani tüm belge
+     yüksekliğine yayıldığı için yüzdeler uzun sayfalarda esner ve ızgara
+     sayfa boyunca sürüklenirdi. Piksel verince erime her sayfada aynı yerde
+     bitiyor; gradyanın son rengi aşağı doğru uzadığından 700px'ten sonrası
+     kalıcı olarak düz kâğıt.
+
+     `attachment` varsayılan (`scroll`): ızgara belgenin üstüne sabit, sayfayla
+     birlikte yukarı kayıp gözden kayboluyor. */
+  background-image:
+    linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 220px,
+      var(--color-paper) 700px
+    ),
+    linear-gradient(var(--color-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+  background-size:
+    auto,
+    64px 64px,
+    64px 64px;
+  background-repeat: no-repeat, repeat, repeat;
 }
 
 /* GLOBAL MOR ARKA PLAN ISILTILARI (GLOWS) — tek kaynak, sayfalarda tekrar etmez
@@ -228,18 +293,54 @@ body::after {
   z-index: 0;
 }
 
-/* Bırakma alanının nabzı sonsuz döngüde çalışıyor. Hareket içermiyor ama
-   yanıp sönen bir ışık da hareket hassasiyeti olanları rahatsız edebiliyor;
-   animasyon durduğunda kutunun sabit mor kenarlığı ve arka planı yerinde
-   kaldığı için geri bildirim kaybolmuyor.
+/* TEZGAH: KART İZİ
+   Kartın üst kenarında hover ile çizilen iz. Parıltı yerine çizgi kullanmak
+   bilinçli — marka rengi zaten "iz" demek ve teknik çizim dilini sürdürüyor.
 
-   Utility'yi doğrudan hedefliyoruz: tema değişkenini burada `none` yapmayı
-   denedim, Tailwind `@theme` dışında yeniden tanımlanan tema değişkenlerini
-   eleyip bloğu tamamen düşürdü. Bu kural katmansız olduğu için Tailwind'in
-   katmanlı utility'sini kazanır.
-   (Tüm animasyonları kapsayan genel kural ayrı bir adımda gelecek.) */
+   Soldan sağa açılıyor (`transform-origin: left`), yani bir şeyin *çizildiği*
+   okunuyor; ortadan açılsaydı sadece beliren bir çubuk olurdu. Uçları
+   saydama gidiyor ki kartın köşelerinde sert kesilmesin.
+
+   `focus-visible` de tetikliyor: klavyeyle gezen biri aynı geri bildirimi
+   almalı. Kartın kendi odak halkasının yerini almıyor, ona ekleniyor. */
+.trace-edge::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-trace),
+    transparent
+  );
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--motion-draw) var(--ease-trace);
+  pointer-events: none;
+}
+
+.trace-edge:hover::after,
+.trace-edge:focus-visible::after {
+  transform: scaleX(1);
+}
+
+/* HAREKET AZALTMA — genel kural.
+   Tek tek animasyonları kapatmak yerine hepsini kapsıyoruz: yeni bir
+   animasyon eklendiğinde buraya da satır eklemeyi unutmak, korumanın
+   sessizce delinmesi demek.
+
+   Sıfır yerine 0.01ms: `transitionend`/`animationend` olayları yine
+   tetikleniyor, dolayısıyla bu olaylara bağlı mantık çalışmaya devam ediyor.
+   Süreyi sıfırlamak o olayları hiç ateşlemez ve arayüz takılı kalabilir. */
 @media (prefers-reduced-motion: reduce) {
-  .animate-drop-glow {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

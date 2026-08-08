@@ -28,9 +28,12 @@ export default function BuildCard({ build }: { build: Build }) {
     null;
 
   return (
+    // `trace-edge` üst kenarda izi çiziyor (globals.css). Kalkış 1px'e
+    // düşürüldü: kart zaten iz ve kenarlıkla tepki veriyor, daha fazla yer
+    // değiştirmesi kartların ızgarayla hizasını bozuyor.
     <Link
       href={`/sistemler/${build.id}`}
-      className="group block rounded-2xl border border-hairline bg-paper overflow-hidden hover:border-trace/40 transition-all duration-300 hover:shadow-xl hover:shadow-trace/5 hover:-translate-y-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+      className="trace-edge group relative block rounded-2xl border border-hairline bg-paper overflow-hidden hover:border-trace/40 hover:shadow-lg hover:shadow-trace/5 hover:-translate-y-px transition-[transform,border-color,box-shadow] duration-200 ease-trace focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
     >
       <div className="aspect-[4/3] bg-surface relative overflow-hidden">
         {build.isFeatured && (

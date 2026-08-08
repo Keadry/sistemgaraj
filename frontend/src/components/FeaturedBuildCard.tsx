@@ -1,3 +1,4 @@
+import { ViewTransition } from 'react';
 import Link from 'next/link';
 import type { Build } from '@/lib/api';
 import BuildImage from './BuildImage';
@@ -28,23 +29,31 @@ export default function FeaturedBuildCard({ build }: { build: Build }) {
     null;
 
   return (
+    // Sıradan kartla aynı hareket dili; ayrımı mor kenarlık taşıyor.
+    // Önceden `transition-colors` vardı, yani kalkış ve gölge animasyonsuzdu
+    // ve iki kart yan yana durduğunda farklı ritimde tepki veriyorlardı.
     <Link
       href={`/sistemler/${build.id}`}
-      className="group block rounded-2xl overflow-hidden relative border-2 border-trace/30 bg-paper hover:border-trace transition-colors shadow-sm hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+      className="trace-edge group relative block rounded-2xl overflow-hidden border border-trace/40 bg-paper hover:border-trace hover:shadow-lg hover:shadow-trace/10 hover:-translate-y-px transition-[transform,border-color,box-shadow] duration-200 ease-trace focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
     >
-      <div className="aspect-[4/3] bg-surface relative overflow-hidden">
-        <BuildImage imageUrl={mainImage?.url ?? null} />
+      <ViewTransition name={`build-image-${build.id}`}>
+        <div className="aspect-[4/3] bg-surface relative overflow-hidden">
+          <BuildImage imageUrl={mainImage?.url ?? null} />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/0 to-ink/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+          {/* `scrim`, `ink` değil: perde fotoğrafın üstünde duruyor ve
+              fotoğraf temayla değişmiyor. `ink` kullanıldığında karanlık
+              temada karartma yerine beyaz bir yıkama oluyordu. */}
+          <div className="absolute inset-0 bg-gradient-to-t from-scrim/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-trace" />
 
-        <span className="absolute top-3 left-3 flex items-center gap-1 text-[11px] font-semibold bg-trace text-paper rounded-full px-2.5 py-1 shadow-sm">
-          ★ Öne Çıkan
-        </span>
-      </div>
+          <span className="absolute top-3 left-3 flex items-center gap-1 text-[11px] font-semibold bg-trace text-paper rounded-full px-2.5 py-1 shadow-sm">
+            ★ Öne Çıkan
+          </span>
+        </div>
+      </ViewTransition>
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-[family-name:var(--font-display)] text-base font-semibold tracking-tight leading-snug">
+          <h3 className="font-[family-name:var(--font-display)] text-base font-bold tracking-tight leading-snug text-ink group-hover:text-trace transition-colors line-clamp-1">
             {build.name}
           </h3>
           <span className="font-[family-name:var(--font-mono)] text-sm font-semibold text-trace whitespace-nowrap shrink-0">
@@ -54,15 +63,17 @@ export default function FeaturedBuildCard({ build }: { build: Build }) {
 
         <p className="text-xs text-ink-muted mt-1">@{build.user.username}</p>
 
+        {/* Yuvarlak mor haplar yerine teknik künye: tezgah dilinde parça
+            adları veri gibi görünüyor, etiket gibi değil. */}
         {(cpu || gpu) && (
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <div className="mt-3 flex flex-wrap gap-1.5 font-[family-name:var(--font-mono)]">
             {cpu && (
-              <span className="text-[11px] bg-trace/10 text-trace rounded-full px-2.5 py-1 font-medium">
+              <span className="text-[10px] text-ink-muted border border-hairline rounded-md px-2 py-1 truncate max-w-full">
                 {cpu.name}
               </span>
             )}
             {gpu && (
-              <span className="text-[11px] bg-trace/10 text-trace rounded-full px-2.5 py-1 font-medium">
+              <span className="text-[10px] text-ink-muted border border-hairline rounded-md px-2 py-1 truncate max-w-full">
                 {gpu.name}
               </span>
             )}

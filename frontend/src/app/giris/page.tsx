@@ -11,7 +11,7 @@ export default function GirisPage() {
   const router = useRouter();
   const { login } = useAuth();
 
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   // Her başarısız denemede artar. Hata kutusuna key olarak verilir; aynı hata
@@ -30,7 +30,7 @@ export default function GirisPage() {
     setIsSubmitting(true);
 
     try {
-      await login(email, password);
+      await login(identifier, password);
       router.push('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Bir hata oluştu.');
@@ -65,17 +65,20 @@ export default function GirisPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label
-                htmlFor="email"
+                htmlFor="identifier"
                 className="block text-xs font-bold uppercase tracking-wider text-ink-muted mb-1.5 font-[family-name:var(--font-mono)]"
               >
-                E-posta
+                E-posta veya Kullanıcı Adı
               </label>
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="ornek@domain.com"
+                id="identifier"
+                // `type="email"` değil: alan artık kullanıcı adı da kabul
+                // ediyor, o tür kullanıcı adını geçersiz sayıp formu bloklar.
+                type="text"
+                autoComplete="username"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="ornek@domain.com veya kullanici_adi"
                 required
                 className="w-full rounded-xl border border-hairline px-4 py-2.5 text-sm text-ink outline-none focus:border-trace focus:ring-2 focus:ring-trace/15 transition-all bg-surface/30 font-medium placeholder:text-ink-muted/50"
               />
@@ -93,6 +96,7 @@ export default function GirisPage() {
               <input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"

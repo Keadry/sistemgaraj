@@ -21,7 +21,8 @@ type AuthContextType = {
   user: AuthUser | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  /** `identifier` e-posta da olabilir kullanıcı adı da; ayrımı sunucu yapıyor. */
+  login: (identifier: string, password: string) => Promise<void>;
   register: (
     email: string,
     password: string,
@@ -57,11 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(newUser);
   }
 
-  async function login(email: string, password: string) {
+  async function login(identifier: string, password: string) {
     const res = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ identifier, password }),
     });
 
     const data = await res.json();

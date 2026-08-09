@@ -68,22 +68,45 @@ router.post('/register', authLimiter, async (req, res) => {
 
 router.post('/login', authLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    // `email` hâlâ okunuyor: kayıt sonrası otomatik giriş ve açık sekmede
+    // duran eski istemciler o adla gönderiyor.
+    const { identifier, email, password } = req.body;
+    const trimmedIdentifier = String(identifier ?? email ?? '').trim();
 
-    if (!email || !password) {
-      res.status(400).json({ error: 'E-posta ve şifre zorunludur.' });
+    if (!trimmedIdentifier || !password) {
+      res
+        .status(400)
+        .json({ error: 'E-posta veya kullanıcı adı ile şifre zorunludur.' });
       return;
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    // Kullanıcı adları `[a-zA-Z0-9_]` ile sınırlı (bkz. kayıt), yani "@"
+    // içeren bir girdi kesin e-postadır — ayrım için tahmine gerek yok.
+    const user = trimmedIdentifier.includes('@')
+      ? await prisma.user.findUnique({ where: { email: trimmedIdentifier } })
+      : await prisma.user.findFirst({
+          // Kayıtta çakışma kontrolü büyük/küçük harfe duyarsız yapılıyor;
+          // giriş duyarlı kalırsa "Ahmet" diye kaydolan "ahmet" yazarak
+          // hesabına giremez.
+          where: {
+            username: { equals: trimmedIdentifier, mode: 'insensitive' },
+          },
+        });
+
+    // İki durumda da aynı mesaj: ayrı mesajlar hangi hesapların var olduğunu
+    // sayıp çıkarmayı mümkün kılar.
     if (!user) {
-      res.status(401).json({ error: 'E-posta veya şifre hatalı.' });
+      res
+        .status(401)
+        .json({ error: 'E-posta/kullanıcı adı veya şifre hatalı.' });
       return;
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      res.status(401).json({ error: 'E-posta veya şifre hatalı.' });
+      res
+        .status(401)
+        .json({ error: 'E-posta/kullanıcı adı veya şifre hatalı.' });
       return;
     }
 

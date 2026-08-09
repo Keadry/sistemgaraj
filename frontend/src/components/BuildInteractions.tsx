@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Link from 'next/link';
 import LikeButton from './LikeButton';
 import CommentForm from './CommentForm';
+import CommentText from './CommentText';
+import MentionTextarea, { type MentionCandidate } from './MentionTextarea';
 import { useToast } from '@/lib/toast-context';
 import { useConfirm } from '@/lib/confirm-context';
 import { useAuth } from '@/lib/auth-context';
@@ -15,9 +17,12 @@ import {
   addComment,
   type Like,
   type Comment,
+  type BuildUser,
+  type TaggedComponent,
 } from '@/lib/api';
 
 import { imageUrl } from '@/lib/image-url';
+import { componentTypeLabel } from '@/lib/component-labels';
 
 /* Yorum altındaki metin butonları (beğen / yanıtla / düzenle / sil) aynı
    davranışı paylaşıyor. Tek sabitte toplandı çünkü beşinde de focus
@@ -61,16 +66,56 @@ function Avatar({
   );
 }
 
+/** Sohbetteki herkes: sistem sahibi + her derinlikteki yorum yazarları.
+ *  `@` önerileri bu listeden geliyor.
+ *
+ *  Oturumdaki kullanıcı listede yok: kendini etiketlemek bildirim üretmiyor
+ *  (bkz. `services/notifications.ts`), yani öneri hiçbir işe yaramayan bir
+ *  seçenek olurdu. */
+function collectParticipants(
+  comments: Comment[],
+  owner: BuildUser,
+  currentUserId?: string,
+): MentionCandidate[] {
+  const byId = new Map<string, MentionCandidate>([
+    [owner.id, { id: owner.id, username: owner.username }],
+  ]);
+
+  function walk(list: Comment[]) {
+    for (const comment of list) {
+      byId.set(comment.user.id, {
+        id: comment.user.id,
+        username: comment.user.username,
+      });
+      walk(comment.replies ?? []);
+    }
+  }
+  walk(comments);
+
+  if (currentUserId) byId.delete(currentUserId);
+
+  return [...byId.values()];
+}
+
 export default function BuildInteractions({
   buildId,
+  owner,
   initialLikes,
   initialComments,
+  taggedComponent,
+  onClearTag,
 }: {
   buildId: string;
+  owner: BuildUser;
   initialLikes: Like[];
   initialComments: Comment[];
+  /** Parça listesindeki "sor" düğmesiyle seçilen parça. */
+  taggedComponent?: TaggedComponent | null;
+  onClearTag?: () => void;
 }) {
+  const { user } = useAuth();
   const [comments, setComments] = useState(initialComments);
+  const mentionCandidates = collectParticipants(comments, owner, user?.id);
 
   function updateCommentTree(
     list: Comment[],
@@ -110,7 +155,8 @@ export default function BuildInteractions({
         </span>
       </div>
 
-      <section className="mt-10 pb-16">
+      {/* Parça listesindeki "Sor" düğmesi buraya kaydırıyor. */}
+      <section id="yorumlar" className="mt-10 pb-16 scroll-mt-24">
         <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold mb-4">
           Yorumlar ({totalCommentCount})
         </h2>
@@ -120,6 +166,9 @@ export default function BuildInteractions({
           onCommentAdded={(comment) =>
             setComments((prev) => [{ ...comment, replies: [] }, ...prev])
           }
+          taggedComponent={taggedComponent}
+          onClearTag={onClearTag}
+          mentionCandidates={mentionCandidates}
         />
 
         {comments.length === 0 ? (
@@ -134,6 +183,7 @@ export default function BuildInteractions({
                 buildId={buildId}
                 comment={comment}
                 depth={0}
+                mentionCandidates={mentionCandidates}
                 onUpdated={(updated) =>
                   setComments((prev) =>
                     updateCommentTree(prev, updated.id, () => updated),
@@ -166,6 +216,7 @@ function CommentItem({
   buildId,
   comment,
   depth,
+  mentionCandidates,
   onUpdated,
   onDeleted,
   onReplyAdded,
@@ -173,6 +224,7 @@ function CommentItem({
   buildId: string;
   comment: Comment;
   depth: number;
+  mentionCandidates: MentionCandidate[];
   onUpdated: (comment: Comment) => void;
   onDeleted: (id: string) => void;
   onReplyAdded: (parentId: string, reply: Comment) => void;
@@ -240,6 +292,19 @@ function CommentItem({
         err instanceof Error ? err.message : 'Bir hata oluştu.',
         'error',
       );
+    }
+  }
+
+  /* Yanıt kutusu `@yazar ` ile açılıyor. İki işi birden yapıyor: etiketin
+     var olduğunu gösteriyor (kimse belgelenmemiş bir söz dizimini kendi
+     kendine denemez) ve yanıtın hedefine bildirim gitmesini sağlıyor.
+     Kendine yanıt verirken eklenmiyor — kendini etiketlemek bildirim
+     üretmiyor, yalnızca gürültü olurdu. Kullanıcı silebilir. */
+  function handleReplyToggle() {
+    const next = !isReplying;
+    setIsReplying(next);
+    if (next && !replyText && comment.user.id !== user?.id) {
+      setReplyText(`@${comment.user.username} `);
     }
   }
 
@@ -342,11 +407,25 @@ function CommentItem({
               </span>
             </div>
 
+            {/* Yorumun hangi parça hakkında olduğu, metinden önce: soru
+                okunmaya başlamadan önce konusu belli olmalı. */}
+            {comment.component && (
+              <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-lg border border-trace/30 bg-trace/5 px-2 py-1 max-w-full">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-trace font-[family-name:var(--font-mono)] shrink-0">
+                  {componentTypeLabel(comment.component.type)}
+                </span>
+                <span className="text-[11px] text-ink truncate">
+                  {comment.component.brand} {comment.component.name}
+                </span>
+              </p>
+            )}
+
             {isEditing ? (
               <div className="mt-2">
-                <textarea
+                <MentionTextarea
                   value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
+                  onChange={setEditText}
+                  candidates={mentionCandidates}
                   rows={2}
                   className="w-full rounded-lg border border-hairline px-3 py-2 text-sm outline-none focus:border-trace transition-colors resize-none bg-paper"
                 />
@@ -377,7 +456,10 @@ function CommentItem({
               </div>
             ) : (
               <p className="text-sm text-ink mt-1 leading-relaxed break-words">
-                {comment.content}
+                <CommentText
+                  content={comment.content}
+                  mentions={comment.mentions}
+                />
               </p>
             )}
 
@@ -406,7 +488,7 @@ function CommentItem({
 
                 {user && depth < 2 && (
                   <button
-                    onClick={() => setIsReplying((v) => !v)}
+                    onClick={handleReplyToggle}
                     aria-expanded={isReplying}
                     className={`${ACTION_BUTTON} text-ink-muted hover:text-trace`}
                   >
@@ -433,17 +515,23 @@ function CommentItem({
             )}
 
             {isReplying && (
-              <div className="mt-2 flex gap-2">
-                <input
+              /* Alan ve düğme yan yana değil alt alta: öneri paneli metin
+                 alanının altına açılıyor, yan yana dizilişte düğmenin
+                 üstüne biniyordu. */
+              <div className="mt-2">
+                <MentionTextarea
                   value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  placeholder="Yanıt yaz..."
-                  className="flex-1 rounded-lg border border-hairline px-3 py-1.5 text-sm outline-none focus:border-trace transition-colors bg-paper"
+                  onChange={setReplyText}
+                  candidates={mentionCandidates}
+                  placeholder="Yanıt yaz... (@ ile birini etiketleyebilirsin)"
+                  rows={2}
+                  autoFocus
+                  className="w-full rounded-lg border border-hairline px-3 py-1.5 text-sm outline-none focus:border-trace transition-colors bg-paper resize-none"
                 />
                 <button
                   onClick={handleReply}
                   disabled={isReplySubmitting || !replyText.trim()}
-                  className="text-xs rounded-lg bg-ink text-paper px-3 py-1.5 disabled:opacity-50 shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+                  className="mt-2 text-xs rounded-lg bg-ink text-paper px-3 py-1.5 disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
                 >
                   {isReplySubmitting ? 'Gönderiliyor...' : 'Gönder'}
                 </button>
@@ -461,6 +549,7 @@ function CommentItem({
               buildId={buildId}
               comment={reply}
               depth={depth + 1}
+              mentionCandidates={mentionCandidates}
               onUpdated={onUpdated}
               onDeleted={onDeleted}
               onReplyAdded={onReplyAdded}

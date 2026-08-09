@@ -28,6 +28,17 @@ router.get('/', requireAuth, async (req: AuthRequest, res) => {
         include: {
           actor: { select: { id: true, username: true, avatarUrl: true } },
           build: { select: { id: true, name: true } },
+          /* Parça, bildirimin kendisinde değil yorumunda duruyor: iki yerde
+             tutulsa ikisinin ayrışması mümkün olurdu. Bildirim metni
+             istemcide türden üretildiği için parçanın adı da oradan
+             okunuyor — adı bildirime kopyalamak, parça yeniden
+             adlandırıldığında eski bildirimleri yanlış bırakırdı. */
+          comment: {
+            select: {
+              id: true,
+              component: { select: { brand: true, name: true, type: true } },
+            },
+          },
         },
       }),
       prisma.notification.count({

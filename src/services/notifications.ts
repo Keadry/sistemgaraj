@@ -23,11 +23,17 @@ type CreateInput = {
 };
 
 /** Hangi tercih hangi türü susturuyor. Listede olmayan türler her zaman
- *  gönderiliyor: moderasyon sonucu ve duyuru kapatılabilir şeyler değil. */
+ *  gönderiliyor: moderasyon sonucu ve duyuru kapatılabilir şeyler değil.
+ *
+ *  `MENTION` de bilerek listede yok. Yorum ve beğeni bildirimi, sistemin
+ *  etrafındaki genel hareketlilik — kapatılabilir olması makul. Etiket ise
+ *  doğrudan hitap: birisi sana soru sormuş ve yanıt bekliyor. Onu susturmak
+ *  ayrı bir tercih olurdu, mevcut iki anahtardan birine sıkıştırılamaz. */
 const PREFERENCE_BY_TYPE: Partial<
   Record<NotificationType, 'notifyOnBuildComment' | 'notifyOnBuildLike'>
 > = {
   BUILD_COMMENT: 'notifyOnBuildComment',
+  BUILD_PART_COMMENT: 'notifyOnBuildComment',
   COMMENT_REPLY: 'notifyOnBuildComment',
   BUILD_LIKE: 'notifyOnBuildLike',
   COMMENT_LIKE: 'notifyOnBuildLike',

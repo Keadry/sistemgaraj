@@ -2,12 +2,17 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "dev",
+      "//": "Express API. Kök package.json'daki `dev`, tsx watch ile src/server.ts'i 4000'de dinletiyor.",
+      "name": "api",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": [
-        "run",
-        "dev"
-      ],
+      "runtimeArgs": ["run", "dev"],
+      "port": 4000
+    },
+    {
+      "//": "Next.js arayüzü. API'nin ayakta olmasını bekliyor (NEXT_PUBLIC_API_URL).",
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--dir", "frontend", "run", "dev"],
       "port": 3000
     }
   ]

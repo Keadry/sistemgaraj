@@ -3,6 +3,7 @@ import { prisma } from '../../db.js';
 import { requireAuth, type AuthRequest } from '../../middleware/auth.js';
 import { containsBannedWord } from '../../services/moderation.js';
 import { createNotification } from '../../services/notifications.js';
+import { syncCommentMentions } from '../../services/mentions.js';
 
 const router = Router();
 
@@ -12,10 +13,21 @@ const router = Router();
 router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
   try {
     const buildId = req.params.id as string;
-    const { content, parentId } = req.body;
+    const { content, parentId, componentId } = req.body;
 
     if (!content || content.trim().length === 0) {
       res.status(400).json({ error: 'Yorum içeriği boş olamaz.' });
+      return;
+    }
+
+    /* Parça etiketi yalnızca üst seviye yorumlarda. Yanıt, konusu zaten
+       belirlenmiş bir sohbetin içi — orada ikinci bir konu başlığı açmak
+       hem bildirimi belirsizleştirir (yanıt mı, parça sorusu mu?) hem de
+       arayüzde iki farklı bağlam üst üste biner. */
+    if (componentId && parentId) {
+      res.status(400).json({
+        error: 'Parça etiketi yalnızca üst seviye yorumlarda kullanılabilir.',
+      });
       return;
     }
 
@@ -79,6 +91,21 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
       }
     }
 
+    /* Etiketlenen parçanın bu sistemde bulunduğu doğrulanıyor. Kontrol
+       olmasa istemci herhangi bir parça id'si gönderip, o sistemde
+       bulunmayan bir parça hakkında soru sormuş gibi görünebilirdi. */
+    if (componentId) {
+      const inBuild = await prisma.buildComponent.findUnique({
+        where: { buildId_componentId: { buildId, componentId } },
+      });
+      if (!inBuild) {
+        res
+          .status(400)
+          .json({ error: 'Etiketlenen parça bu sistemde bulunmuyor.' });
+        return;
+      }
+    }
+
     const comment = await prisma.comment.create({
       data: {
         content,
@@ -86,23 +113,39 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
         buildId,
         status,
         parentId: parentId || null,
+        componentId: componentId || null,
       },
       include: {
         user: { select: { id: true, username: true, avatarUrl: true } },
         likes: true,
+        component: {
+          select: { id: true, brand: true, name: true, type: true },
+        },
       },
     });
 
+    let mentionsForResponse: { user: { id: string; username: string } }[] = [];
+
     /* Yalnızca yayına giren yorumlar bildiriliyor. İncelemedeki bir yorum
        için sahibine haber vermek, tıklayınca göremeyeceği bir şeye
-       yönlendirmek olurdu. */
+       yönlendirmek olurdu.
+
+       Etiket satırları da aynı koşulda yazılıyor: incelemede takılan bir
+       yorumun etiketleri kimseye görünmüyor, yayına girerse zaten
+       moderasyon akışı yeniden eşitliyor. */
     if (status === 'APPROVED') {
+      /* Bir yorum için bir kişiye bir bildirim. Sistem sahibini kendi
+         sisteminin altında etiketlemek, aksi halde aynı yorum için iki
+         bildirim gönderirdi — biri "yorum geldi", biri "etiketlendin". */
+      const alreadyNotified = new Set<string>();
+
       if (parentId) {
         const parent = await prisma.comment.findUnique({
           where: { id: parentId },
           select: { userId: true },
         });
         if (parent) {
+          alreadyNotified.add(parent.userId);
           await createNotification({
             userId: parent.userId,
             type: 'COMMENT_REPLY',
@@ -112,14 +155,42 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
           });
         }
       } else {
+        alreadyNotified.add(build.userId);
         await createNotification({
           userId: build.userId,
-          type: 'BUILD_COMMENT',
+          // Parça etiketliyse sahibine "şu parça hakkında" diyen tür
+          // gidiyor. İkisini birlikte göndermek aynı yorumu iki kez
+          // duyurmak olurdu.
+          type: componentId ? 'BUILD_PART_COMMENT' : 'BUILD_COMMENT',
           actorId: req.userId!,
           buildId,
           commentId: comment.id,
         });
       }
+
+      const { added, all } = await syncCommentMentions({
+        commentId: comment.id,
+        content,
+        authorId: req.userId!,
+      });
+
+      for (const user of added) {
+        if (alreadyNotified.has(user.id)) continue;
+        await createNotification({
+          userId: user.id,
+          type: 'MENTION',
+          actorId: req.userId!,
+          buildId,
+          commentId: comment.id,
+        });
+      }
+
+      /* Etiketler yoruma yanıtta da dönüyor. İstemci yeni yorumu listeye
+         sunucuya tekrar sormadan ekliyor; bu alan olmasa etiket, sayfa
+         yenilenene kadar bağlantı değil düz metin olarak görünürdü. */
+      mentionsForResponse = all.map((user) => ({
+        user: { id: user.id, username: user.username },
+      }));
     }
 
     res.status(201).json({
@@ -127,7 +198,7 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
         status === 'PENDING'
           ? 'Yorumun incelemeye alındı, onaylandıktan sonra görünecek.'
           : 'Yorum eklendi',
-      comment,
+      comment: { ...comment, mentions: mentionsForResponse },
     });
   } catch (error) {
     console.error(error);
@@ -183,15 +254,68 @@ router.patch(
       const updated = await prisma.comment.update({
         where: { id: commentId },
         data: { content, status, lastEditedAt: new Date() },
-        include: { user: { select: { id: true, username: true } } },
+        include: {
+          user: { select: { id: true, username: true } },
+          component: {
+            select: { id: true, brand: true, name: true, type: true },
+          },
+        },
       });
+
+      let mentionsForResponse: { user: { id: string; username: string } }[] =
+        [];
+
+      /* Düzenleme etiketleri de değiştirebiliyor. Eşitleyici yeni eklenenleri
+         ayrı döndürüyor: metinde baştan beri duran bir etiket, her
+         düzeltmede o kişiye tekrar bildirim göndermez. */
+      if (status === 'APPROVED') {
+        const { added, all } = await syncCommentMentions({
+          commentId,
+          content,
+          authorId: req.userId!,
+        });
+
+        mentionsForResponse = all.map((user) => ({
+          user: { id: user.id, username: user.username },
+        }));
+
+        /* Bu yorum için kimin zaten bildirimi varsa atlanıyor — aynı kural
+           yorum ilk yazılırken de uygulanıyor. Sistem sahibi yorumun
+           kendisi için haber almışken, düzenlemeyle adı eklendiğinde ikinci
+           bir bildirim alması aynı olayı iki kez duyurmak olurdu.
+
+           Burada bellekteki bir kümeyle değil sorguyla bakılıyor: yorum
+           kaç kez düzenlenirse düzenlensin, daha önce gönderilmiş her
+           bildirim görünür kalıyor. */
+        if (added.length > 0) {
+          const existing = await prisma.notification.findMany({
+            where: {
+              commentId,
+              userId: { in: added.map((user) => user.id) },
+            },
+            select: { userId: true },
+          });
+          const notified = new Set(existing.map((row) => row.userId));
+
+          for (const user of added) {
+            if (notified.has(user.id)) continue;
+            await createNotification({
+              userId: user.id,
+              type: 'MENTION',
+              actorId: req.userId!,
+              buildId: comment.buildId,
+              commentId,
+            });
+          }
+        }
+      }
 
       res.json({
         message:
           status === 'PENDING'
             ? 'Yorumun tekrar incelemeye alındı.'
             : 'Yorum güncellendi.',
-        comment: updated,
+        comment: { ...updated, mentions: mentionsForResponse },
       });
     } catch (error) {
       console.error(error);

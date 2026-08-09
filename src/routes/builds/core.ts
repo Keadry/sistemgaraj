@@ -257,6 +257,18 @@ router.get('/:id', optionalAuth, async (req: AuthRequest, res) => {
           include: {
             user: { select: { id: true, username: true, avatarUrl: true } },
             likes: true,
+            /* Etiketlenen parça. Yalnızca üst seviyede seçiliyor çünkü
+               etiket yalnızca orada verilebiliyor (bkz. comments.ts). */
+            component: {
+              select: { id: true, brand: true, name: true, type: true },
+            },
+            /* Çözümlenmiş `@kullanıcı` etiketleri. İstemci metindeki her
+               `@...` parçasını bağlantıya çevirmiyor; yalnızca burada dönen
+               adları çeviriyor, yoksa yanlış yazılmış bir etiket 404'e
+               giden bir bağlantıya dönüşürdü. */
+            mentions: {
+              select: { user: { select: { id: true, username: true } } },
+            },
             replies: {
               where: { status: 'APPROVED' },
               include: {
@@ -264,6 +276,9 @@ router.get('/:id', optionalAuth, async (req: AuthRequest, res) => {
                   select: { id: true, username: true, avatarUrl: true },
                 },
                 likes: true,
+                mentions: {
+                  select: { user: { select: { id: true, username: true } } },
+                },
                 replies: {
                   where: { status: 'APPROVED' },
                   include: {
@@ -271,6 +286,11 @@ router.get('/:id', optionalAuth, async (req: AuthRequest, res) => {
                       select: { id: true, username: true, avatarUrl: true },
                     },
                     likes: true,
+                    mentions: {
+                      select: {
+                        user: { select: { id: true, username: true } },
+                      },
+                    },
                   },
                   orderBy: { createdAt: 'asc' },
                 },

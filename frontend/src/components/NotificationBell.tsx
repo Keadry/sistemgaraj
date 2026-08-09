@@ -20,8 +20,18 @@ function describe(n: Notification): string {
   switch (n.type) {
     case 'BUILD_COMMENT':
       return `${who} sistemine yorum yaptı`;
+    case 'BUILD_PART_COMMENT': {
+      const part = n.comment?.component;
+      /* Parça çekilemediyse (silinmiş bir parça `SetNull` bırakıyor) genel
+         cümleye düşüyor — "undefined hakkında" yazmaktansa daha az bilgi
+         veren ama doğru bir cümle. */
+      if (!part) return `${who} sistemindeki bir parça hakkında yorum yaptı`;
+      return `${who} sisteminde ${part.brand} ${part.name} hakkında yorum yaptı`;
+    }
     case 'COMMENT_REPLY':
       return `${who} yorumuna yanıt verdi`;
+    case 'MENTION':
+      return `${who} bir yorumda senden bahsetti`;
     case 'BUILD_LIKE':
       return `${who} sistemini beğendi`;
     case 'COMMENT_LIKE':

@@ -2,7 +2,9 @@ import { API_URL } from './client';
 
 export type NotificationType =
   | 'BUILD_COMMENT'
+  | 'BUILD_PART_COMMENT'
   | 'COMMENT_REPLY'
+  | 'MENTION'
   | 'BUILD_LIKE'
   | 'COMMENT_LIKE'
   | 'BUILD_APPROVED'
@@ -21,6 +23,12 @@ export type Notification = {
   actor: { id: string; username: string; avatarUrl: string | null } | null;
   build: { id: string; name: string } | null;
   commentId: string | null;
+  /** Parça bildiriminde hangi parça olduğunu adlandırmak için. Yorum
+   *  silinmişse bildirim de silindiği için (cascade) burası boş kalmıyor. */
+  comment: {
+    id: string;
+    component: { brand: string; name: string; type: string } | null;
+  } | null;
 };
 
 export async function getNotifications(

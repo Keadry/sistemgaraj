@@ -93,6 +93,8 @@ model User {
 
   notifications      Notification[] @relation("NotificationRecipient")
   triggeredNotifications Notification[] @relation("NotificationActor")
+
+  commentMentions CommentMention[]
 }
 
 // ==============================
@@ -100,7 +102,9 @@ model User {
 // ==============================
 enum NotificationType {
   BUILD_COMMENT // sistemine yorum geldi
+  BUILD_PART_COMMENT // sistemindeki belirli bir parça hakkında yorum geldi
   COMMENT_REPLY // yorumuna yanıt geldi
+  MENTION // bir yorumda etiketlendin
   BUILD_LIKE // sistemi beğenildi
   COMMENT_LIKE // yorumu beğenildi
   BUILD_APPROVED // sistemi yayına alındı
@@ -180,6 +184,9 @@ model Component {
   updatedAt DateTime @updatedAt
 
   buildComponents BuildComponent[]
+
+  /// Bu parça hakkında yazılmış yorumlar (bkz. `Comment.component`).
+  taggedInComments Comment[]
 }
 
 // ==============================
@@ -280,9 +287,37 @@ model Comment {
   parentId String?
   replies  Comment[] @relation("CommentReplies")
 
-  likes CommentLike[]
+  /// Yorumun belirli bir parça hakkında olduğunu işaretler ("bu ekran kartı
+  /// neden bu kasaya sığmıyor?"). Parça silinirse yorum kalıyor, yalnızca
+  /// etiket düşüyor: soruya verilmiş yanıtlar hâlâ okunabilir olmalı.
+  component   Component? @relation(fields: [componentId], references: [id], onDelete: SetNull)
+  componentId String?
+
+  likes    CommentLike[]
+  mentions CommentMention[]
 
   notifications Notification[]
+}
+
+// ==============================
+// YORUMDA KULLANICI ETİKETLEME (@mention)
+// ==============================
+/// Metindeki `@kullanıcı` parçalarının **çözümlenmiş** hali. Metnin kendisi
+/// yeterli değil: hangi etiketin gerçek bir hesaba karşılık geldiğini her
+/// okuma yolunda yeniden çözmek gerekirdi, ve yorum düzenlenince kimin daha
+/// önce bildirim aldığı bilinemezdi — aynı kişiye ikinci bildirim giderdi.
+model CommentMention {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  comment   Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  /// Aynı yorumda aynı kişiyi iki kez yazmak tek etiket sayılır.
+  @@unique([commentId, userId])
 }
 
 model CommentLike {

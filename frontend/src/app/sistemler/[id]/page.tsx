@@ -15,7 +15,8 @@ import { SkeletonBuildDetail } from '@/components/Skeleton';
 import BuildInteractions from '@/components/BuildInteractions';
 import EditPanel from '@/components/EditPanel';
 import { useAuth } from '@/lib/auth-context';
-import { getBuild, type Build } from '@/lib/api';
+import { getBuild, type Build, type TaggedComponent } from '@/lib/api';
+import { componentTypeLabel } from '@/lib/component-labels';
 import { bookmarkBuild, unbookmarkBuild } from '@/lib/api';
 import { useToast } from '@/lib/toast-context';
 import { imageUrl } from '@/lib/image-url';
@@ -53,6 +54,18 @@ export default function BuildDetailPage({
   const [isLoading, setIsLoading] = useState(true);
   const [notFoundError, setNotFoundError] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [taggedComponent, setTaggedComponent] =
+    useState<TaggedComponent | null>(null);
+
+  /* Parça etiketi yorum kutusunda; sayfanın altında duruyor. Etiketi
+     ayarlayıp kaydırmadan bırakmak, "Sor"a basan kişiye hiçbir şey olmamış
+     gibi görünürdü — kutu ekranın dışında. */
+  function handleAskAboutPart(component: TaggedComponent) {
+    setTaggedComponent(component);
+    document
+      .getElementById('yorumlar')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   function reload() {
     setIsLoading(true);
@@ -254,18 +267,32 @@ export default function BuildDetailPage({
                     i !== 0 ? 'border-t border-hairline' : ''
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
                       <span className="font-[family-name:var(--font-mono)] text-xs text-ink-muted uppercase tracking-wide">
-                        {bc.component.type}
+                        {componentTypeLabel(bc.component.type)}
                       </span>
                       <p className="font-medium mt-0.5">
                         {bc.component.brand} {bc.component.name}
                       </p>
                     </div>
-                    <span className="font-[family-name:var(--font-mono)] text-sm text-ink-muted">
-                      {formatPrice(bc.component.price)}
-                    </span>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="font-[family-name:var(--font-mono)] text-sm text-ink-muted">
+                        {formatPrice(bc.component.price)}
+                      </span>
+                      {/* Parçayı yorum kutusuna bağlar. Satırın kendisini
+                          tıklanabilir yapmadım: satır zaten fiyat ve not
+                          taşıyor, tamamının tıklanması ne olacağını
+                          belirsizleştirirdi. */}
+                      <button
+                        type="button"
+                        onClick={() => handleAskAboutPart(bc.component)}
+                        aria-label={`${bc.component.brand} ${bc.component.name} hakkında soru sor`}
+                        className="text-xs font-semibold text-ink-muted hover:text-trace border border-hairline hover:border-trace/50 rounded-lg px-2.5 py-1 transition-colors cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+                      >
+                        Sor
+                      </button>
+                    </div>
                   </div>
                   {visibleNote && (
                     <p className="text-xs text-ink-muted bg-surface rounded-lg px-3 py-2 mt-2 leading-relaxed">
@@ -280,8 +307,11 @@ export default function BuildDetailPage({
 
         <BuildInteractions
           buildId={build.id}
+          owner={build.user}
           initialLikes={build.likes}
           initialComments={build.comments}
+          taggedComponent={taggedComponent}
+          onClearTag={() => setTaggedComponent(null)}
         />
       </div>
     </main>

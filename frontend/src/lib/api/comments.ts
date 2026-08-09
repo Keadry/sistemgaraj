@@ -3,6 +3,20 @@ import type { BuildUser } from './builds';
 
 export type CommentLikeType = { id: string; userId: string };
 
+/** Yorumun hakkında olduğu parça — yalnızca üst seviye yorumlarda dolu. */
+export type TaggedComponent = {
+  id: string;
+  brand: string;
+  name: string;
+  type: string;
+};
+
+/** Sunucunun çözümlediği `@kullanıcı` etiketleri. Metindeki her `@...`
+ *  parçası değil, yalnızca gerçek bir hesaba karşılık gelenler. */
+export type CommentMention = {
+  user: { id: string; username: string };
+};
+
 export type Comment = {
   id: string;
   content: string;
@@ -11,6 +25,8 @@ export type Comment = {
   user: BuildUser & { avatarUrl: string | null };
   likes: CommentLikeType[];
   replies: Comment[];
+  component?: TaggedComponent | null;
+  mentions?: CommentMention[];
 };
 
 export async function addComment(
@@ -18,6 +34,7 @@ export async function addComment(
   content: string,
   token: string,
   parentId?: string,
+  componentId?: string,
 ): Promise<{ comment: Comment; message: string }> {
   const res = await fetch(`${API_URL}/api/builds/${buildId}/comments`, {
     method: 'POST',
@@ -25,7 +42,7 @@ export async function addComment(
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ content, parentId }),
+    body: JSON.stringify({ content, parentId, componentId }),
   });
 
   const data = await res.json();

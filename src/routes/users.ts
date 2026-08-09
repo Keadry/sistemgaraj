@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../db.js';
 import bcrypt from 'bcryptjs';
 import { upload } from '../upload.js';
+import { verifyImageContents } from '../middleware/image-content.js';
 import { saveImage } from '../storage.js';
 import {
   requireAuth,
@@ -127,6 +128,7 @@ router.post(
   '/me/avatar',
   requireAuth,
   upload.single('avatar'),
+  verifyImageContents,
   async (req: AuthRequest, res) => {
     try {
       if (!req.file) {
@@ -159,6 +161,7 @@ router.post(
   '/me/cover',
   requireAuth,
   upload.single('cover'),
+  verifyImageContents,
   async (req: AuthRequest, res) => {
     try {
       if (!req.file) {

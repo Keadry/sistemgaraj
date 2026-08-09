@@ -12,6 +12,7 @@ import {
 } from '../../services/moderation.js';
 import { applyEditRequestChanges } from '../../services/buildEdits.js';
 import { upload } from '../../upload.js';
+import { verifyImageContents } from '../../middleware/image-content.js';
 import { saveImages } from '../../storage.js';
 import { getArray } from './shared.js';
 
@@ -24,6 +25,7 @@ router.post(
   '/:id/edit-request',
   requireAuth,
   upload.array('images', 5),
+  verifyImageContents,
   async (req: AuthRequest, res) => {
     try {
       const buildId = req.params.id as string;

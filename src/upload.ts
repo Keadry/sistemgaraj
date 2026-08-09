@@ -10,6 +10,21 @@ import multer from 'multer';
  */
 const storage = multer.memoryStorage();
 
+/** Reddi kendi sınıfıyla bildiriyoruz; düz `Error` hata işleyicide gerçek bir
+ *  çökmeden ayırt edilemez ve 500 olarak döner. */
+export class UploadTypeError extends Error {
+  constructor() {
+    super('Sadece JPEG, PNG veya WEBP yükleyebilirsin.');
+    this.name = 'UploadTypeError';
+  }
+}
+
+/**
+ * İlk kapı: istemcinin bildirdiği tür. Beyana güvenilmez, bu yüzden asıl
+ * doğrulama içeriğe bakan `verifyImageContents` katmanında yapılıyor — ama
+ * burada durdurmak, kabul edilmeyecek bir dosyanın 5 MB'a kadar belleğe
+ * alınmasını baştan engelliyor.
+ */
 function fileFilter(
   req: Express.Request,
   file: Express.Multer.File,
@@ -19,7 +34,7 @@ function fileFilter(
   if (allowed.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Sadece JPEG, PNG veya WEBP yükleyebilirsin.'));
+    cb(new UploadTypeError());
   }
 }
 

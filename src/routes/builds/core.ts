@@ -11,6 +11,7 @@ import {
   checkStorageSlotCompatibility,
 } from '../../services/compatibility.js';
 import { upload } from '../../upload.js';
+import { verifyImageContents } from '../../middleware/image-content.js';
 import { saveImages, deleteImages } from '../../storage.js';
 import type { Component } from '../../generated/prisma/client.js';
 import { buildIncludes, getArray } from './shared.js';
@@ -24,6 +25,7 @@ router.post(
   '/',
   requireAuth,
   upload.array('images', 5),
+  verifyImageContents,
   async (req: AuthRequest, res) => {
     try {
       const { name, cpuId, motherboardId, gpuId, psuId, caseId } = req.body;

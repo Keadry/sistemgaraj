@@ -9,6 +9,7 @@ import adminRoutes from './routes/admin.js';
 import userRoutes from './routes/users.js';
 import notificationRoutes from './routes/notifications.js';
 import { apiLimiter } from './middleware/rate-limit.js';
+import { uploadErrorHandler } from './middleware/image-content.js';
 
 /**
  * Express uygulaması burada kurulur ama dinlemeye başlamaz.
@@ -90,6 +91,10 @@ app.use('/api/notifications', notificationRoutes);
 // bulunmadığı için express.static sessizce sıradaki katmana devrediyor —
 // yani orada bağlı olması da bir maliyet getirmiyor.
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+// Reddedilen yüklemeler de arıza değil, girdi hatası. Rotaların ardından
+// gelmek zorunda: Express hata işleyicilerini bağlanma sırasına göre çağırıyor.
+app.use(uploadErrorHandler);
 
 // CORS reddi bir yetki kararı, sunucu arızası değil — 500 dönerse izlemede
 // gerçek hatalarla karışır. Diğer hatalar Express'in kendi işleyicisine

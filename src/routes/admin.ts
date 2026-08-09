@@ -627,4 +627,49 @@ router.post(
   },
 );
 
+// ==============================
+// TÜM KULLANICILARA DUYURU (admin)
+// ==============================
+router.post('/announcements', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const message =
+      typeof req.body?.message === 'string' ? req.body.message.trim() : '';
+
+    if (!message) {
+      res.status(400).json({ error: 'Duyuru metni boş olamaz.' });
+      return;
+    }
+
+    if (message.length > 280) {
+      res.status(400).json({
+        error: 'Duyuru en fazla 280 karakter olabilir.',
+      });
+      return;
+    }
+
+    /* Kullanıcı listesini çekip tek `createMany` ile yazıyoruz.
+       `createNotification` servisini kullanmıyoruz çünkü o kullanıcı başına
+       en az bir sorgu daha açıyor (tercih kontrolü) — binlerce kullanıcıda
+       binlerce tur demek. Duyurularda o kontrole gerek de yok: tercihler
+       yorum ve beğeni bildirimlerini susturuyor, yönetim duyurusunu değil. */
+    const users = await prisma.user.findMany({ select: { id: true } });
+
+    const result = await prisma.notification.createMany({
+      data: users.map((u) => ({
+        userId: u.id,
+        type: 'ANNOUNCEMENT' as const,
+        message,
+      })),
+    });
+
+    res.status(201).json({
+      message: `Duyuru ${result.count} kullanıcıya gönderildi.`,
+      count: result.count,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Sunucu hatası.' });
+  }
+});
+
 export default router;

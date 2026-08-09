@@ -439,3 +439,21 @@ export async function changeUsername(
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Kullanıcı adı değiştirilemedi.');
 }
+
+export async function sendAnnouncement(
+  message: string,
+  token: string,
+): Promise<{ count: number; message: string }> {
+  const res = await fetch(`${API_URL}/api/admin/announcements`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ message }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Duyuru gönderilemedi.');
+  return data;
+}

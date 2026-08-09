@@ -9,8 +9,15 @@ import BuildsTab from './BuildsTab';
 import CommentsTab from './CommentsTab';
 import NewBuildsTab from './NewBuildsTab';
 import EditRequestsTab from './EditRequestsTab';
+import AnnouncementsTab from './AnnouncementsTab';
 
-type Tab = 'users' | 'builds' | 'comments' | 'newBuilds' | 'editRequests';
+type Tab =
+  | 'users'
+  | 'builds'
+  | 'comments'
+  | 'newBuilds'
+  | 'editRequests'
+  | 'announcements';
 
 export default function AdminPage() {
   const { user, token, isLoading: isAuthLoading } = useAuth();
@@ -47,6 +54,11 @@ export default function AdminPage() {
             { key: 'comments' as Tab, label: 'Yorumlar' },
             { key: 'newBuilds' as Tab, label: 'Yeni Sistem Onayları' },
             { key: 'editRequests' as Tab, label: 'Düzenleme İstekleri' },
+            // Duyuru yalnızca adminlerde: moderatörler içerik denetliyor,
+            // herkese ulaşan bir mesaj göndermek ayrı bir yetki.
+            ...(isAdmin
+              ? [{ key: 'announcements' as Tab, label: 'Duyuru' }]
+              : []),
           ].map((t) => (
             <button
               key={t.key}
@@ -74,6 +86,9 @@ export default function AdminPage() {
           {tab === 'comments' && <CommentsTab token={token} />}
           {tab === 'newBuilds' && <NewBuildsTab token={token} />}
           {tab === 'editRequests' && <EditRequestsTab token={token} />}
+          {tab === 'announcements' && isAdmin && (
+            <AnnouncementsTab token={token} />
+          )}
         </div>
       </div>
     </main>

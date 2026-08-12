@@ -15,6 +15,11 @@ type AuthUser = {
   email: string;
   username: string;
   role: 'USER' | 'MODERATOR' | 'ADMIN';
+  /** Eski oturumlarda yok: bu alan eklenmeden önce localStorage'a yazılmış
+   *  kayıtlar onsuz duruyor. `undefined`, "bilinmiyor" demek — şerit yalnızca
+   *  kesin `false` olduğunda gösteriliyor, yoksa doğrulanmış kullanıcılar
+   *  sayfayı yenileyene kadar boşuna uyarı görürdü. */
+  emailVerified?: boolean;
 };
 
 type AuthContextType = {
@@ -29,6 +34,9 @@ type AuthContextType = {
     username: string,
   ) => Promise<void>;
   logout: () => void;
+  /** Doğrulama tamamlandıktan sonra saklanan kullanıcıyı günceller; şeridin
+   *  kaybolması için yeniden giriş yapmak gerekmiyor. */
+  markEmailVerified: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -98,9 +106,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
+  function markEmailVerified() {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, emailVerified: true };
+      localStorage.setItem('sistemgaraj_user', JSON.stringify(next));
+      return next;
+    });
+  }
+
   return (
     <AuthContext.Provider
-      value={{ user, token, isLoading, login, register, logout }}
+      value={{
+        user,
+        token,
+        isLoading,
+        login,
+        register,
+        logout,
+        markEmailVerified,
+      }}
     >
       {children}
     </AuthContext.Provider>

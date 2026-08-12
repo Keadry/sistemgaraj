@@ -1,4 +1,5 @@
 export * from './client';
+export * from './auth';
 export * from './builds';
 export * from './comments';
 export * from './users';

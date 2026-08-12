@@ -7,6 +7,7 @@ import { ConfirmProvider } from '@/lib/confirm-context';
 import Footer from '@/components/Footer';
 import { ThemeProvider } from '@/lib/theme-context';
 import CookieConsent from '@/components/CookieConsent';
+import EmailVerifyBanner from '@/components/EmailVerifyBanner';
 
 const spaceGrotesk = Space_Grotesk({
   variable: '--font-space-grotesk',
@@ -59,6 +60,10 @@ export default function RootLayout({
           <AuthProvider>
             <ToastProvider>
               <ConfirmProvider>
+                {/* Navbar'ın içinde değil onun üstünde: her sayfa kendi
+                    Navbar'ını çağırıyor, şerit ise sayfadan bağımsız ve
+                    sayfa başına bir kez görünmeli. */}
+                <EmailVerifyBanner />
                 <div className="flex-1">{children}</div>
                 <Footer />
                 <CookieConsent />

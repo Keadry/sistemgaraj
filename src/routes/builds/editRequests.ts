@@ -13,6 +13,7 @@ import {
 import { applyEditRequestChanges } from '../../services/buildEdits.js';
 import { upload } from '../../upload.js';
 import { verifyImageContents } from '../../middleware/image-content.js';
+import { requireVerifiedEmail } from '../../middleware/verified-email.js';
 import { saveImages } from '../../storage.js';
 import { getArray } from './shared.js';
 
@@ -24,6 +25,7 @@ const router = Router();
 router.post(
   '/:id/edit-request',
   requireAuth,
+  requireVerifiedEmail,
   upload.array('images', 5),
   verifyImageContents,
   async (req: AuthRequest, res) => {

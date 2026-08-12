@@ -12,6 +12,7 @@ import {
 } from '../../services/compatibility.js';
 import { upload } from '../../upload.js';
 import { verifyImageContents } from '../../middleware/image-content.js';
+import { requireVerifiedEmail } from '../../middleware/verified-email.js';
 import { saveImages, deleteImages } from '../../storage.js';
 import type { Component } from '../../generated/prisma/client.js';
 import { buildIncludes, getArray } from './shared.js';
@@ -24,6 +25,7 @@ const router = Router();
 router.post(
   '/',
   requireAuth,
+  requireVerifiedEmail,
   upload.array('images', 5),
   verifyImageContents,
   async (req: AuthRequest, res) => {

@@ -92,6 +92,14 @@ export default function GirisPage() {
                 >
                   Şifre
                 </label>
+                {/* Etiketin yanında: şifreyi hatırlamadığı anlaşıldığı yer
+                    tam burası, formun altı değil. */}
+                <Link
+                  href="/sifremi-unuttum"
+                  className="text-xs font-semibold text-trace hover:underline rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-trace"
+                >
+                  Şifremi unuttum
+                </Link>
               </div>
               <input
                 id="password"

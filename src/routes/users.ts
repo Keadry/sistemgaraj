@@ -3,6 +3,9 @@ import { prisma } from '../db.js';
 import bcrypt from 'bcryptjs';
 import { upload } from '../upload.js';
 import { verifyImageContents } from '../middleware/image-content.js';
+import { requireVerifiedEmail } from '../middleware/verified-email.js';
+import { createEmailVerificationToken } from '../services/tokens.js';
+import { sendVerificationEmail } from '../services/mail.js';
 import { saveImage } from '../storage.js';
 import {
   requireAuth,
@@ -190,70 +193,75 @@ router.post(
 // ==============================
 // DUVAR YORUMU EKLE (soru/yorum, ya da cevap)
 // ==============================
-router.post('/:username/wall', requireAuth, async (req: AuthRequest, res) => {
-  try {
-    const username = req.params.username as string;
-    const { content, parentId } = req.body;
+router.post(
+  '/:username/wall',
+  requireAuth,
+  requireVerifiedEmail,
+  async (req: AuthRequest, res) => {
+    try {
+      const username = req.params.username as string;
+      const { content, parentId } = req.body;
 
-    if (!content || content.trim().length === 0) {
-      res.status(400).json({ error: 'Yorum içeriği boş olamaz.' });
-      return;
-    }
-
-    const profileUser = await prisma.user.findFirst({
-      where: { username: { equals: username, mode: 'insensitive' } },
-    });
-
-    if (!profileUser) {
-      res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
-      return;
-    }
-
-    const isBlocked = await prisma.userBlock.findUnique({
-      where: {
-        blockerId_blockedId: {
-          blockerId: profileUser.id,
-          blockedId: req.userId!,
-        },
-      },
-    });
-
-    if (isBlocked) {
-      res.status(403).json({
-        error: 'Bu kullanıcı seni engellemiş, profiline yorum yapamazsın.',
-      });
-      return;
-    }
-
-    // Cevap veriliyorsa, üst yorumun gerçekten bu profile ait olduğunu doğrula
-    if (parentId) {
-      const parent = await prisma.profileComment.findUnique({
-        where: { id: parentId },
-      });
-      if (!parent || parent.profileUserId !== profileUser.id) {
-        res.status(400).json({ error: 'Geçersiz yanıt hedefi.' });
+      if (!content || content.trim().length === 0) {
+        res.status(400).json({ error: 'Yorum içeriği boş olamaz.' });
         return;
       }
+
+      const profileUser = await prisma.user.findFirst({
+        where: { username: { equals: username, mode: 'insensitive' } },
+      });
+
+      if (!profileUser) {
+        res.status(404).json({ error: 'Kullanıcı bulunamadı.' });
+        return;
+      }
+
+      const isBlocked = await prisma.userBlock.findUnique({
+        where: {
+          blockerId_blockedId: {
+            blockerId: profileUser.id,
+            blockedId: req.userId!,
+          },
+        },
+      });
+
+      if (isBlocked) {
+        res.status(403).json({
+          error: 'Bu kullanıcı seni engellemiş, profiline yorum yapamazsın.',
+        });
+        return;
+      }
+
+      // Cevap veriliyorsa, üst yorumun gerçekten bu profile ait olduğunu doğrula
+      if (parentId) {
+        const parent = await prisma.profileComment.findUnique({
+          where: { id: parentId },
+        });
+        if (!parent || parent.profileUserId !== profileUser.id) {
+          res.status(400).json({ error: 'Geçersiz yanıt hedefi.' });
+          return;
+        }
+      }
+
+      const comment = await prisma.profileComment.create({
+        data: {
+          content,
+          authorId: req.userId!,
+          profileUserId: profileUser.id,
+          parentId: parentId || null,
+        },
+        include: {
+          author: { select: { id: true, username: true, avatarUrl: true } },
+        },
+      });
+
+      res.status(201).json({ message: 'Yorum eklendi.', comment });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Sunucu hatası.' });
     }
-
-    const comment = await prisma.profileComment.create({
-      data: {
-        content,
-        authorId: req.userId!,
-        profileUserId: profileUser.id,
-        parentId: parentId || null,
-      },
-      include: {
-        author: { select: { id: true, username: true, avatarUrl: true } },
-      },
-    });
-
-    res.status(201).json({ message: 'Yorum eklendi.', comment });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Sunucu hatası.' });
-  }
-});
+  },
+);
 
 // ==============================
 // DUVAR YORUMUNU SİL (yazarı, profil sahibi veya moderatör)
@@ -313,6 +321,7 @@ router.get('/me/account', requireAuth, async (req: AuthRequest, res) => {
       select: {
         id: true,
         email: true,
+        emailVerified: true,
         username: true,
         avatarUrl: true,
         coverUrl: true,
@@ -463,12 +472,27 @@ router.patch('/me/email', requireAuth, async (req: AuthRequest, res) => {
       return;
     }
 
-    await prisma.user.update({
+    /* Adres değişince doğrulama sıfırlanıyor. Aksi halde kendi adresini
+       doğrulayıp sonra başka bir adrese geçen biri, sahibi olduğunu hiç
+       kanıtlamadığı bir adresle "doğrulanmış" kalırdı — doğrulamayı
+       anlamsızlaştıran tam olarak bu boşluk. */
+    const updated = await prisma.user.update({
       where: { id: req.userId! },
-      data: { email: newEmail },
+      data: {
+        email: newEmail,
+        emailVerified: false,
+        emailVerifiedAt: null,
+      },
     });
 
-    res.json({ message: 'E-posta güncellendi.' });
+    const token = await createEmailVerificationToken(updated.id);
+    await sendVerificationEmail(updated.email, updated.username, token);
+
+    res.json({
+      message:
+        'E-posta güncellendi. Yeni adresine doğrulama bağlantısı gönderdik.',
+      emailVerified: false,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Sunucu hatası.' });

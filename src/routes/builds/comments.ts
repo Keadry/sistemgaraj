@@ -1,16 +1,34 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { prisma } from '../../db.js';
 import { requireAuth, type AuthRequest } from '../../middleware/auth.js';
 import { containsBannedWord } from '../../services/moderation.js';
 import { createNotification } from '../../services/notifications.js';
 import { syncCommentMentions } from '../../services/mentions.js';
+import { requireVerifiedEmail } from '../../middleware/verified-email.js';
 
 const router = Router();
+
+/**
+ * Yorum yazmak, düzenlemek ve beğenmek aynı iki kapıdan geçiyor: oturum ve
+ * doğrulanmış e-posta. Tek dizide tutmak üçünün ayrışmasını engelliyor —
+ * birine eklenip diğerine eklenmeyen bir kapı, açık kalan tarafı fark
+ * edilmeden bırakırdı.
+ *
+ * Silme işlemleri bilerek dışında: kendi yazdığını geri almak doğrulama
+ * beklemeye bağlanmamalı.
+ */
+const requireVerifiedUser = [requireAuth, requireVerifiedEmail];
 
 // ==============================
 // YORUM EKLE
 // ==============================
-router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
+/* `res` tipi elle yazılıyor: ara katmanları dizi olarak vermek Express'in
+   aşırı yüklemelerinden farklı birini seçtiriyor ve son işleyicinin
+   parametreleri `any`ye düşüyor. */
+router.post(
+  '/:id/comments',
+  requireVerifiedUser,
+  async (req: AuthRequest, res: Response) => {
   try {
     const buildId = req.params.id as string;
     const { content, parentId, componentId } = req.body;
@@ -211,8 +229,8 @@ router.post('/:id/comments', requireAuth, async (req: AuthRequest, res) => {
 // ==============================
 router.patch(
   '/:id/comments/:commentId',
-  requireAuth,
-  async (req: AuthRequest, res) => {
+  requireVerifiedUser,
+  async (req: AuthRequest, res: Response) => {
     try {
       const commentId = req.params.commentId as string;
       const { content } = req.body;
@@ -375,8 +393,8 @@ router.delete(
 // ==============================
 router.post(
   '/:id/comments/:commentId/like',
-  requireAuth,
-  async (req: AuthRequest, res) => {
+  requireVerifiedUser,
+  async (req: AuthRequest, res: Response) => {
     try {
       const commentId = req.params.commentId as string;
 

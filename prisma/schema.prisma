@@ -71,6 +71,12 @@ model User {
   password  String
   role      Role     @default(USER)
 
+  /// E-posta adresinin sahibi olduğu doğrulandı mı. Doğrulanmamış hesaplar
+  /// girebiliyor ve gezebiliyor ama dışa dönük yazma işlemleri kapalı
+  /// (bkz. `middleware/verified-email.ts`).
+  emailVerified   Boolean   @default(false)
+  emailVerifiedAt DateTime?
+
   isBanned   Boolean   @default(false)
   banReason  String?
   mutedUntil DateTime?
@@ -95,6 +101,46 @@ model User {
   triggeredNotifications Notification[] @relation("NotificationActor")
 
   commentMentions CommentMention[]
+
+  emailVerificationTokens EmailVerificationToken[]
+  passwordResetTokens     PasswordResetToken[]
+}
+
+// ==============================
+// TEK KULLANIMLIK BAĞLANTI TOKEN'LARI
+// ==============================
+/// Ham token değil **SHA-256 özeti** saklanıyor. Veritabanı bir gün sızarsa
+/// ham sıfırlama token'ları doğrudan hesap devralma anlamına gelirdi; özet
+/// ise maildeki bağlantı olmadan işe yaramıyor. Aynı sebeple `@unique`
+/// özetin üzerinde: arama da özetle yapılıyor.
+///
+/// İki ayrı tablo, tür alanı olan tek tablo değil: bir sıfırlama token'ının
+/// doğrulama uç noktasında (veya tersi) kabul edilmesi böylece bir hata
+/// sonucu bile mümkün olmuyor.
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  /// Yeni token üretilirken kişinin eski token'ları siliniyor; sorgu bu alanı
+  /// kullanıyor.
+  @@index([userId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@index([userId])
 }
 
 // ==============================

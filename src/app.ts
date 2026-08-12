@@ -10,6 +10,7 @@ import userRoutes from './routes/users.js';
 import notificationRoutes from './routes/notifications.js';
 import { apiLimiter } from './middleware/rate-limit.js';
 import { uploadErrorHandler } from './middleware/image-content.js';
+import { allowedOrigins } from './config.js';
 
 /**
  * Express uygulaması burada kurulur ama dinlemeye başlamaz.
@@ -36,20 +37,10 @@ class CorsError extends Error {
   }
 }
 
-// Virgülle ayrılmış izinli origin listesi. Tanımsızsa yerel geliştirmeye
-// düşüyor; üretimde CORS_ORIGINS ayarlanmazsa tarayıcı istekleri reddedilir,
-// bu bilinçli — sessizce herkese açık kalmasındansa gürültülü şekilde kapalı
-// olsun.
-export const allowedOrigins = (
-  process.env.CORS_ORIGINS ?? 'http://localhost:3000'
-)
-  .split(',')
-  // Tarayıcı `Origin` başlığını şema + host olarak, sonunda eğik çizgi
-  // olmadan gönderiyor. Ortam değişkenine adres yapıştırılırken sonuna
-  // çizgi gelmesi çok yaygın; karşılaştırma tam eşleşme olduğu için bu
-  // sessizce her isteği reddettiriyordu. Normalleştirip o tuzağı kapatıyoruz.
-  .map((origin) => origin.trim().replace(/\/+$/, ''))
-  .filter(Boolean);
+// Liste `config.ts`'te; mail katmanı da aynı değeri okuyor ve buradan
+// alması döngüsel bir içe alma zinciri kuruyordu. `server.ts` hâlâ buradan
+// içe aldığı için yeniden dışa veriliyor.
+export { allowedOrigins };
 
 const app = express();
 

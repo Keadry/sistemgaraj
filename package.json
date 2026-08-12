@@ -8,7 +8,7 @@
     "seed": "pnpm tsx src/seed.ts",
     "dev": "pnpm tsx watch src/server.ts",
     "postinstall": "prisma generate",
-    "build": "prisma generate && tsc",
+    "build": "prisma migrate deploy && prisma generate && tsc",
     "start": "pnpm tsx src/server.ts"
   },
   "keywords": [],

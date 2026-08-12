@@ -1,6 +1,7 @@
 import app, { allowedOrigins } from './app.js';
 import { isRemoteStorage } from './storage.js';
 import { isSharedRateLimitStore } from './middleware/rate-limit-store.js';
+import { isMailConfigured } from './mailer.js';
 
 /**
  * Yerel geliştirme girişi. Sunucusuz dağıtımda bu dosya hiç çalıştırılmaz;
@@ -16,5 +17,12 @@ app.listen(PORT, () => {
   );
   console.log(
     `   Hız sınırı deposu: ${isSharedRateLimitStore ? 'Upstash Redis (paylaşımlı)' : 'bellek (tek süreç)'}`,
+  );
+  console.log(
+    `   Mail: ${
+      isMailConfigured
+        ? 'SMTP'
+        : 'yapılandırılmadı — bağlantılar bu günlüğe yazılıyor, e-posta doğrulama zorunlu DEĞİL'
+    }`,
   );
 });

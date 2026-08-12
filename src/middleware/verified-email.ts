@@ -1,5 +1,6 @@
 import type { NextFunction, Response } from 'express';
 import { prisma } from '../db.js';
+import { isMailConfigured } from '../mailer.js';
 import type { AuthRequest } from './auth.js';
 
 /**
@@ -28,6 +29,19 @@ export async function requireVerifiedEmail(
   res: Response,
   next: NextFunction,
 ) {
+  /* Mail gönderilemiyorsa kapı açık kalıyor.
+
+     Kapının tek varsayımı kullanıcının doğrulamayı **tamamlayabilmesi**.
+     SMTP tanımsızken bağlantı yalnızca sunucu günlüğüne yazılıyor (bkz.
+     `mailer.ts`), yani kullanıcının eline hiç geçmiyor: kapıyı kapalı
+     tutmak, kaydolan herkesi hiçbir zaman geçemeyeceği bir duvarın
+     arkasında bırakmak olurdu. Özelliğin hiç olmadığı hale dönmek, kimseyi
+     kilitlemekten iyi.
+
+     Sağlayıcı ayarlandığı an kapı kendiliğinden kapanıyor; ayrıca bir
+     bayrak yok ki biri açık kalmayı unutsun. */
+  if (!isMailConfigured) return next();
+
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId! },

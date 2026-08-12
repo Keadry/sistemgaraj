@@ -6,6 +6,7 @@ import { verifyImageContents } from '../middleware/image-content.js';
 import { requireVerifiedEmail } from '../middleware/verified-email.js';
 import { createEmailVerificationToken } from '../services/tokens.js';
 import { sendVerificationEmail } from '../services/mail.js';
+import { isMailConfigured } from '../mailer.js';
 import { saveImage } from '../storage.js';
 import {
   requireAuth,
@@ -348,7 +349,14 @@ router.get('/me/account', requireAuth, async (req: AuthRequest, res) => {
       return;
     }
 
-    res.json({ user });
+    /* Giriş yanıtıyla aynı sebep: mail gönderilemiyorken doğrulama
+       istenmiyor, dolayısıyla ayarlar sayfası da "doğrulanmadı" demiyor. */
+    res.json({
+      user: {
+        ...user,
+        emailVerified: isMailConfigured ? user.emailVerified : true,
+      },
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Sunucu hatası.' });

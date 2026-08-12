@@ -8,6 +8,7 @@ import {
   sendPasswordResetEmail,
   sendVerificationEmail,
 } from '../services/mail.js';
+import { isMailConfigured } from '../mailer.js';
 import {
   consumeEmailVerificationToken,
   consumePasswordResetToken,
@@ -82,11 +83,18 @@ router.post('/register', authLimiter, async (req, res) => {
        açılmamış gibi göstermek olurdu; doğrulama maili "tekrar gönder" ile
        her zaman yeniden istenebiliyor. */
     const token = await createEmailVerificationToken(user.id);
-    await sendVerificationEmail(user.email, user.username, token);
+    const mailSent = await sendVerificationEmail(
+      user.email,
+      user.username,
+      token,
+    );
 
     res.status(201).json({
-      message:
-        'Kayıt başarılı. E-posta adresine doğrulama bağlantısı gönderdik.',
+      /* Mesaj gerçekten olana göre: gönderilemediyse "gönderdik" demek
+         kullanıcıyı hiç gelmeyecek bir maili beklerken bırakırdı. */
+      message: mailSent
+        ? 'Kayıt başarılı. E-posta adresine doğrulama bağlantısı gönderdik.'
+        : 'Kayıt başarılı.',
       user: {
         id: user.id,
         email: user.email,
@@ -159,8 +167,12 @@ router.post('/login', authLimiter, async (req, res) => {
         email: user.email,
         username: user.username,
         role: user.role,
-        // Arayüz doğrulama şeridini buna bakarak gösteriyor.
-        emailVerified: user.emailVerified,
+        /* Arayüz doğrulama şeridini buna bakarak gösteriyor.
+           Mail gönderilemiyorken doğrulama zaten istenmiyor
+           (bkz. `middleware/verified-email.ts`), o yüzden burada da
+           doğrulanmış sayılıyor: kapatılması mümkün olmayan bir uyarı
+           şeridi göstermenin kullanıcıya söyleyeceği bir şey yok. */
+        emailVerified: isMailConfigured ? user.emailVerified : true,
       },
     });
   } catch (error) {
